@@ -301,9 +301,10 @@ npm install
 
 ### **👥 Equipo de Desarrollo**
 
-- **👨‍💻 Líder Técnico**: [Tu nombre] - [tu-email@psyche.cl]
-- **🎨 Diseñador UX**: [Nombre] - [email]
-- **🔧 DevOps**: [Nombre] - [email]
+- **Orlando Godoy**: [gabrielgodoy211@gmail.com]
+- **Miguel Román**: [romandiazmiguelignacio@gmail.com]
+- **Bairon Campos**: [bai.campos@duocuc.cl]
+- **Felipe Ríos**: [feli.rios2003@gmail.com]
 
 ### **📞 Soporte Técnico**
 
