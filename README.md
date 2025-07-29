@@ -120,7 +120,6 @@ centro-terapeutico-psyche/
 - **ESLint** - Linter de código
 - **Prettier** - Formateador de código
 - **Jest** - Framework de testing
-- **Docker** - Contenedores
 - **Git** - Control de versiones
 
 ---
@@ -141,7 +140,6 @@ centro-terapeutico-psyche/
 
 ### **🚀 Deployment**
 
-- [🐳 Docker Setup](docs/DOCKER_SETUP.md) - Configuración con Docker
 - [☁️ Production Deployment](docs/PRODUCTION_DEPLOYMENT.md) - Despliegue en producción
 
 ---
