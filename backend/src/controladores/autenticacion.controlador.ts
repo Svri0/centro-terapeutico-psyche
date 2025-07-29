@@ -1,5 +1,8 @@
 // Controlador de autenticación
 import { Request, Response } from 'express';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import sequelize from '../configuracion/database';
 import { log } from '../utilidades/logger';
 import { MENSAJES_AUTH } from '../utilidades/mensajes';
 import { ManejadorRespuestas } from '../utilidades/respuestas';
@@ -19,23 +22,87 @@ export const iniciarSesion = async (req: Request, res: Response) => {
       );
     }
 
-    // TODO: Implementar lógica de autenticación real
-    // Por ahora simular login exitoso
-    const usuarioSimulado = {
-      id: 1,
-      email: email,
-      nombre: 'Usuario de Prueba',
-      rol: 'psicologo',
-      token: 'jwt_token_simulado_12345'
+    // Buscar usuario en la base de datos
+    const [usuarios] = await sequelize.query(
+      `SELECT u.id, u.nombres, u.apellidos, u.email, u.password_hash, u.activo, u.rol_id, r.nombre as rol_nombre
+       FROM usuarios u
+       INNER JOIN roles r ON u.rol_id = r.id
+       WHERE u.email = :email`,
+      {
+        replacements: { email }
+      }
+    );
+
+    if (!Array.isArray(usuarios) || usuarios.length === 0) {
+      return ManejadorRespuestas.noAutorizado(
+        res,
+        'Credenciales inválidas',
+        'AUTH_002'
+      );
+    }
+
+    const usuario = usuarios[0] as any;
+
+    // Verificar que el usuario esté activo
+    if (!usuario.activo) {
+      return ManejadorRespuestas.prohibido(
+        res,
+        'Cuenta desactivada. Contacta al administrador.',
+        'AUTH_003'
+      );
+    }
+
+    // Verificar contraseña
+    const passwordValida = await bcrypt.compare(password, usuario.password_hash);
+    if (!passwordValida) {
+      return ManejadorRespuestas.noAutorizado(
+        res,
+        'Credenciales inválidas',
+        'AUTH_004'
+      );
+    }
+
+    // Generar token JWT
+    const secret = 'tu_secreto_super_seguro_para_jwt_tokens_2024';
+    const token = jwt.sign(
+      {
+        id: usuario.id,
+        email: usuario.email,
+        rol_id: usuario.rol_id,
+        nombres: usuario.nombres,
+        apellidos: usuario.apellidos
+      },
+      secret,
+      { expiresIn: '24h' }
+    );
+
+    // Actualizar último acceso
+    await sequelize.query(
+      'UPDATE usuarios SET ultimo_acceso = NOW() WHERE id = :id',
+      {
+        replacements: { id: usuario.id }
+      }
+    );
+
+    const respuesta = {
+      usuario: {
+        id: usuario.id,
+        nombres: usuario.nombres,
+        apellidos: usuario.apellidos,
+        email: usuario.email,
+        rol: usuario.rol_nombre
+      },
+      token,
+      expira_en: '24 horas'
     };
 
-    return ManejadorRespuestas.exito(res, MENSAJES_AUTH.LOGIN_EXITOSO, usuarioSimulado, 'AUTH_002');
+    return ManejadorRespuestas.exito(res, MENSAJES_AUTH.LOGIN_EXITOSO, respuesta, 'AUTH_005');
   } catch (error) {
     log.error('Error en iniciarSesion:', error);
     return ManejadorRespuestas.errorInterno(
       res,
       'Error interno al procesar el inicio de sesión',
-      'AUTH_003'
+      'AUTH_006'
     );
   }
 };
@@ -80,7 +147,7 @@ export const registrar = async (req: Request, res: Response) => {
   }
 };
 
-export const cerrarSesion = async (req: Request, res: Response) => {
+export const cerrarSesion = async (_req: Request, res: Response) => {
   try {
     // TODO: Implementar lógica de cierre de sesión (invalidar token, etc.)
 
@@ -96,7 +163,7 @@ export const cerrarSesion = async (req: Request, res: Response) => {
   }
 };
 
-export const obtenerPerfil = async (req: Request, res: Response) => {
+export const obtenerPerfil = async (_req: Request, res: Response) => {
   try {
     // TODO: Implementar obtención de perfil real desde la base de datos
     const perfilSimulado = {

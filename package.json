@@ -39,6 +39,9 @@
     "prepare": "husky install"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/uuid": "^10.0.0",
     "concurrently": "^8.2.2",
     "husky": "^8.0.3",
     "lint-staged": "^15.2.0",
@@ -78,5 +81,10 @@
     "nodejs"
   ],
   "author": "Equipo Centro Terapéutico Psyche",
-  "license": "MIT"
-} 
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "jsonwebtoken": "^9.0.2",
+    "uuid": "^11.1.0"
+  }
+}

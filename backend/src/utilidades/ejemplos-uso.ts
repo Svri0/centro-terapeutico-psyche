@@ -8,7 +8,7 @@ import { ManejadorRespuestas } from './respuestas';
 /**
  * EJEMPLO 1: Respuesta exitosa básica
  */
-export const ejemploRespuestaExitosa = (req: Request, res: Response) => {
+export const ejemploRespuestaExitosa = (_req: Request, res: Response) => {
   const datos = {
     usuario: 'María González',
     puntos: 150
@@ -20,7 +20,7 @@ export const ejemploRespuestaExitosa = (req: Request, res: Response) => {
 /**
  * EJEMPLO 2: Mensaje de gamificación con variables dinámicas
  */
-export const ejemploGamificacion = (req: Request, res: Response) => {
+export const ejemploGamificacion = (_req: Request, res: Response) => {
   const puntos = 50;
   const nivel = 3;
 
@@ -44,7 +44,7 @@ export const ejemploGamificacion = (req: Request, res: Response) => {
 /**
  * EJEMPLO 3: Usar obtenerMensaje con categorías
  */
-export const ejemploCategoriaMensajes = (req: Request, res: Response) => {
+export const ejemploCategoriaMensajes = (_req: Request, res: Response) => {
   // Obtener mensaje desde categoría específica
   const mensajeTarea = obtenerMensaje('tareas', 'TAREA_COMPLETADA');
   const mensajeAuth = obtenerMensaje('auth', 'LOGIN_EXITOSO');
@@ -180,7 +180,7 @@ export const ejemploMensajeDinamico = (req: Request, res: Response) => {
 /**
  * EJEMPLO 7: Respuesta con múltiples tipos de datos
  */
-export const ejemploRespuestaCompleja = (req: Request, res: Response) => {
+export const ejemploRespuestaCompleja = (_req: Request, res: Response) => {
   const datosComplejos = {
     paciente: {
       id: 1,
