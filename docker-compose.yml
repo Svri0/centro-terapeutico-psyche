@@ -1,0 +1,153 @@
+version: '3.8'
+
+services:
+  # Base de datos PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: psyche_postgres
+    environment:
+      POSTGRES_DB: psyche_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: psyche_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - psyche_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d psyche_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # pgAdmin para gestión de base de datos
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: psyche_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@psyche.cl
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - psyche_network
+    restart: unless-stopped
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: psyche_backend
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: psyche_password
+      DB_NAME: psyche_db
+      JWT_SECRET: psyche_jwt_secret_dev_super_seguro_para_desarrollo
+      JWT_EXPIRES_IN: 24h
+      CORS_ORIGIN: http://localhost:3000
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./backend/uploads:/app/uploads
+    networks:
+      - psyche_network
+    command: npm run dev
+    restart: unless-stopped
+
+  # Frontend PWA
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: psyche_frontend
+    environment:
+      VITE_API_URL: http://localhost:3001
+      VITE_APP_NAME: Centro Terapéutico Psyche
+      VITE_NODE_ENV: development
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - psyche_network
+    command: npm run dev
+    restart: unless-stopped
+
+  # Servicio de Machine Learning
+  ml-service:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile
+      target: development
+    container_name: psyche_ml_service
+    environment:
+      NODE_ENV: development
+      PORT: 3003
+      BACKEND_URL: http://backend:3001
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: psyche_password
+      DB_NAME: psyche_db
+    ports:
+      - "3003:3003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    volumes:
+      - ./ml-service:/app
+      - /app/node_modules
+      - ./ml-service/models:/app/models
+      - ./ml-service/data:/app/data
+    networks:
+      - psyche_network
+    command: npm run dev
+    restart: unless-stopped
+
+  # Redis para cache y sesiones
+  redis:
+    image: redis:7-alpine
+    container_name: psyche_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - psyche_network
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  psyche_network:
+    driver: bridge 
