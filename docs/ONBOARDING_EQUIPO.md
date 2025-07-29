@@ -65,7 +65,7 @@ NODE_ENV=development
 JWT_SECRET=tu_secreto_super_seguro_aqui
 ```
 
-**⚠️ IMPORTANTE:** Cada desarrollador debe usar su propia contraseña de PostgreSQL que configuró durante la instalación.
+**⚠️ IMPORTANTE:** Para mantener consistencia en el equipo, todos los desarrolladores deben usar la misma contraseña de PostgreSQL.
 
 ### **3. 📦 Instalar Dependencias**
 
@@ -84,25 +84,23 @@ cd ..
 
 ### **4. 🗄️ Configurar Base de Datos**
 
-#### **🔐 Configuración de Contraseñas Individuales**
+#### **🔐 Configuración de Contraseña del Equipo**
 
-**Cada desarrollador debe:**
+**Todos los desarrolladores deben usar la misma contraseña:**
 
-1. **Usar su propia contraseña** de PostgreSQL (la que configuró durante la instalación)
-2. **No compartir contraseñas** entre miembros del equipo
-3. **Configurar su archivo `.env`** con su contraseña personal
+1. **Contraseña del equipo:** `Ferreteriakm6`
+2. **Configurar PostgreSQL** con esta contraseña
+3. **Configurar el archivo `.env`** con esta contraseña
 
-**Ejemplos de configuración:**
+**Configuración estándar del equipo:**
 
 ```env
-# Desarrollador 1
-DB_PASSWORD=mi_contraseña_123
-
-# Desarrollador 2
-DB_PASSWORD=postgres2024
-
-# Desarrollador 3
-DB_PASSWORD=admin123
+# Configuración de la base de datos
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=psyche_db
+DB_USER=postgres
+DB_PASSWORD=Ferreteriakm6
 ```
 
 #### **📋 Pasos para Configurar Base de Datos:**
