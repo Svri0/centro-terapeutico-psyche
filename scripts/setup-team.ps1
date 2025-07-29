@@ -149,6 +149,9 @@ if ($DbPassword -ne "") {
     $envContent = $envContent -replace "DB_PASSWORD=.*", "DB_PASSWORD=$DbPassword"
     Set-Content ".env" $envContent
     Write-Success "Contraseña de base de datos actualizada"
+} else {
+    Write-Warning "IMPORTANTE: Debes editar manualmente el archivo .env con tu contraseña personal de PostgreSQL"
+    Write-Info "Abre el archivo .env y cambia DB_PASSWORD=TU_CONTRASEÑA_PERSONAL_DE_POSTGRESQL"
 }
 
 # Instalar dependencias del backend

@@ -34,7 +34,7 @@ El **Centro Terapéutico Psyche** es una plataforma integral de gestión terapé
 
 ### **⚡ Instalación Rápida**
 
-```bash
+````bash
 # 1. Clonar el repositorio
 git clone https://github.com/tu-usuario/centro-terapeutico-psyche.git
 cd centro-terapeutico-psyche
@@ -43,20 +43,32 @@ cd centro-terapeutico-psyche
 cp env.example .env
 # Editar .env con tus configuraciones
 
+**⚠️ IMPORTANTE - Contraseñas Individuales:**
+Cada desarrollador debe usar su propia contraseña de PostgreSQL en el archivo `.env`:
+```env
+DB_PASSWORD=TU_CONTRASEÑA_PERSONAL_DE_POSTGRESQL
+````
+
 # 3. Instalar dependencias
+
 cd backend; npm install
 cd ../frontend; npm install
 
 # 4. Configurar base de datos
+
 createdb psyche_db
 cd ../backend; npm run db:migrate
 
 # 5. Iniciar el proyecto
+
 # Terminal 1: Backend
+
 cd backend; npm run dev
 
 # Terminal 2: Frontend
+
 cd frontend; npm run dev
+
 ```
 
 ### **🎯 URLs Importantes**
@@ -71,26 +83,28 @@ cd frontend; npm run dev
 ## 🏗️ **Arquitectura del Proyecto**
 
 ```
+
 centro-terapeutico-psyche/
-├── 📁 backend/                 # API REST (Node.js + TypeScript)
-│   ├── 📁 src/
-│   │   ├── 📁 controladores/   # Lógica de negocio
-│   │   ├── 📁 modelos/         # Modelos de datos
-│   │   ├── 📁 rutas/           # Definición de endpoints
-│   │   ├── 📁 utilidades/      # Funciones auxiliares
-│   │   └── servidor.ts         # Punto de entrada
-│   ├── 📁 migrations/          # Migraciones de BD
-│   └── 📁 seeders/             # Datos de ejemplo
-├── 📁 frontend/                # Interfaz web (React + TypeScript)
-│   ├── 📁 src/
-│   │   ├── 📁 componentes/     # Componentes reutilizables
-│   │   ├── 📁 paginas/         # Páginas de la aplicación
-│   │   ├── 📁 servicios/       # Llamadas a la API
-│   │   └── 📁 utilidades/      # Funciones auxiliares
-├── 📁 docs/                    # Documentación
-├── 📁 docker/                  # Configuración Docker
-└── 📁 scripts/                 # Scripts de automatización
-```
+├── 📁 backend/ # API REST (Node.js + TypeScript)
+│ ├── 📁 src/
+│ │ ├── 📁 controladores/ # Lógica de negocio
+│ │ ├── 📁 modelos/ # Modelos de datos
+│ │ ├── 📁 rutas/ # Definición de endpoints
+│ │ ├── 📁 utilidades/ # Funciones auxiliares
+│ │ └── servidor.ts # Punto de entrada
+│ ├── 📁 migrations/ # Migraciones de BD
+│ └── 📁 seeders/ # Datos de ejemplo
+├── 📁 frontend/ # Interfaz web (React + TypeScript)
+│ ├── 📁 src/
+│ │ ├── 📁 componentes/ # Componentes reutilizables
+│ │ ├── 📁 paginas/ # Páginas de la aplicación
+│ │ ├── 📁 servicios/ # Llamadas a la API
+│ │ └── 📁 utilidades/ # Funciones auxiliares
+├── 📁 docs/ # Documentación
+├── 📁 docker/ # Configuración Docker
+└── 📁 scripts/ # Scripts de automatización
+
+````
 
 ---
 
@@ -167,7 +181,7 @@ git commit -m "feat: descripción del cambio"
 
 # 3. Push y crear Pull Request
 git push origin feature/nombre-funcionalidad
-```
+````
 
 ### **📋 Convenciones de Commits**
 

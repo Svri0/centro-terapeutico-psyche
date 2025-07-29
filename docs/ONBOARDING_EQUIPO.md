@@ -54,8 +54,8 @@ code .env
 DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=psyche_db
-DB_USER=tu_usuario
-DB_PASSWORD=tu_password
+DB_USER=postgres
+DB_PASSWORD=TU_CONTRASEÑA_PERSONAL_DE_POSTGRESQL
 
 # Servidor
 PORT=3002
@@ -64,6 +64,8 @@ NODE_ENV=development
 # JWT
 JWT_SECRET=tu_secreto_super_seguro_aqui
 ```
+
+**⚠️ IMPORTANTE:** Cada desarrollador debe usar su propia contraseña de PostgreSQL que configuró durante la instalación.
 
 ### **3. 📦 Instalar Dependencias**
 
@@ -81,6 +83,29 @@ cd ..
 ```
 
 ### **4. 🗄️ Configurar Base de Datos**
+
+#### **🔐 Configuración de Contraseñas Individuales**
+
+**Cada desarrollador debe:**
+
+1. **Usar su propia contraseña** de PostgreSQL (la que configuró durante la instalación)
+2. **No compartir contraseñas** entre miembros del equipo
+3. **Configurar su archivo `.env`** con su contraseña personal
+
+**Ejemplos de configuración:**
+
+```env
+# Desarrollador 1
+DB_PASSWORD=mi_contraseña_123
+
+# Desarrollador 2
+DB_PASSWORD=postgres2024
+
+# Desarrollador 3
+DB_PASSWORD=admin123
+```
+
+#### **📋 Pasos para Configurar Base de Datos:**
 
 ```bash
 # Crear base de datos PostgreSQL
