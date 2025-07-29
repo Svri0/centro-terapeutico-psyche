@@ -134,7 +134,6 @@ centro-terapeutico-psyche/
 - **ESLint** - Linter de código
 - **Prettier** - Formateador de código
 - **Jest** - Framework de testing
-- **Docker** - Contenedores
 - **Git** - Control de versiones
 
 ---
@@ -155,7 +154,6 @@ centro-terapeutico-psyche/
 
 ### **🚀 Deployment**
 
-- [🐳 Docker Setup](docs/DOCKER_SETUP.md) - Configuración con Docker
 - [☁️ Production Deployment](docs/PRODUCTION_DEPLOYMENT.md) - Despliegue en producción
 
 ---
@@ -210,21 +208,6 @@ npm run test:coverage
 
 ---
 
-## 🐳 **Docker**
-
-```bash
-# Construir imagen
-docker build -t psyche-backend ./backend
-docker build -t psyche-frontend ./frontend
-
-# Ejecutar con Docker Compose
-docker-compose up -d
-
-# Ver logs
-docker-compose logs -f
-```
-
----
 
 ## 📊 **Scripts Útiles**
 
@@ -332,9 +315,10 @@ npm install
 
 ### **👥 Equipo de Desarrollo**
 
-- **👨‍💻 Líder Técnico**: [Tu nombre] - [tu-email@psyche.cl]
-- **🎨 Diseñador UX**: [Nombre] - [email]
-- **🔧 DevOps**: [Nombre] - [email]
+- **Orlando Godoy**: [gabrielgodoy211@gmail.com]
+- **Miguel Román**: [romandiazmiguelignacio@gmail.com]
+- **Bairon Campos**: [bai.campos@duocuc.cl]
+- **Felipe Ríos**: [feli.rios2003@gmail.com]
 
 ### **📞 Soporte Técnico**
 
