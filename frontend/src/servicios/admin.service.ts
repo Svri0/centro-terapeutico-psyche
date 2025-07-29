@@ -1,5 +1,7 @@
 import axios from 'axios';
 
+const API_BASE_URL = 'http://localhost:3004/api/v1';
+
 export interface Psicologo {
   id: string;
   nombres: string;
@@ -45,7 +47,7 @@ export interface ApiResponse<T> {
 class AdminService {
   async obtenerPsicologos(): Promise<Psicologo[]> {
     try {
-      const response = await axios.get<ApiResponse<Psicologo[]>>('/admin/psicologos');
+      const response = await axios.get<ApiResponse<Psicologo[]>>(`${API_BASE_URL}/admin/psicologos`);
       return response.data.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.mensaje || 'Error al obtener psicólogos');
@@ -54,7 +56,7 @@ class AdminService {
 
   async obtenerPsicologoPorId(id: string): Promise<Psicologo> {
     try {
-      const response = await axios.get<ApiResponse<Psicologo>>(`/admin/psicologos/${id}`);
+      const response = await axios.get<ApiResponse<Psicologo>>(`${API_BASE_URL}/admin/psicologos/${id}`);
       return response.data.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.mensaje || 'Error al obtener psicólogo');
@@ -63,7 +65,7 @@ class AdminService {
 
   async crearPsicologo(data: CrearPsicologoData): Promise<{ usuario: any; token_activacion: string }> {
     try {
-      const response = await axios.post<ApiResponse<{ usuario: any; token_activacion: string }>>('/admin/psicologos', data);
+      const response = await axios.post<ApiResponse<{ usuario: any; token_activacion: string }>>(`${API_BASE_URL}/admin/psicologos`, data);
       return response.data.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.mensaje || 'Error al crear psicólogo');
@@ -72,7 +74,7 @@ class AdminService {
 
   async actualizarPsicologo(id: string, data: ActualizarPsicologoData): Promise<{ id: string; campos_actualizados: number }> {
     try {
-      const response = await axios.put<ApiResponse<{ id: string; campos_actualizados: number }>>(`/admin/psicologos/${id}`, data);
+      const response = await axios.put<ApiResponse<{ id: string; campos_actualizados: number }>>(`${API_BASE_URL}/admin/psicologos/${id}`, data);
       return response.data.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.mensaje || 'Error al actualizar psicólogo');
@@ -81,7 +83,7 @@ class AdminService {
 
   async desactivarPsicologo(id: string): Promise<{ id: string; nombres: string; apellidos: string; estado: string }> {
     try {
-      const response = await axios.patch<ApiResponse<{ id: string; nombres: string; apellidos: string; estado: string }>>(`/admin/psicologos/${id}/desactivar`);
+      const response = await axios.patch<ApiResponse<{ id: string; nombres: string; apellidos: string; estado: string }>>(`${API_BASE_URL}/admin/psicologos/${id}/desactivar`);
       return response.data.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.mensaje || 'Error al desactivar psicólogo');
@@ -90,7 +92,7 @@ class AdminService {
 
   async reactivarPsicologo(id: string): Promise<{ id: string; nombres: string; apellidos: string; estado: string }> {
     try {
-      const response = await axios.patch<ApiResponse<{ id: string; nombres: string; apellidos: string; estado: string }>>(`/admin/psicologos/${id}/reactivar`);
+      const response = await axios.patch<ApiResponse<{ id: string; nombres: string; apellidos: string; estado: string }>>(`${API_BASE_URL}/admin/psicologos/${id}/reactivar`);
       return response.data.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.mensaje || 'Error al reactivar psicólogo');

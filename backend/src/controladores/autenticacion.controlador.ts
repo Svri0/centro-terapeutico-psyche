@@ -90,7 +90,8 @@ export const iniciarSesion = async (req: Request, res: Response) => {
         nombres: usuario.nombres,
         apellidos: usuario.apellidos,
         email: usuario.email,
-        rol: usuario.rol_nombre
+        rol: usuario.rol_nombre,
+        rol_id: usuario.rol_id
       },
       token,
       expira_en: '24 horas'
@@ -246,6 +247,99 @@ export const cambiarPassword = async (req: Request, res: Response) => {
       res,
       'Error interno al cambiar la contraseña',
       'AUTH_015'
+    );
+  }
+};
+
+// Cambiar contraseña
+export const cambiarContraseña = async (req: Request, res: Response) => {
+  try {
+    const { contraseña_actual, nueva_contraseña } = req.body;
+    const userId = (req as any).user?.id;
+
+    if (!userId) {
+      return ManejadorRespuestas.noAutorizado(
+        res,
+        'Usuario no autenticado',
+        'AUTH_108'
+      );
+    }
+
+    if (!contraseña_actual || !nueva_contraseña) {
+      return ManejadorRespuestas.errorValidacion(
+        res,
+        'Contraseña actual y nueva contraseña son requeridas',
+        null,
+        'AUTH_109'
+      );
+    }
+
+    if (nueva_contraseña.length < 8) {
+      return ManejadorRespuestas.errorValidacion(
+        res,
+        'La nueva contraseña debe tener al menos 8 caracteres',
+        null,
+        'AUTH_110'
+      );
+    }
+
+    // Obtener usuario actual
+    const [usuario] = await sequelize.query(
+      'SELECT password_hash FROM usuarios WHERE id = :userId',
+      {
+        replacements: { userId }
+      }
+    );
+
+    if (!usuario) {
+      return ManejadorRespuestas.noEncontrado(
+        res,
+        'Usuario no encontrado',
+        'AUTH_111'
+      );
+    }
+
+    // Verificar contraseña actual
+    const contraseñaValida = await bcrypt.compare(contraseña_actual, (usuario as any).password_hash);
+    
+    if (!contraseñaValida) {
+      return ManejadorRespuestas.noAutorizado(
+        res,
+        'Contraseña actual incorrecta',
+        'AUTH_112'
+      );
+    }
+
+    // Hashear nueva contraseña
+    const saltRounds = 12;
+    const nuevaContraseñaHash = await bcrypt.hash(nueva_contraseña, saltRounds);
+
+    // Actualizar contraseña
+    await sequelize.query(
+      'UPDATE usuarios SET password_hash = :passwordHash, updated_at = NOW() WHERE id = :userId',
+      {
+        replacements: { 
+          passwordHash: nuevaContraseñaHash,
+          userId 
+        }
+      }
+    );
+
+    log.info(`Contraseña cambiada para usuario: ${userId}`);
+
+    return ManejadorRespuestas.exito(
+      res,
+      'Contraseña cambiada exitosamente',
+      { mensaje: 'Contraseña actualizada correctamente' },
+      'AUTH_113'
+    );
+
+  } catch (error) {
+    log.error('Error en cambiarContraseña:', error);
+    return ManejadorRespuestas.errorInterno(
+      res,
+      'Error al cambiar la contraseña',
+      'AUTH_114'
     );
   }
 };

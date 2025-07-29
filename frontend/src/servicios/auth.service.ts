@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:3002/api/v1';
+const API_BASE_URL = 'http://localhost:3004/api/v1';
 
 export interface LoginData {
   email: string;
@@ -13,6 +13,7 @@ export interface User {
   apellidos: string;
   email: string;
   rol: string;
+  rol_id: number;
 }
 
 export interface AuthResponse {
@@ -64,9 +65,22 @@ class AuthService {
       const { token, usuario } = response.data.data;
       
       this.setToken(token);
+      this.setUser(usuario);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.mensaje || 'Error en el login');
+    }
+  }
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<any> {
+    try {
+      const response = await axios.put('/autenticacion/cambiar-contraseña', {
+        contraseña_actual: currentPassword,
+        nueva_contraseña: newPassword
+      });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.mensaje || 'Error al cambiar la contraseña');
     }
   }
 
@@ -100,7 +114,12 @@ class AuthService {
 
   isAdmin(): boolean {
     const user = this.getUser();
-    return user?.rol === 'administrador';
+    return user?.rol_id === 1;
+  }
+
+  isPsicologo(): boolean {
+    const user = this.getUser();
+    return user?.rol_id === 2;
   }
 }
 
