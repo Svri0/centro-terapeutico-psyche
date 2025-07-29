@@ -194,21 +194,6 @@ npm run test:coverage
 
 ---
 
-## 🐳 **Docker**
-
-```bash
-# Construir imagen
-docker build -t psyche-backend ./backend
-docker build -t psyche-frontend ./frontend
-
-# Ejecutar con Docker Compose
-docker-compose up -d
-
-# Ver logs
-docker-compose logs -f
-```
-
----
 
 ## 📊 **Scripts Útiles**
 
