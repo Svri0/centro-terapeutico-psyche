@@ -57,12 +57,12 @@ cd ../backend; npm run db:migrate
 npm run dev
 ```
 
-### **⚠️ IMPORTANTE - Contraseña del Equipo**
+### **⚠️ IMPORTANTE - Contraseñas Individuales**
 
-Todos los desarrolladores deben usar la contraseña estándar del equipo:
+Cada desarrollador debe usar su propia contraseña de PostgreSQL:
 
 ```env
-DB_PASSWORD=Ferreteriakm6
+DB_PASSWORD=TU_CONTRASEÑA_PERSONAL_DE_POSTGRESQL
 ```
 
 ### **🎯 URLs Importantes**

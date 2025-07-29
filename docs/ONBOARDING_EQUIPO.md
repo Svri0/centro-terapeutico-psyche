@@ -65,7 +65,7 @@ NODE_ENV=development
 JWT_SECRET=tu_secreto_super_seguro_aqui
 ```
 
-**⚠️ IMPORTANTE:** Para mantener consistencia en el equipo, todos los desarrolladores deben usar la misma contraseña de PostgreSQL.
+**⚠️ IMPORTANTE:** Cada desarrollador debe usar su propia contraseña de PostgreSQL que configuró durante la instalación.
 
 ### **3. 📦 Instalar Dependencias**
 
@@ -84,38 +84,71 @@ cd ..
 
 ### **4. 🗄️ Configurar Base de Datos**
 
-#### **🔐 Configuración de Contraseña del Equipo**
+#### **🔐 Configuración Individual de PostgreSQL**
 
-**Todos los desarrolladores deben usar la misma contraseña:**
+**Cada desarrollador debe:**
 
-1. **Contraseña del equipo:** `Ferreteriakm6`
-2. **Configurar PostgreSQL** con esta contraseña
-3. **Configurar el archivo `.env`** con esta contraseña
+1. **Usar su propia contraseña** de PostgreSQL (la que configuró durante la instalación)
+2. **Crear su propia base de datos** `psyche_db`
+3. **Configurar su archivo `.env`** con su contraseña personal
+4. **Verificar configuración en `database.ts`** antes de ejecutar migraciones
 
-**Configuración estándar del equipo:**
+**Configuración individual:**
 
 ```env
-# Configuración de la base de datos
+# Configuración de la base de datos (personal)
 DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=psyche_db
 DB_USER=postgres
-DB_PASSWORD=Ferreteriakm6
+DB_PASSWORD=TU_CONTRASEÑA_PERSONAL_DE_POSTGRESQL
 ```
 
 #### **📋 Pasos para Configurar Base de Datos:**
 
 ```bash
-# Crear base de datos PostgreSQL
+# 1. Crear base de datos PostgreSQL
 createdb psyche_db
 
-# Ejecutar migraciones
+# 2. Verificar configuración en database.ts
+# Asegurarse de que la contraseña en database.ts coincida con .env
+
+# 3. Ejecutar migraciones
 cd backend
 npm run db:migrate
 
-# Opcional: Cargar datos de ejemplo
+# 4. Opcional: Cargar datos de ejemplo
 npm run db:seed
 ```
+
+#### **🔧 Verificación de Configuración:**
+
+**Antes de ejecutar migraciones, verificar:**
+
+1. **Archivo `.env`** en el directorio raíz:
+
+```env
+DB_PASSWORD=TU_CONTRASEÑA_PERSONAL_DE_POSTGRESQL
+```
+
+2. **Archivo `backend/src/configuracion/database.ts`** - **CAMBIAR LA LÍNEA 12**:
+
+```typescript
+// Cambiar esta línea:
+password: process.env.DB_PASSWORD || 'psyche_password',
+
+// Por esta (con tu contraseña personal):
+password: process.env.DB_PASSWORD || 'TU_CONTRASEÑA_PERSONAL_DE_POSTGRESQL',
+```
+
+3. **Copiar `.env` al directorio backend**:
+
+```bash
+# Copiar .env al directorio backend para que Sequelize lo encuentre
+cp .env backend/.env
+```
+
+**⚠️ IMPORTANTE:** Si no cambias la contraseña en `database.ts`, Sequelize usará `'psyche_password'` como fallback y fallará la migración.
 
 ### **5. 🚀 Iniciar el Proyecto**
 
