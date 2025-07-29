@@ -1,456 +1,349 @@
 # 🏥 Centro Terapéutico Psyche
 
-**Sistema integral de gestión para centro terapéutico** - Proyecto de titulación desarrollado con tecnologías modernas.
+**Sistema de Gestión Terapéutica con Gamificación**
 
-## 📋 Descripción
+[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-18+-blue.svg)](https://reactjs.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-blue.svg)](https://www.postgresql.org/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-Centro Terapéutico Psyche es una aplicación web full-stack diseñada para la gestión integral de un centro de salud mental. Incluye funcionalidades para administrar pacientes, sesiones terapéuticas, tareas, reportes y un sistema completo de autenticación.
+## 📋 **Descripción del Proyecto**
 
-## 🚀 Tecnologías
+El **Centro Terapéutico Psyche** es una plataforma integral de gestión terapéutica que combina herramientas profesionales de psicología con elementos de gamificación para mejorar la experiencia del paciente y optimizar el trabajo del terapeuta.
 
-### Backend
+### **🎯 Características Principales**
 
-- **Node.js** con **TypeScript**
-- **Express.js** - Framework web
-- **PostgreSQL** - Base de datos principal
-- **Redis** - Cache y sesiones
-- **Sequelize** - ORM
-- **JWT** - Autenticación
-- **Docker** - Contenedorización (opcional)
+- **👥 Gestión de Pacientes**: Registro, historial clínico y seguimiento
+- **📅 Programación de Sesiones**: Calendario inteligente y recordatorios
+- **📝 Sistema de Tareas**: Asignación y seguimiento de ejercicios terapéuticos
+- **🎮 Gamificación**: Puntos, niveles y logros para motivar a los pacientes
+- **📊 Reportes y Estadísticas**: Análisis de progreso y métricas
+- **🔐 Autenticación Segura**: Sistema de roles y permisos
+- **📱 Interfaz Moderna**: Diseño responsive y accesible
 
-### Frontend
+---
 
-- **React 18** con **TypeScript**
-- **Vite** - Build tool y dev server
-- **Tailwind CSS** - Framework de estilos
-- **React Router** - Navegación
+## 🚀 **Inicio Rápido**
 
-### Herramientas de Desarrollo
+### **📋 Prerrequisitos**
 
-- **ESLint** - Linter de código
-- **Prettier** - Formateador de código
-- **Nodemon** - Auto-reload del servidor
-- **Concurrently** - Ejecución paralela de scripts
-- **Sistema de Logger profesional**
+- **Node.js 18+** ([Descargar](https://nodejs.org/))
+- **PostgreSQL 15+** ([Descargar](https://www.postgresql.org/download/))
+- **Git** ([Descargar](https://git-scm.com/))
 
-## 📁 Estructura del Proyecto
+### **⚡ Instalación Rápida**
+
+```bash
+# 1. Clonar el repositorio
+git clone https://github.com/tu-usuario/centro-terapeutico-psyche.git
+cd centro-terapeutico-psyche
+
+# 2. Configurar variables de entorno
+cp env.example .env
+# Editar .env con tus configuraciones
+
+# 3. Instalar dependencias
+cd backend; npm install
+cd ../frontend; npm install
+
+# 4. Configurar base de datos
+createdb psyche_db
+cd ../backend; npm run db:migrate
+
+# 5. Iniciar el proyecto
+# Terminal 1: Backend
+cd backend; npm run dev
+
+# Terminal 2: Frontend
+cd frontend; npm run dev
+```
+
+### **🎯 URLs Importantes**
+
+- **🌐 Dashboard**: http://localhost:3002/dashboard
+- **📊 API Salud**: http://localhost:3002/salud
+- **🎨 Frontend**: http://localhost:3000
+- **📋 API Docs**: http://localhost:3002/api/v1
+
+---
+
+## 🏗️ **Arquitectura del Proyecto**
 
 ```
 centro-terapeutico-psyche/
-├── 📁 backend/                 # API Server (Express + TypeScript)
+├── 📁 backend/                 # API REST (Node.js + TypeScript)
 │   ├── 📁 src/
-│   │   ├── 📁 controladores/   # Controladores de rutas
-│   │   ├── 📁 modelos/         # Modelos de base de datos
-│   │   ├── 📁 rutas/           # Definición de rutas
-│   │   ├── 📁 utilidades/      # Funciones auxiliares y logger
-│   │   ├── 📁 configuracion/   # Configuración de DB y servicios
-│   │   └── servidor.ts         # Punto de entrada del servidor
-│   ├── package.json
-│   └── tsconfig.json
-├── 📁 frontend/                # Cliente Web (React + Vite)
+│   │   ├── 📁 controladores/   # Lógica de negocio
+│   │   ├── 📁 modelos/         # Modelos de datos
+│   │   ├── 📁 rutas/           # Definición de endpoints
+│   │   ├── 📁 utilidades/      # Funciones auxiliares
+│   │   └── servidor.ts         # Punto de entrada
+│   ├── 📁 migrations/          # Migraciones de BD
+│   └── 📁 seeders/             # Datos de ejemplo
+├── 📁 frontend/                # Interfaz web (React + TypeScript)
 │   ├── 📁 src/
 │   │   ├── 📁 componentes/     # Componentes reutilizables
-│   │   ├── 📁 paginas/         # Páginas principales
-│   │   ├── 📁 servicios/       # Servicios de API
-│   │   └── 📁 utilidades/      # Tipos y utilidades
-│   ├── package.json
-│   └── vite.config.ts
-├── 📁 shared/                  # Código compartido
-├── 📁 scripts/                 # Scripts de automatización
+│   │   ├── 📁 paginas/         # Páginas de la aplicación
+│   │   ├── 📁 servicios/       # Llamadas a la API
+│   │   └── 📁 utilidades/      # Funciones auxiliares
 ├── 📁 docs/                    # Documentación
-└── package.json               # Workspace principal
+├── 📁 docker/                  # Configuración Docker
+└── 📁 scripts/                 # Scripts de automatización
 ```
 
-## 🛠️ Prerrequisitos
+---
 
-Antes de instalar, asegúrate de tener:
+## 🛠️ **Tecnologías Utilizadas**
 
-- **Node.js** >= 18.0.0
-- **npm** >= 9.0.0
-- **PostgreSQL** >= 14.0
-- **Redis** >= 6.0 (opcional)
-- **Git**
+### **🔧 Backend**
 
-### Verificar versiones:
+- **Node.js** - Runtime de JavaScript
+- **Express.js** - Framework web
+- **TypeScript** - Lenguaje tipado
+- **PostgreSQL** - Base de datos relacional
+- **Sequelize** - ORM para Node.js
+- **JWT** - Autenticación
+- **bcrypt** - Encriptación de contraseñas
+
+### **🎨 Frontend**
+
+- **React 18** - Biblioteca de UI
+- **TypeScript** - Lenguaje tipado
+- **Vite** - Build tool
+- **Tailwind CSS** - Framework CSS
+- **React Router** - Enrutamiento
+- **Axios** - Cliente HTTP
+
+### **🛠️ Herramientas de Desarrollo**
+
+- **ESLint** - Linter de código
+- **Prettier** - Formateador de código
+- **Jest** - Framework de testing
+- **Docker** - Contenedores
+- **Git** - Control de versiones
+
+---
+
+## 📚 **Documentación**
+
+### **📖 Guías de Usuario**
+
+- [🚀 Guía de Onboarding](docs/ONBOARDING_EQUIPO.md) - Para nuevos miembros del equipo
+- [🛠️ Configuración de Desarrollo](docs/development/DEVELOPMENT_SETUP.md) - Setup del entorno
+- [🐛 Solución de Problemas](docs/SOLUCION_ERRORES.md) - Troubleshooting común
+
+### **🔧 Documentación Técnica**
+
+- [📋 API Documentation](docs/API_DOCUMENTATION.md) - Endpoints y respuestas
+- [🗄️ Base de Datos](docs/DATABASE_SCHEMA.md) - Esquema y relaciones
+- [🎨 Componentes Frontend](docs/FRONTEND_COMPONENTS.md) - Guía de componentes
+
+### **🚀 Deployment**
+
+- [🐳 Docker Setup](docs/DOCKER_SETUP.md) - Configuración con Docker
+- [☁️ Production Deployment](docs/PRODUCTION_DEPLOYMENT.md) - Despliegue en producción
+
+---
+
+## 🤝 **Contribuir al Proyecto**
+
+### **👥 Para Nuevos Colaboradores**
+
+1. **📖 Leer**: [Guía de Onboarding](docs/ONBOARDING_EQUIPO.md)
+2. **🎯 Asignar**: Issues en GitHub
+3. **💻 Desarrollar**: Seguir el flujo de trabajo
+4. **🤝 Contribuir**: Hacer pull requests
+
+### **🔄 Flujo de Trabajo**
 
 ```bash
-node --version
-npm --version
-git --version
+# 1. Crear rama para nueva funcionalidad
+git checkout -b feature/nombre-funcionalidad
+
+# 2. Desarrollar y hacer commits
+git add .
+git commit -m "feat: descripción del cambio"
+
+# 3. Push y crear Pull Request
+git push origin feature/nombre-funcionalidad
 ```
 
-## 📦 Instalación
+### **📋 Convenciones de Commits**
 
-### 1. Clonar el repositorio
+- `feat:` - Nueva funcionalidad
+- `fix:` - Corrección de bug
+- `docs:` - Documentación
+- `style:` - Formato de código
+- `refactor:` - Refactorización
+- `test:` - Tests
+- `chore:` - Tareas de mantenimiento
+
+---
+
+## 🧪 **Testing**
 
 ```bash
-git clone <url-del-repositorio>
-cd centro-terapeutico-psyche
+# Ejecutar todos los tests
+npm run test
+
+# Tests en modo watch
+npm run test:watch
+
+# Tests con coverage
+npm run test:coverage
 ```
 
-### 2. Instalar dependencias
+---
+
+## 🐳 **Docker**
 
 ```bash
-# Instalar dependencias de todo el workspace
-npm install
+# Construir imagen
+docker build -t psyche-backend ./backend
+docker build -t psyche-frontend ./frontend
+
+# Ejecutar con Docker Compose
+docker-compose up -d
+
+# Ver logs
+docker-compose logs -f
 ```
 
-### 3. Configurar variables de entorno
+---
+
+## 📊 **Scripts Útiles**
+
+### **🔧 Backend**
 
 ```bash
-# Copiar archivo de ejemplo
-cp env.example .env
-
-# Editar variables según tu configuración
-# DATABASE_URL=postgresql://usuario:password@localhost:5432/psyche_db
-# REDIS_URL=redis://localhost:6379
-# JWT_SECRET=tu_jwt_secret_muy_seguro
+npm run dev              # Servidor de desarrollo
+npm run build            # Compilar TypeScript
+npm run start            # Ejecutar versión compilada
+npm run lint             # Verificar código
+npm run lint:fix         # Corregir automáticamente
+npm run test             # Ejecutar tests
+npm run db:migrate       # Ejecutar migraciones
+npm run db:seed          # Cargar datos de ejemplo
 ```
 
-### 4. Configurar base de datos
+### **🎨 Frontend**
 
 ```bash
+npm run dev              # Servidor de desarrollo
+npm run build            # Build para producción
+npm run preview          # Preview del build
+npm run lint             # Verificar código
+npm run lint:fix         # Corregir automáticamente
+```
+
+### **🛠️ Scripts Globales**
+
+```bash
+# Setup automático para el equipo
+./scripts/setup-team.ps1
+
+# Limpiar puertos ocupados
+npm run kill-ports
+
+# Verificar salud del sistema
+npm run health
+```
+
+---
+
+## 🐛 **Solución de Problemas Comunes**
+
+### **❌ Puerto 3002 ocupado**
+
+```bash
+npm run kill-ports
+# o
+npx kill-port 3002 3004 3006 3008 3010 3011 3012
+```
+
+### **❌ Base de datos no conecta**
+
+```bash
+# Verificar PostgreSQL
+pg_isready -h localhost -p 5432
+
 # Crear base de datos
 createdb psyche_db
 
 # Ejecutar migraciones
 npm run db:migrate
-
-# Ejecutar seeders (datos iniciales)
-npm run db:seed
 ```
 
-## 🚀 Ejecución
-
-### Desarrollo (Recomendado)
+### **❌ Dependencias no instalan**
 
 ```bash
-# Ejecutar frontend y backend simultáneamente
-npm run dev
-```
+# Limpiar cache
+npm cache clean --force
 
-**URLs disponibles:**
-
-- **Frontend:** http://localhost:3002/
-- **Backend API:** http://localhost:3004/api/v1
-- **Dashboard del Sistema:** http://localhost:3004/dashboard
-- **Health Check:** http://localhost:3004/salud
-
-### Ejecución Individual
-
-```bash
-# Solo backend
-npm run dev:backend
-
-# Solo frontend
-npm run dev:frontend
-```
-
-### Producción
-
-```bash
-# Construir para producción
-npm run build
-
-# Ejecutar en producción
-npm start
-```
-
-## 📚 Scripts Disponibles
-
-### Desarrollo
-
-- `npm run dev` - Ejecuta frontend y backend en paralelo
-- `npm run dev:backend` - Solo servidor backend
-- `npm run dev:frontend` - Solo cliente frontend
-
-### Base de Datos
-
-- `npm run db:migrate` - Ejecutar migraciones
-- `npm run db:seed` - Poblar datos iniciales
-- `npm run db:reset` - Reiniciar base de datos
-
-### Construcción
-
-- `npm run build` - Construir para producción
-- `npm run build:backend` - Solo backend
-- `npm run build:frontend` - Solo frontend
-
-### Calidad de Código
-
-- `npm run lint` - Ejecutar ESLint
-- `npm run lint:fix` - Corregir errores automáticamente
-- `npm run format` - Formatear código con Prettier
-
-### Utilidades
-
-- `npm run clean` - Limpiar archivos de construcción
-- `npm run reset` - Reiniciar todo el proyecto
-
-## 🔌 API Endpoints
-
-### Autenticación
-
-- `POST /api/v1/auth/login` - Iniciar sesión
-- `POST /api/v1/auth/register` - Registrar usuario
-- `POST /api/v1/auth/logout` - Cerrar sesión
-- `GET /api/v1/auth/profile` - Obtener perfil
-- `PUT /api/v1/auth/profile` - Actualizar perfil
-- `POST /api/v1/auth/change-password` - Cambiar contraseña
-
-### Pacientes
-
-- `GET /api/v1/patients` - Listar pacientes
-- `POST /api/v1/patients` - Crear paciente
-- `GET /api/v1/patients/:id` - Obtener paciente
-- `PUT /api/v1/patients/:id` - Actualizar paciente
-- `DELETE /api/v1/patients/:id` - Eliminar paciente
-
-### Sesiones
-
-- `GET /api/v1/sessions` - Listar sesiones
-- `POST /api/v1/sessions` - Crear sesión
-- `GET /api/v1/sessions/:id` - Obtener sesión
-- `PUT /api/v1/sessions/:id` - Actualizar sesión
-
-### Sistema
-
-- `GET /salud` - Estado del servidor (JSON)
-- `GET /dashboard` - Panel de control (HTML)
-- `GET /` - Información general
-
-## 🧪 Desarrollo
-
-### Configuración Automática de Herramientas
-
-El proyecto incluye scripts automatizados para configurar tu entorno:
-
-```bash
-# Verificar extensiones de VSCode/Cursor instaladas
-./scripts/check-extensions.ps1
-
-# Instalar extensiones automáticamente
-./scripts/install-extensions.ps1
-
-# Configurar terminal (encoding UTF-8)
-./scripts/configurar-terminal.ps1
-```
-
-### Extensiones Recomendadas
-
-- ES7+ React/Redux/React-Native snippets
-- Tailwind CSS IntelliSense
-- Prettier - Code formatter
-- ESLint
-- GitLens
-- Auto Rename Tag
-- Material Icon Theme
-- Thunder Client
-- Error Lens
-- Path Intellisense
-- TypeScript Next
-
-### Sistema de Logger
-
-El proyecto incluye un sistema de logging profesional:
-
-```typescript
-import { log } from "./utilidades/logger";
-
-// Diferentes niveles de log
-log.info("Información general");
-log.warn("Advertencia");
-log.error("Error crítico");
-log.debug("Debug para desarrollo");
-
-// Funciones especiales para servidor
-log.servidor("Mensaje del servidor");
-log.exito("Operación exitosa");
-log.problema("Problema detectado");
-log.critico("Error crítico del sistema");
-```
-
-## 🐛 Solución de Problemas
-
-### Problemas de Puertos
-
-```bash
-# Liberar puertos ocupados
-npx kill-port 3002 3004 3006 3008
-
-# Ver puertos en uso
-netstat -ano | findstr :300
-```
-
-### Problemas de Base de Datos
-
-```bash
-# Reiniciar base de datos
-npm run db:reset
-
-# Verificar conexión
-npm run db:test
-```
-
-### Problemas de Node Modules
-
-```bash
-# Limpiar e reinstalar
+# Reinstalar
 rm -rf node_modules package-lock.json
 npm install
 ```
 
-### Problemas de ESLint/Prettier
+---
 
-```bash
-# Regenerar configuración
-npm run lint:reset
-```
+## 📈 **Roadmap del Proyecto**
 
-## 🔧 Configuración de Desarrollo
+### **🎯 Versión 1.0 (Actual)**
 
-### VSCode/Cursor Settings
+- ✅ Sistema de autenticación
+- ✅ Gestión básica de pacientes
+- ✅ Programación de sesiones
+- ✅ Sistema de tareas
+- ✅ Gamificación básica
 
-El proyecto incluye configuración automática para:
+### **🚀 Versión 1.1 (Próxima)**
 
-- Formateo automático al guardar
-- ESLint integrado
-- Configuración de TypeScript
-- Snippets personalizados
-- Tema y iconos optimizados
+- 📊 Reportes avanzados
+- 📱 Aplicación móvil
+- 🤖 Chatbot de asistencia
+- 📧 Notificaciones por email
 
-### Variables de Entorno
+### **🌟 Versión 2.0 (Futuro)**
 
-```env
-# Servidor
-PORT=3002
-NODE_ENV=development
-
-# Base de Datos
-DATABASE_URL=postgresql://usuario:password@localhost:5432/psyche_db
-
-# Autenticación
-JWT_SECRET=tu_jwt_secret_muy_seguro
-JWT_EXPIRE=24h
-
-# Redis (opcional)
-REDIS_URL=redis://localhost:6379
-
-# Logs
-LOG_LEVEL=debug
-```
-
-## 🐳 Docker (Opcional)
-
-Si prefieres usar Docker:
-
-```bash
-# Construir contenedores
-docker-compose build
-
-# Ejecutar en desarrollo
-docker-compose up -d
-
-# Ver logs
-docker-compose logs -f
-
-# Parar servicios
-docker-compose down
-```
-
-## 📊 Versionado
-
-Este proyecto sigue **Semantic Versioning** (SemVer):
-
-### Historial de Versiones
-
-#### v1.0.0 (2025-07-29)
-
-**🎉 Lanzamiento Inicial**
-
-- ✅ Sistema completo de autenticación JWT
-- ✅ CRUD de pacientes y sesiones
-- ✅ API RESTful documentada
-- ✅ Dashboard de administración
-- ✅ Sistema de logging profesional
-- ✅ Manejo inteligente de puertos
-- ✅ Respuestas API estandarizadas
-- ✅ Configuración automática de desarrollo
-- ✅ Scripts de automatización
-- ✅ Documentación completa
-
-### Próximas Versiones
-
-- **v1.1.0** - Sistema de reportes avanzados
-- **v1.2.0** - Integración con servicios de terceros
-- **v2.0.0** - Migración a microservicios
-
-## 🤝 Contribución
-
-### Flujo de Trabajo
-
-1. Fork del proyecto
-2. Crear rama feature (`git checkout -b feature/nueva-caracteristica`)
-3. Commit cambios (`git commit -m 'Agregar nueva característica'`)
-4. Push a la rama (`git push origin feature/nueva-caracteristica`)
-5. Crear Pull Request
-
-### Estándares de Código
-
-- Usar **TypeScript** en todo el código
-- Seguir guías de **ESLint** y **Prettier**
-- Escribir tests para nuevas funcionalidades
-- Documentar funciones complejas
-- Usar **commits semánticos**
-
-### Commits Semánticos
-
-```
-feat: nueva funcionalidad
-fix: corrección de bug
-docs: actualización de documentación
-style: cambios de formato
-refactor: refactorización de código
-test: agregar o modificar tests
-chore: tareas de mantenimiento
-```
-
-## 📞 Soporte
-
-### Recursos
-
-- 📚 **Documentación:** `/docs`
-- 🐛 **Issues:** GitHub Issues
-- 💬 **Discusiones:** GitHub Discussions
-- 📧 **Email:** soporte@psyche-center.com
-
-### Problemas Comunes
-
-Consulta `/docs/SOLUCION_ERRORES.md` para soluciones a problemas frecuentes.
-
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT. Ver `LICENSE` para más detalles.
-
-## 👨‍💼 Autor
-
-**Desarrollado por:** [Tu Nombre]  
-**Proyecto de Titulación** - [Tu Institución]  
-**Año:** 2025
+- 🧠 IA para análisis de progreso
+- 📹 Sesiones por videollamada
+- 🔗 Integración con wearables
+- 🌐 API pública
 
 ---
 
-## 🎯 Comandos Rápidos
+## 📞 **Contacto y Soporte**
 
-```bash
-# Configuración inicial completa
-git clone <repo> && cd centro-terapeutico-psyche && npm install && npm run dev
+### **👥 Equipo de Desarrollo**
 
-# Verificar que todo funcione
-curl http://localhost:3004/salud
+- **👨‍💻 Líder Técnico**: [Tu nombre] - [tu-email@psyche.cl]
+- **🎨 Diseñador UX**: [Nombre] - [email]
+- **🔧 DevOps**: [Nombre] - [email]
 
-# Abrir dashboard
-# http://localhost:3004/dashboard
-```
+### **📞 Soporte Técnico**
 
-**¡Feliz desarrollo! 🚀✨**
+- **🚨 Emergencias**: Crear issue en GitHub con label "urgent"
+- **❓ Dudas**: Usar GitHub Discussions
+- **🐛 Bugs**: Crear issue con template de bug
+
+---
+
+## 📄 **Licencia**
+
+Este proyecto está bajo la Licencia MIT. Ver el archivo [LICENSE](LICENSE) para más detalles.
+
+---
+
+## 🙏 **Agradecimientos**
+
+- **👥 Equipo de Desarrollo** - Por su dedicación y esfuerzo
+- **🏥 Psicólogos Colaboradores** - Por su feedback y validación
+- **💡 Comunidad Open Source** - Por las herramientas utilizadas
+
+---
+
+**🏥 Centro Terapéutico Psyche - Transformando la terapia digital**
+
+_Última actualización: Julio 2025_
