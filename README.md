@@ -8,6 +8,8 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-blue.svg)](https://www.postgresql.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
+---
+
 ## 📋 **Descripción del Proyecto**
 
 El **Centro Terapéutico Psyche** es una plataforma integral de gestión terapéutica que combina herramientas profesionales de psicología con elementos de gamificación para mejorar la experiencia del paciente y optimizar el trabajo del terapeuta.
@@ -34,77 +36,67 @@ El **Centro Terapéutico Psyche** es una plataforma integral de gestión terapé
 
 ### **⚡ Instalación Rápida**
 
-````bash
+```bash
 # 1. Clonar el repositorio
-git clone https://github.com/tu-usuario/centro-terapeutico-psyche.git
+git clone https://github.com/Svri0/centro-terapeutico-psyche.git
 cd centro-terapeutico-psyche
 
 # 2. Configurar variables de entorno
 cp env.example .env
 # Editar .env con tus configuraciones
 
-**⚠️ IMPORTANTE - Contraseñas Individuales:**
-Cada desarrollador debe usar su propia contraseña de PostgreSQL en el archivo `.env`:
-```env
-DB_PASSWORD=TU_CONTRASEÑA_PERSONAL_DE_POSTGRESQL
-````
-
 # 3. Instalar dependencias
-
 cd backend; npm install
 cd ../frontend; npm install
 
 # 4. Configurar base de datos
-
 createdb psyche_db
 cd ../backend; npm run db:migrate
 
 # 5. Iniciar el proyecto
+npm run dev
+```
 
-# Terminal 1: Backend
+### **⚠️ IMPORTANTE - Contraseñas Individuales**
 
-cd backend; npm run dev
+Cada desarrollador debe usar su propia contraseña de PostgreSQL en el archivo `.env`:
 
-# Terminal 2: Frontend
-
-cd frontend; npm run dev
-
+```env
+DB_PASSWORD=TU_CONTRASEÑA_PERSONAL_DE_POSTGRESQL
 ```
 
 ### **🎯 URLs Importantes**
 
-- **🌐 Dashboard**: http://localhost:3002/dashboard
-- **📊 API Salud**: http://localhost:3002/salud
-- **🎨 Frontend**: http://localhost:3000
-- **📋 API Docs**: http://localhost:3002/api/v1
+- **🌐 Dashboard**: http://localhost:3010/dashboard
+- **📊 API Salud**: http://localhost:3010/salud
+- **🎨 Frontend**: http://localhost:3008
+- **📋 API Docs**: http://localhost:3010/api/v1
 
 ---
 
 ## 🏗️ **Arquitectura del Proyecto**
 
 ```
-
 centro-terapeutico-psyche/
-├── 📁 backend/ # API REST (Node.js + TypeScript)
-│ ├── 📁 src/
-│ │ ├── 📁 controladores/ # Lógica de negocio
-│ │ ├── 📁 modelos/ # Modelos de datos
-│ │ ├── 📁 rutas/ # Definición de endpoints
-│ │ ├── 📁 utilidades/ # Funciones auxiliares
-│ │ └── servidor.ts # Punto de entrada
-│ ├── 📁 migrations/ # Migraciones de BD
-│ └── 📁 seeders/ # Datos de ejemplo
-├── 📁 frontend/ # Interfaz web (React + TypeScript)
-│ ├── 📁 src/
-│ │ ├── 📁 componentes/ # Componentes reutilizables
-│ │ ├── 📁 paginas/ # Páginas de la aplicación
-│ │ ├── 📁 servicios/ # Llamadas a la API
-│ │ └── 📁 utilidades/ # Funciones auxiliares
-├── 📁 docs/ # Documentación
-├── 📁 docker/ # Configuración Docker
-└── 📁 scripts/ # Scripts de automatización
-
-````
+├── 📁 backend/                 # API REST (Node.js + TypeScript)
+│   ├── 📁 src/
+│   │   ├── 📁 controladores/   # Lógica de negocio
+│   │   ├── 📁 modelos/         # Modelos de datos
+│   │   ├── 📁 rutas/           # Definición de endpoints
+│   │   ├── 📁 utilidades/      # Funciones auxiliares
+│   │   └── servidor.ts         # Punto de entrada
+│   ├── 📁 migrations/          # Migraciones de BD
+│   └── 📁 seeders/             # Datos de ejemplo
+├── 📁 frontend/                # Interfaz web (React + TypeScript)
+│   ├── 📁 src/
+│   │   ├── 📁 componentes/     # Componentes reutilizables
+│   │   ├── 📁 paginas/         # Páginas de la aplicación
+│   │   ├── 📁 servicios/       # Llamadas a la API
+│   │   └── 📁 utilidades/      # Funciones auxiliares
+├── 📁 docs/                    # Documentación
+├── 📁 docker/                  # Configuración Docker
+└── 📁 scripts/                 # Scripts de automatización
+```
 
 ---
 
@@ -134,6 +126,7 @@ centro-terapeutico-psyche/
 - **ESLint** - Linter de código
 - **Prettier** - Formateador de código
 - **Jest** - Framework de testing
+- **Docker** - Contenedores
 - **Git** - Control de versiones
 
 ---
@@ -154,6 +147,7 @@ centro-terapeutico-psyche/
 
 ### **🚀 Deployment**
 
+- [🐳 Docker Setup](docs/DOCKER_SETUP.md) - Configuración con Docker
 - [☁️ Production Deployment](docs/PRODUCTION_DEPLOYMENT.md) - Despliegue en producción
 
 ---
@@ -179,7 +173,7 @@ git commit -m "feat: descripción del cambio"
 
 # 3. Push y crear Pull Request
 git push origin feature/nombre-funcionalidad
-````
+```
 
 ### **📋 Convenciones de Commits**
 
@@ -208,6 +202,21 @@ npm run test:coverage
 
 ---
 
+## 🐳 **Docker**
+
+```bash
+# Construir imagen
+docker build -t psyche-backend ./backend
+docker build -t psyche-frontend ./frontend
+
+# Ejecutar con Docker Compose
+docker-compose up -d
+
+# Ver logs
+docker-compose logs -f
+```
+
+---
 
 ## 📊 **Scripts Útiles**
 
@@ -251,12 +260,12 @@ npm run health
 
 ## 🐛 **Solución de Problemas Comunes**
 
-### **❌ Puerto 3002 ocupado**
+### **❌ Puerto 3001 ocupado**
 
 ```bash
 npm run kill-ports
 # o
-npx kill-port 3002 3004 3006 3008 3010 3011 3012
+npx kill-port 3001 3004 3006 3008 3010 3011 3012
 ```
 
 ### **❌ Base de datos no conecta**
@@ -315,10 +324,9 @@ npm install
 
 ### **👥 Equipo de Desarrollo**
 
-- **Orlando Godoy**: [gabrielgodoy211@gmail.com]
-- **Miguel Román**: [romandiazmiguelignacio@gmail.com]
-- **Bairon Campos**: [bai.campos@duocuc.cl]
-- **Felipe Ríos**: [feli.rios2003@gmail.com]
+- **👨‍💻 Líder Técnico**: [Tu nombre] - [tu-email@psyche.cl]
+- **🎨 Diseñador UX**: [Nombre] - [email]
+- **🔧 DevOps**: [Nombre] - [email]
 
 ### **📞 Soporte Técnico**
 
