@@ -330,12 +330,6 @@ centro-terapeutico-psyche/
 - **📋 GitHub Issues**: Para reportar bugs y features
 - **📝 GitHub Discussions**: Para debates técnicos
 
-### **📅 Reuniones:**
-
-- **Daily Standup**: Lunes a Viernes, 9:00 AM
-- **Sprint Planning**: Cada 2 semanas
-- **Code Review**: Antes de cada merge
-
 ---
 
 ## 🎉 **¡Listo para Contribuir!**
@@ -364,9 +358,10 @@ centro-terapeutico-psyche/
 
 ### **👥 Contacto del Equipo:**
 
-- **👨‍💻 Líder Técnico**: [Tu nombre] - [tu-email@psyche.cl]
-- **🎨 Diseñador UX**: [Nombre] - [email]
-- **🔧 DevOps**: [Nombre] - [email]
+- **Orlando Godoy**
+- **Miguel Román**
+- **Bairon Campos**
+- **Felipe Ríos**
 
 ### **📞 Soporte Técnico:**
 
