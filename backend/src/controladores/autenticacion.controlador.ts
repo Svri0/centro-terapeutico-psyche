@@ -21,10 +21,39 @@ export const iniciarSesion = async (req: Request, res: Response) => {
       );
     }
 
-    // Buscar usuario por email
-    const usuario = await Usuario.findOne({
-      where: { email: email.toLowerCase() }
-    });
+    // Datos simulados para pruebas
+    const usuariosSimulados = [
+      {
+        id: 1,
+        email: 'admin@psyche.cl',
+        password: 'admin123',
+        nombre: 'Administrador',
+        apellidos: 'Sistema',
+        rol: 'admin',
+        activo: true
+      },
+      {
+        id: 2,
+        email: 'juan.perez@psyche.cl',
+        password: 'password123',
+        nombre: 'Juan',
+        apellidos: 'Pérez',
+        rol: 'psicologo',
+        activo: true
+      },
+      {
+        id: 3,
+        email: 'carlos.rodriguez@psyche.cl',
+        password: 'password123',
+        nombre: 'Carlos',
+        apellidos: 'Rodríguez',
+        rol: 'paciente',
+        activo: true
+      }
+    ];
+
+    // Buscar usuario simulado
+    const usuario = usuariosSimulados.find(u => u.email === email && u.password === password);
 
     if (!usuario) {
       return ManejadorRespuestas.noAutorizado(res, 'Credenciales inválidas', 'AUTH_002');
@@ -39,26 +68,23 @@ export const iniciarSesion = async (req: Request, res: Response) => {
       );
     }
 
-    // Verificar contraseña
-    const passwordValida = await usuario.compararPassword(password);
-    if (!passwordValida) {
-      return ManejadorRespuestas.noAutorizado(res, 'Credenciales inválidas', 'AUTH_004');
-    }
-
-    // Generar tokens
-    const tokens = JWTService.generarTokens({
-      id: usuario.id,
-      email: usuario.email,
-      rol: usuario.rol,
-      nombre: usuario.nombre
-    });
-
-    // Actualizar último acceso
-    await usuario.actualizarUltimoAcceso();
+    // Generar tokens simulados
+    const tokens = {
+      accessToken: `token_${usuario.id}_${Date.now()}`,
+      refreshToken: `refresh_${usuario.id}_${Date.now()}`,
+      expiresIn: 3600
+    };
 
     // Preparar respuesta
     const respuesta = {
-      usuario: usuario.toJSON(),
+      usuario: {
+        id: usuario.id,
+        email: usuario.email,
+        nombre: usuario.nombre,
+        apellidos: usuario.apellidos,
+        rol: usuario.rol,
+        activo: usuario.activo
+      },
       tokens: {
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,

@@ -35,8 +35,8 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     setError('');
 
     try {
-      console.log('🚀 Intentando conectar a:', 'http://localhost:3004/api/v1/auth/login');
-      const response = await fetch('http://localhost:3004/api/v1/auth/login', {
+      console.log('🚀 Intentando conectar a:', 'http://localhost:3003/api/v1/auth/login');
+      const response = await fetch('http://localhost:3003/api/v1/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
