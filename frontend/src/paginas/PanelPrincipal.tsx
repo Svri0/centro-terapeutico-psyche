@@ -1,12 +1,16 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import Chatbot from '../componentes/Chatbot';
 import { useAuth } from '../contextos/AuthContext';
 
 const PanelPrincipal: React.FC = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
+    // Redirigir al login después del logout
+    navigate('/login', { replace: true });
   };
 
   const getRoleDisplayName = (role: string) => {
