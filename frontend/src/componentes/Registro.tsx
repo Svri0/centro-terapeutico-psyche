@@ -63,7 +63,7 @@ const Registro: React.FC<RegistroProps> = ({ onRegistroSuccess }) => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:3003/api/v1/auth/registro', {
+      const response = await fetch('http://localhost:3001/api/v1/auth/registro', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

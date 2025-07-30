@@ -1,6 +1,6 @@
 // Servicio de API para comunicación con el backend
 
-const API_BASE_URL = 'http://localhost:3003/api/v1';
+const API_BASE_URL = 'http://localhost:3001/api/v1';
 
 // Función para obtener el token del localStorage
 const getAuthToken = (): string | null => {
