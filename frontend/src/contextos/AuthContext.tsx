@@ -40,8 +40,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (savedToken && savedUser) {
       try {
         const userData = JSON.parse(savedUser);
-        setToken(savedToken);
-        setUser(userData);
+        // Validar que el token no esté expirado (simplificado)
+        if (userData && userData.id) {
+          setToken(savedToken);
+          setUser(userData);
+        } else {
+          // Datos inválidos, limpiar
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          localStorage.removeItem('refreshToken');
+        }
       } catch (error) {
         console.error('Error parsing saved user data:', error);
         // Limpiar datos corruptos
@@ -71,9 +79,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = () => {
     setToken(null);
     setUser(null);
+    // Limpiar todos los datos de autenticación
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('refreshToken');
+    // Forzar recarga del estado
+    setIsLoading(true);
+    setTimeout(() => setIsLoading(false), 100);
   };
 
   const value: AuthContextType = {

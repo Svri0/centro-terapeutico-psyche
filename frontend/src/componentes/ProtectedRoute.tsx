@@ -22,6 +22,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRoles
 
   // Si no está autenticado, redirigir al login
   if (!isAuthenticated) {
+    // Limpiar cualquier dato residual
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('refreshToken');
     return <Navigate to='/login' state={{ from: location }} replace />;
   }
 

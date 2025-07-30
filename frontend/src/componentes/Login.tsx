@@ -16,8 +16,8 @@ interface LoginProps {
 const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState<LoginForm>({
-    email: 'admin@psyche.cl',
-    password: 'admin123'
+    email: '',
+    password: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
