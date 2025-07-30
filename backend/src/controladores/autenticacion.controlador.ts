@@ -221,41 +221,11 @@ export const actualizarPerfil = async (req: Request, res: Response) => {
 
 export const cambiarPassword = async (req: Request, res: Response) => {
   try {
-    const { passwordActual, passwordNuevo } = req.body;
-
-    // Validar datos requeridos
-    if (!passwordActual || !passwordNuevo) {
-      return ManejadorRespuestas.errorValidacion(
-        res,
-        'Contraseña actual y nueva contraseña son requeridas',
-        { camposRequeridos: ['passwordActual', 'passwordNuevo'] },
-        'AUTH_013'
-      );
-    }
-
-    // TODO: Implementar lógica real de cambio de contraseña
-
-    return ManejadorRespuestas.exito(
-      res,
-      MENSAJES_AUTH.CAMBIO_PASSWORD_EXITOSO,
-      { fechaCambio: new Date().toISOString() },
-      'AUTH_014'
-    );
-  } catch (error) {
-    log.error('Error en cambiarPassword:', error);
-    return ManejadorRespuestas.errorInterno(
-      res,
-      'Error interno al cambiar la contraseña',
-      'AUTH_015'
-    );
-  }
-};
-
-// Cambiar contraseña
-export const cambiarContraseña = async (req: Request, res: Response) => {
-  try {
     const { contraseña_actual, nueva_contraseña } = req.body;
-    const userId = (req as any).user?.id;
+    const userId = req.usuario?.id;
+
+    log.info(`🔍 cambiarPassword - req.usuario:`, req.usuario);
+    log.info(`🔍 cambiarPassword - userId: ${userId}`);
 
     if (!userId) {
       return ManejadorRespuestas.noAutorizado(
@@ -284,14 +254,14 @@ export const cambiarContraseña = async (req: Request, res: Response) => {
     }
 
     // Obtener usuario actual
-    const [usuario] = await sequelize.query(
+    const [usuarios] = await sequelize.query(
       'SELECT password_hash FROM usuarios WHERE id = :userId',
       {
         replacements: { userId }
       }
     );
 
-    if (!usuario) {
+    if (!Array.isArray(usuarios) || usuarios.length === 0) {
       return ManejadorRespuestas.noEncontrado(
         res,
         'Usuario no encontrado',
@@ -299,8 +269,12 @@ export const cambiarContraseña = async (req: Request, res: Response) => {
       );
     }
 
+    const usuario = usuarios[0] as any;
+    log.info(`🔍 Usuario encontrado: ${userId}, password_hash: ${usuario.password_hash ? 'EXISTE' : 'NO EXISTE'}`);
+
     // Verificar contraseña actual
-    const contraseñaValida = await bcrypt.compare(contraseña_actual, (usuario as any).password_hash);
+    const contraseñaValida = await bcrypt.compare(contraseña_actual, usuario.password_hash);
+    log.info(`🔍 Contraseña actual válida: ${contraseñaValida}`);
     
     if (!contraseñaValida) {
       return ManejadorRespuestas.noAutorizado(
@@ -313,9 +287,10 @@ export const cambiarContraseña = async (req: Request, res: Response) => {
     // Hashear nueva contraseña
     const saltRounds = 12;
     const nuevaContraseñaHash = await bcrypt.hash(nueva_contraseña, saltRounds);
+    log.info(`🔍 Nueva contraseña hasheada: ${nuevaContraseñaHash.substring(0, 20)}...`);
 
     // Actualizar contraseña
-    await sequelize.query(
+    const [resultado] = await sequelize.query(
       'UPDATE usuarios SET password_hash = :passwordHash, updated_at = NOW() WHERE id = :userId',
       {
         replacements: { 
@@ -325,7 +300,8 @@ export const cambiarContraseña = async (req: Request, res: Response) => {
       }
     );
 
-    log.info(`Contraseña cambiada para usuario: ${userId}`);
+    log.info(`🔍 Resultado de actualización: ${JSON.stringify(resultado)}`);
+    log.info(`🔍 Contraseña cambiada para usuario: ${userId}`);
 
     return ManejadorRespuestas.exito(
       res,
@@ -335,7 +311,7 @@ export const cambiarContraseña = async (req: Request, res: Response) => {
     );
 
   } catch (error) {
-    log.error('Error en cambiarContraseña:', error);
+    log.error('Error en cambiarPassword:', error);
     return ManejadorRespuestas.errorInterno(
       res,
       'Error al cambiar la contraseña',
@@ -343,3 +319,5 @@ export const cambiarContraseña = async (req: Request, res: Response) => {
     );
   }
 };
+
+

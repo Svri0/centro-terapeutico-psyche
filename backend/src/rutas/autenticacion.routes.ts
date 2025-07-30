@@ -6,8 +6,7 @@ import {
   cerrarSesion,
   iniciarSesion,
   obtenerPerfil,
-  registrar,
-  cambiarContraseña
+  registrar
 } from '../controladores/autenticacion.controlador';
 import { verificarToken } from '../middleware/auth.middleware';
 
@@ -21,7 +20,7 @@ router.post('/logout', cerrarSesion); // POST /api/v1/auth/logout
 // Rutas de perfil de usuario
 router.get('/perfil', obtenerPerfil); // GET /api/v1/auth/perfil
 router.put('/perfil', actualizarPerfil); // PUT /api/v1/auth/perfil
-router.put('/cambiar-password', cambiarPassword); // PUT /api/v1/auth/cambiar-password
-router.put('/cambiar-contraseña', verificarToken, cambiarContraseña); // PUT /api/v1/auth/cambiar-contraseña
+router.put('/cambiar-password', verificarToken, cambiarPassword); // PUT /api/v1/auth/cambiar-password
+
 
 export default router;

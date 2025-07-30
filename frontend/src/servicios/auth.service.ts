@@ -64,8 +64,16 @@ class AuthService {
       const response = await axios.post('/autenticacion/login', credentials);
       const { token, usuario } = response.data.data;
       
+      console.log('🔍 Login response:', response.data);
+      console.log('🔍 Usuario data:', usuario);
+      
       this.setToken(token);
       this.setUser(usuario);
+      
+      console.log('🔍 Token guardado:', this.getToken());
+      console.log('🔍 Usuario guardado:', this.getUser());
+      console.log('🔍 Es paciente?', this.isPaciente());
+      
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.mensaje || 'Error en el login');
@@ -74,7 +82,7 @@ class AuthService {
 
   async changePassword(currentPassword: string, newPassword: string): Promise<any> {
     try {
-      const response = await axios.put('/autenticacion/cambiar-contraseña', {
+      const response = await axios.put('/autenticacion/cambiar-password', {
         contraseña_actual: currentPassword,
         nueva_contraseña: newPassword
       });
@@ -120,6 +128,14 @@ class AuthService {
   isPsicologo(): boolean {
     const user = this.getUser();
     return user?.rol_id === 2;
+  }
+
+  isPaciente(): boolean {
+    const user = this.getUser();
+    console.log('🔍 isPaciente() - User:', user);
+    console.log('🔍 isPaciente() - rol_id:', user?.rol_id);
+    console.log('🔍 isPaciente() - Result:', user?.rol_id === 3);
+    return user?.rol_id === 3;
   }
 }
 

@@ -23,10 +23,18 @@ const Login: React.FC = () => {
 
     try {
       const response = await authService.login(formData);
-      authService.setUser(response.data.usuario);
       
-      // Redirigir al panel de administrador
-      window.location.href = '/admin';
+      // Redirigir según el rol del usuario
+      const usuario = response.data.usuario;
+      if (usuario.rol_id === 1) {
+        window.location.href = '/admin';
+      } else if (usuario.rol_id === 2) {
+        window.location.href = '/psicologo';
+      } else if (usuario.rol_id === 3) {
+        window.location.href = '/paciente';
+      } else {
+        window.location.href = '/admin';
+      }
     } catch (error: any) {
       setError(error.message);
     } finally {

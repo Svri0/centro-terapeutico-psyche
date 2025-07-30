@@ -10,6 +10,8 @@ import tareasRoutes from './tareas.routes';
 import pacientesRoutes from './pacientes.routes';
 import reportesRoutes from './reportes.routes';
 import adminRoutes from './admin.routes';
+import citasRoutes from './citas.routes';
+import disponibilidadRoutes from './disponibilidad.routes';
 
 // Configurar rutas
 router.use('/autenticacion', autenticacionRoutes);
@@ -19,5 +21,7 @@ router.use('/tareas', tareasRoutes);
 router.use('/pacientes', pacientesRoutes);
 router.use('/reportes', reportesRoutes);
 router.use('/admin', adminRoutes);
+router.use('/citas', citasRoutes);
+router.use('/disponibilidad', disponibilidadRoutes);
 
 export default router; 

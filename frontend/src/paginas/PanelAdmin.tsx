@@ -13,6 +13,14 @@ const PanelAdmin: React.FC = () => {
   const [showEditarModal, setShowEditarModal] = useState(false);
   const [psicologoSeleccionado, setPsicologoSeleccionado] = useState<Psicologo | null>(null);
   const [user, setUser] = useState(authService.getUser());
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [message, setMessage] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   useEffect(() => {
     if (!authService.isAuthenticated() || !authService.isAdmin()) {
@@ -76,6 +84,40 @@ const PanelAdmin: React.FC = () => {
     }
   };
 
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordLoading(true);
+    setMessage('');
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setMessage('Las contraseñas no coinciden');
+      setPasswordLoading(false);
+      return;
+    }
+
+    if (passwordData.newPassword.length < 8) {
+      setMessage('La nueva contraseña debe tener al menos 8 caracteres');
+      setPasswordLoading(false);
+      return;
+    }
+
+    try {
+      await authService.changePassword(passwordData.currentPassword, passwordData.newPassword);
+      
+      setMessage('Contraseña cambiada exitosamente');
+      setShowChangePassword(false);
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+    } catch (error: any) {
+      setMessage(error.message || 'Error al cambiar la contraseña');
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
   const handleLogout = () => {
     authService.logout();
     window.location.href = '/login';
@@ -108,6 +150,12 @@ const PanelAdmin: React.FC = () => {
               <div className="text-sm text-gray-700">
                 Bienvenido, {user.nombres} {user.apellidos}
               </div>
+              <button
+                onClick={() => setShowChangePassword(true)}
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
+                Cambiar Contraseña
+              </button>
               <button
                 onClick={handleLogout}
                 className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
@@ -184,6 +232,78 @@ const PanelAdmin: React.FC = () => {
           }}
           onSubmit={(data) => handleEditarPsicologo(psicologoSeleccionado.id, data)}
         />
+      )}
+
+      {/* Modal Cambiar Contraseña */}
+      {showChangePassword && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Cambiar Contraseña</h3>
+              <form onSubmit={handleChangePassword}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Contraseña Actual
+                    </label>
+                    <input
+                      type="password"
+                      value={passwordData.currentPassword}
+                      onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Nueva Contraseña
+                    </label>
+                    <input
+                      type="password"
+                      value={passwordData.newPassword}
+                      onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Confirmar Nueva Contraseña
+                    </label>
+                    <input
+                      type="password"
+                      value={passwordData.confirmPassword}
+                      onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    />
+                  </div>
+                </div>
+                {message && (
+                  <p className={`mt-2 text-sm ${message.includes('Error') ? 'text-red-600' : 'text-green-600'}`}>
+                    {message}
+                  </p>
+                )}
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setShowChangePassword(false)}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={passwordLoading}
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md disabled:opacity-50"
+                  >
+                    {passwordLoading ? 'Cambiando...' : 'Cambiar Contraseña'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

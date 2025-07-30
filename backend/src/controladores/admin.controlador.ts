@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import sequelize from '../configuracion/database';
 import { ManejadorRespuestas } from '../utilidades/respuestas';
 import { log } from '../utilidades/logger';
+import { crearDisponibilidadPorDefecto } from './disponibilidad.controlador';
 
 // Interfaz para crear psicólogo
 interface CrearPsicologoData {
@@ -49,7 +50,7 @@ export const obtenerPsicologos = async (_req: Request, res: Response) => {
       ORDER BY u.created_at DESC
     `;
 
-    const [psicologos] = await sequelize.query(query);
+    const [psicologos] = await sequelize.query(query) as [any[], unknown];
 
     return ManejadorRespuestas.exito(
       res,
@@ -104,7 +105,7 @@ export const crearPsicologo = async (req: Request, res: Response) => {
         replacements: { email },
         transaction
       }
-    );
+    ) as [any[], unknown];
 
     if (Array.isArray(usuarioExistente) && usuarioExistente.length > 0) {
       await transaction.rollback();
@@ -123,7 +124,7 @@ export const crearPsicologo = async (req: Request, res: Response) => {
         replacements: { nombre: 'psicologo' },
         transaction
       }
-    );
+    ) as [any[], unknown];
 
     if (!Array.isArray(rolPsicologo) || rolPsicologo.length === 0) {
       await transaction.rollback();
@@ -179,9 +180,13 @@ export const crearPsicologo = async (req: Request, res: Response) => {
         },
         transaction
       }
-    );
+    ) as [any[], unknown];
 
     await transaction.commit();
+
+    // Crear disponibilidad por defecto para el psicólogo
+    const psicologoId = nuevoUsuario[0].id;
+    await crearDisponibilidadPorDefecto(psicologoId);
 
     // TODO: Enviar email de activación con el token
     log.info(`Nuevo psicólogo creado: ${email} con token: ${tokenActivacion}`);
@@ -233,7 +238,7 @@ export const obtenerPsicologoPorId = async (req: Request, res: Response) => {
       {
         replacements: { id }
       }
-    );
+    ) as [any[], unknown];
 
     if (!Array.isArray(psicologo) || psicologo.length === 0) {
       return ManejadorRespuestas.noEncontrado(
@@ -278,7 +283,7 @@ export const actualizarPsicologo = async (req: Request, res: Response) => {
         replacements: { id },
         transaction
       }
-    );
+    ) as [any[], unknown];
 
     if (!Array.isArray(psicologoExistente) || psicologoExistente.length === 0) {
       await transaction.rollback();
@@ -308,7 +313,7 @@ export const actualizarPsicologo = async (req: Request, res: Response) => {
           replacements: { email, id },
           transaction
         }
-      );
+      ) as [any[], unknown];
 
       if (Array.isArray(emailExistente) && emailExistente.length > 0) {
         await transaction.rollback();
@@ -406,7 +411,7 @@ export const desactivarPsicologo = async (req: Request, res: Response) => {
         replacements: { id },
         transaction
       }
-    );
+    ) as [any[], unknown];
 
     if (!Array.isArray(psicologo) || psicologo.length === 0) {
       await transaction.rollback();
@@ -433,7 +438,7 @@ export const desactivarPsicologo = async (req: Request, res: Response) => {
         replacements: { id },
         transaction
       }
-    );
+    ) as [any[], unknown];
 
     await transaction.commit();
 
@@ -477,7 +482,7 @@ export const reactivarPsicologo = async (req: Request, res: Response) => {
         replacements: { id },
         transaction
       }
-    );
+    ) as [any[], unknown];
 
     if (!Array.isArray(psicologo) || psicologo.length === 0) {
       await transaction.rollback();
@@ -504,7 +509,7 @@ export const reactivarPsicologo = async (req: Request, res: Response) => {
         replacements: { id },
         transaction
       }
-    );
+    ) as [any[], unknown];
 
     await transaction.commit();
 
