@@ -1,5 +1,7 @@
 // Controlador de autenticación
 import { Request, Response } from 'express';
+import Usuario from '../modelos/Usuario';
+import JWTService from '../servicios/jwt.service';
 import { log } from '../utilidades/logger';
 import { MENSAJES_AUTH } from '../utilidades/mensajes';
 import { ManejadorRespuestas } from '../utilidades/respuestas';
@@ -19,30 +21,65 @@ export const iniciarSesion = async (req: Request, res: Response) => {
       );
     }
 
-    // TODO: Implementar lógica de autenticación real
-    // Por ahora simular login exitoso
-    const usuarioSimulado = {
-      id: 1,
-      email: email,
-      nombre: 'Usuario de Prueba',
-      rol: 'psicologo',
-      token: 'jwt_token_simulado_12345'
+    // Buscar usuario por email
+    const usuario = await Usuario.findOne({
+      where: { email: email.toLowerCase() }
+    });
+
+    if (!usuario) {
+      return ManejadorRespuestas.noAutorizado(res, 'Credenciales inválidas', 'AUTH_002');
+    }
+
+    // Verificar si el usuario está activo
+    if (!usuario.activo) {
+      return ManejadorRespuestas.prohibido(
+        res,
+        'Cuenta desactivada. Contacta al administrador.',
+        'AUTH_003'
+      );
+    }
+
+    // Verificar contraseña
+    const passwordValida = await usuario.compararPassword(password);
+    if (!passwordValida) {
+      return ManejadorRespuestas.noAutorizado(res, 'Credenciales inválidas', 'AUTH_004');
+    }
+
+    // Generar tokens
+    const tokens = JWTService.generarTokens({
+      id: usuario.id,
+      email: usuario.email,
+      rol: usuario.rol,
+      nombre: usuario.nombre
+    });
+
+    // Actualizar último acceso
+    await usuario.actualizarUltimoAcceso();
+
+    // Preparar respuesta
+    const respuesta = {
+      usuario: usuario.toJSON(),
+      tokens: {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        expiresIn: tokens.expiresIn
+      }
     };
 
-    return ManejadorRespuestas.exito(res, MENSAJES_AUTH.LOGIN_EXITOSO, usuarioSimulado, 'AUTH_002');
+    return ManejadorRespuestas.exito(res, MENSAJES_AUTH.LOGIN_EXITOSO, respuesta, 'AUTH_005');
   } catch (error) {
     log.error('Error en iniciarSesion:', error);
     return ManejadorRespuestas.errorInterno(
       res,
       'Error interno al procesar el inicio de sesión',
-      'AUTH_003'
+      'AUTH_006'
     );
   }
 };
 
 export const registrar = async (req: Request, res: Response) => {
   try {
-    const { nombre, email, password, rol } = req.body;
+    const { nombre, email, password, rol, telefono, especialidad } = req.body;
 
     // Validar datos requeridos
     if (!nombre || !email || !password) {
@@ -50,109 +87,149 @@ export const registrar = async (req: Request, res: Response) => {
         res,
         'Nombre, email y contraseña son requeridos',
         { camposRequeridos: ['nombre', 'email', 'password'] },
-        'AUTH_004'
+        'AUTH_007'
       );
     }
 
-    // TODO: Implementar lógica de registro real
-    // Por ahora simular registro exitoso
-    const nuevoUsuario = {
-      id: 2,
+    // Verificar si el email ya existe
+    const usuarioExistente = await Usuario.findOne({
+      where: { email: email.toLowerCase() }
+    });
+
+    if (usuarioExistente) {
+      return ManejadorRespuestas.conflicto(
+        res,
+        'El email ya está registrado',
+        { email },
+        'AUTH_008'
+      );
+    }
+
+    // Crear nuevo usuario
+    const nuevoUsuario = await Usuario.create({
       nombre,
-      email,
+      email: email.toLowerCase(),
+      password,
       rol: rol || 'paciente',
-      fechaCreacion: new Date().toISOString()
+      telefono,
+      especialidad
+    });
+
+    // Generar tokens
+    const tokens = JWTService.generarTokens({
+      id: nuevoUsuario.id,
+      email: nuevoUsuario.email,
+      rol: nuevoUsuario.rol,
+      nombre: nuevoUsuario.nombre
+    });
+
+    // Preparar respuesta
+    const respuesta = {
+      usuario: nuevoUsuario.toJSON(),
+      tokens: {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        expiresIn: tokens.expiresIn
+      }
     };
 
-    return ManejadorRespuestas.creado(
-      res,
-      MENSAJES_AUTH.REGISTRO_EXITOSO,
-      nuevoUsuario,
-      'AUTH_005'
-    );
+    return ManejadorRespuestas.creado(res, MENSAJES_AUTH.REGISTRO_EXITOSO, respuesta, 'AUTH_009');
   } catch (error) {
     log.error('Error en registrar:', error);
     return ManejadorRespuestas.errorInterno(
       res,
       'Error interno al procesar el registro',
-      'AUTH_006'
+      'AUTH_010'
     );
   }
 };
 
 export const cerrarSesion = async (req: Request, res: Response) => {
   try {
-    // TODO: Implementar lógica de cierre de sesión (invalidar token, etc.)
+    // TODO: Implementar blacklist de tokens si es necesario
+    // Por ahora solo devolvemos éxito
 
     return ManejadorRespuestas.exito(
       res,
       MENSAJES_AUTH.LOGOUT_EXITOSO,
       { timestamp: new Date().toISOString() },
-      'AUTH_007'
+      'AUTH_011'
     );
   } catch (error) {
     log.error('Error en cerrarSesion:', error);
-    return ManejadorRespuestas.errorInterno(res, 'Error interno al cerrar sesión', 'AUTH_008');
+    return ManejadorRespuestas.errorInterno(res, 'Error interno al cerrar sesión', 'AUTH_012');
   }
 };
 
 export const obtenerPerfil = async (req: Request, res: Response) => {
   try {
-    // TODO: Implementar obtención de perfil real desde la base de datos
-    const perfilSimulado = {
-      id: 1,
-      nombre: 'Dr. Juan Pérez',
-      email: 'juan.perez@psyche.cl',
-      rol: 'psicologo',
-      especialidad: 'Psicología Clínica',
-      añosExperiencia: 5,
-      pacientesAsignados: 12,
-      fechaUltimoAcceso: new Date().toISOString()
-    };
+    if (!req.usuario) {
+      return ManejadorRespuestas.noAutorizado(res, 'Usuario no autenticado', 'AUTH_013');
+    }
+
+    const usuario = await Usuario.findByPk(req.usuario.id, {
+      attributes: { exclude: ['password'] }
+    });
+
+    if (!usuario) {
+      return ManejadorRespuestas.noEncontrado(res, 'Usuario no encontrado', 'AUTH_014');
+    }
 
     return ManejadorRespuestas.exito(
       res,
       'Perfil obtenido exitosamente',
-      perfilSimulado,
-      'AUTH_009'
+      usuario.toJSON(),
+      'AUTH_015'
     );
   } catch (error) {
     log.error('Error en obtenerPerfil:', error);
-    return ManejadorRespuestas.errorInterno(res, 'Error interno al obtener el perfil', 'AUTH_010');
+    return ManejadorRespuestas.errorInterno(res, 'Error interno al obtener el perfil', 'AUTH_016');
   }
 };
 
 export const actualizarPerfil = async (req: Request, res: Response) => {
   try {
-    const { nombre, telefono, especialidad } = req.body;
+    if (!req.usuario) {
+      return ManejadorRespuestas.noAutorizado(res, 'Usuario no autenticado', 'AUTH_017');
+    }
 
-    // TODO: Implementar actualización real del perfil
-    const perfilActualizado = {
-      id: 1,
-      nombre: nombre || 'Dr. Juan Pérez',
-      telefono: telefono || '+56912345678',
-      especialidad: especialidad || 'Psicología Clínica',
-      fechaActualizacion: new Date().toISOString()
-    };
+    const { nombre, telefono, especialidad, direccion } = req.body;
+
+    const usuario = await Usuario.findByPk(req.usuario.id);
+    if (!usuario) {
+      return ManejadorRespuestas.noEncontrado(res, 'Usuario no encontrado', 'AUTH_018');
+    }
+
+    // Actualizar campos permitidos
+    await usuario.update({
+      nombre: nombre || usuario.nombre,
+      telefono: telefono || usuario.telefono,
+      especialidad: especialidad || usuario.especialidad,
+      direccion: direccion || usuario.direccion
+    });
 
     return ManejadorRespuestas.exito(
       res,
       MENSAJES_AUTH.PERFIL_ACTUALIZADO,
-      perfilActualizado,
-      'AUTH_011'
+      usuario.toJSON(),
+      'AUTH_019'
     );
   } catch (error) {
     log.error('Error en actualizarPerfil:', error);
     return ManejadorRespuestas.errorInterno(
       res,
       'Error interno al actualizar el perfil',
-      'AUTH_012'
+      'AUTH_020'
     );
   }
 };
 
 export const cambiarPassword = async (req: Request, res: Response) => {
   try {
+    if (!req.usuario) {
+      return ManejadorRespuestas.noAutorizado(res, 'Usuario no autenticado', 'AUTH_021');
+    }
+
     const { passwordActual, passwordNuevo } = req.body;
 
     // Validar datos requeridos
@@ -161,24 +238,83 @@ export const cambiarPassword = async (req: Request, res: Response) => {
         res,
         'Contraseña actual y nueva contraseña son requeridas',
         { camposRequeridos: ['passwordActual', 'passwordNuevo'] },
-        'AUTH_013'
+        'AUTH_022'
       );
     }
 
-    // TODO: Implementar lógica real de cambio de contraseña
+    const usuario = await Usuario.findByPk(req.usuario.id);
+    if (!usuario) {
+      return ManejadorRespuestas.noEncontrado(res, 'Usuario no encontrado', 'AUTH_023');
+    }
+
+    // Verificar contraseña actual
+    const passwordValida = await usuario.compararPassword(passwordActual);
+    if (!passwordValida) {
+      return ManejadorRespuestas.noAutorizado(res, 'Contraseña actual incorrecta', 'AUTH_024');
+    }
+
+    // Actualizar contraseña
+    usuario.password = passwordNuevo;
+    await usuario.save();
 
     return ManejadorRespuestas.exito(
       res,
       MENSAJES_AUTH.CAMBIO_PASSWORD_EXITOSO,
       { fechaCambio: new Date().toISOString() },
-      'AUTH_014'
+      'AUTH_025'
     );
   } catch (error) {
     log.error('Error en cambiarPassword:', error);
     return ManejadorRespuestas.errorInterno(
       res,
       'Error interno al cambiar la contraseña',
-      'AUTH_015'
+      'AUTH_026'
     );
+  }
+};
+
+export const refrescarToken = async (req: Request, res: Response) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return ManejadorRespuestas.errorValidacion(
+        res,
+        'Refresh token es requerido',
+        { camposRequeridos: ['refreshToken'] },
+        'AUTH_027'
+      );
+    }
+
+    // Verificar refresh token
+    const decoded = JWTService.verificarRefreshToken(refreshToken);
+
+    // Buscar usuario
+    const usuario = await Usuario.findByPk(decoded.id);
+    if (!usuario || !usuario.activo) {
+      return ManejadorRespuestas.noAutorizado(res, 'Usuario no encontrado o inactivo', 'AUTH_028');
+    }
+
+    // Generar nuevos tokens
+    const tokens = JWTService.generarTokens({
+      id: usuario.id,
+      email: usuario.email,
+      rol: usuario.rol,
+      nombre: usuario.nombre
+    });
+
+    return ManejadorRespuestas.exito(
+      res,
+      'Token refrescado exitosamente',
+      {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        expiresIn: tokens.expiresIn
+      },
+      'AUTH_029'
+    );
+  } catch (error) {
+    log.error('Error en refrescarToken:', error);
+    return ManejadorRespuestas.noAutorizado(res, 'Refresh token inválido o expirado', 'AUTH_030');
   }
 };

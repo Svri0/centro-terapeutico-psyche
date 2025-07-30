@@ -24,6 +24,22 @@ El **Centro Terapéutico Psyche** es una plataforma integral de gestión terapé
 - **🔐 Autenticación Segura**: Sistema de roles y permisos
 - **📱 Interfaz Moderna**: Diseño responsive y accesible
 
+### **⚠️ Estado Actual del Desarrollo**
+
+#### **🔐 Sistema de Login**
+- ✅ **Backend**: Endpoints de autenticación implementados (`/login`, `/registro`, `/logout`)
+- ✅ **Estructura**: Controladores, rutas y middleware de autenticación creados
+- ⚠️ **Frontend**: Interfaz de login creada pero **aún no conectada** al backend
+- 🔄 **Estado**: En desarrollo - pendiente integración completa frontend-backend
+
+#### **📋 Funcionalidades Implementadas**
+- ✅ Backend API REST completa
+- ✅ Base de datos configurada
+- ✅ Sistema de mensajes personalizados
+- ✅ Logging profesional
+- ✅ Estructura de carpetas organizada
+- ⚠️ Frontend básico (pendiente integración con backend)
+
 ---
 
 ## 🚀 **Inicio Rápido**

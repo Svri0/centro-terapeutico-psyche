@@ -7,6 +7,8 @@ import dotenv from 'dotenv';
 import express from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import { syncDatabase, testConnection } from './configuracion/database';
+import { crearUsuariosIniciales } from './seeders/usuarios-iniciales';
 import { MENSAJES_GENERALES } from './utilidades/mensajes';
 import { ManejadorRespuestas } from './utilidades/respuestas';
 
@@ -452,6 +454,28 @@ const encontrarPuertoDisponible = async (puertoInicial: number): Promise<number>
 const iniciarServidor = async () => {
   try {
     console.log('🔍 Verificando disponibilidad del puerto...');
+
+    // Inicializar base de datos
+    console.log('🗄️  Inicializando base de datos...');
+    try {
+      await testConnection();
+      await syncDatabase(false); // false = no forzar recreación de tablas
+      console.log('✅ Base de datos inicializada correctamente.');
+    } catch (error) {
+      console.error('❌ Error al inicializar la base de datos:', error);
+      console.log('💡 Asegúrate de que PostgreSQL esté corriendo y la base de datos exista');
+      process.exit(1);
+    }
+
+    // Crear usuarios iniciales
+    try {
+      console.log('👥 Creando usuarios iniciales...');
+      await crearUsuariosIniciales();
+      console.log('✅ Usuarios iniciales creados correctamente.');
+    } catch (error) {
+      console.error('❌ Error al crear usuarios iniciales:', error);
+      process.exit(1);
+    }
 
     const servidor = app
       .listen(PUERTO, () => {

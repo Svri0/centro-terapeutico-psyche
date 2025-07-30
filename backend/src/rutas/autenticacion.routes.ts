@@ -6,19 +6,22 @@ import {
   cerrarSesion,
   iniciarSesion,
   obtenerPerfil,
+  refrescarToken,
   registrar
 } from '../controladores/autenticacion.controlador';
+import { verificarAuth } from '../intermediarios/auth.middleware';
 
 const router = Router();
 
-// Rutas de autenticación con mensajes personalizados
+// Rutas públicas de autenticación
 router.post('/login', iniciarSesion); // POST /api/v1/auth/login
 router.post('/registro', registrar); // POST /api/v1/auth/registro
-router.post('/logout', cerrarSesion); // POST /api/v1/auth/logout
+router.post('/refresh', refrescarToken); // POST /api/v1/auth/refresh
 
-// Rutas de perfil de usuario
-router.get('/perfil', obtenerPerfil); // GET /api/v1/auth/perfil
-router.put('/perfil', actualizarPerfil); // PUT /api/v1/auth/perfil
-router.put('/cambiar-password', cambiarPassword); // PUT /api/v1/auth/cambiar-password
+// Rutas protegidas de autenticación
+router.post('/logout', verificarAuth, cerrarSesion); // POST /api/v1/auth/logout
+router.get('/perfil', verificarAuth, obtenerPerfil); // GET /api/v1/auth/perfil
+router.put('/perfil', verificarAuth, actualizarPerfil); // PUT /api/v1/auth/perfil
+router.put('/cambiar-password', verificarAuth, cambiarPassword); // PUT /api/v1/auth/cambiar-password
 
 export default router;
