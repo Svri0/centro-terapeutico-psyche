@@ -6,18 +6,40 @@ export interface Paciente {
   id: string;
   numero_ficha: string;
   rut?: string;
+  direccion?: string;
+  contacto_emergencia_nombre?: string;
+  contacto_emergencia_telefono?: string;
+  contacto_emergencia_relacion?: string;
+  diagnosticos?: any[];
+  etiquetas?: any[];
+  estrategias_autorregulacion?: any[];
+  puntos_acumulados: number;
   estado: string;
   fecha_ingreso: string;
-  puntos_acumulados: number;
+  fecha_alta?: string;
+  observaciones?: string;
   nombres: string;
   apellidos: string;
   email: string;
   telefono?: string;
   fecha_nacimiento?: string;
   genero?: string;
-  activo: boolean;
-  email_verificado: boolean;
-  ultimo_acceso?: string;
+}
+
+export interface PacienteCreado {
+  id: string;
+  numero_ficha: string;
+  nombres: string;
+  apellidos: string;
+  email: string;
+  password_temporal: string;
+  mensaje: string;
+}
+
+export interface BusquedaPacientes {
+  pacientes: Paciente[];
+  total: number;
+  termino_busqueda: string;
 }
 
 export interface DatosPaciente {
@@ -54,15 +76,27 @@ class PacientesService {
     };
   }
 
-  async obtenerPacientes(): Promise<Paciente[]> {
+  async obtenerPacientes(): Promise<{ pacientes: Paciente[]; total: number; activos: number }> {
     try {
-      const response = await axios.get<ApiResponse<Paciente[]>>(
+      const response = await axios.get<ApiResponse<{ pacientes: Paciente[]; total: number; activos: number }>>(
         `${API_BASE_URL}/pacientes`,
         { headers: this.getAuthHeaders() }
       );
       return response.data.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.mensaje || 'Error al obtener pacientes');
+    }
+  }
+
+  async buscarPacientes(termino: string): Promise<BusquedaPacientes> {
+    try {
+      const response = await axios.get<ApiResponse<BusquedaPacientes>>(
+        `${API_BASE_URL}/pacientes/buscar?q=${encodeURIComponent(termino)}`,
+        { headers: this.getAuthHeaders() }
+      );
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.mensaje || 'Error al buscar pacientes');
     }
   }
 
@@ -78,21 +112,21 @@ class PacientesService {
     }
   }
 
-  async crearPaciente(datos: DatosPaciente): Promise<any> {
+  async crearPaciente(datos: DatosPaciente): Promise<PacienteCreado> {
     try {
       console.log('🔍 PacientesService - Intentando crear paciente');
       console.log('🔗 URL:', `${API_BASE_URL}/pacientes`);
       console.log('📋 Datos:', datos);
       console.log('🔑 Headers:', this.getAuthHeaders());
       
-      const response = await axios.post<ApiResponse<any>>(
+      const response = await axios.post<ApiResponse<PacienteCreado>>(
         `${API_BASE_URL}/pacientes`,
         datos,
         { headers: this.getAuthHeaders() }
       );
       
       console.log('✅ PacientesService - Respuesta exitosa:', response.data);
-      return response.data;
+      return response.data.data;
     } catch (error: any) {
       console.error('❌ PacientesService - Error:', error);
       console.error('❌ PacientesService - Error response:', error.response);

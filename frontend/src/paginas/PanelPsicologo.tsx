@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { authService } from '../servicios/auth.service';
+import GestionPacientes from '../componentes/GestionPacientes';
+import { PacienteCreado } from '../servicios/pacientes.service';
 
 interface Sesion {
   id: string;
@@ -22,6 +24,7 @@ const PanelPsicologo: React.FC = () => {
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'pacientes'>('dashboard');
 
   const user = authService.getUser();
 
@@ -108,6 +111,11 @@ const PanelPsicologo: React.FC = () => {
     window.location.reload();
   };
 
+  const handlePacienteCreado = (paciente: PacienteCreado) => {
+    // Aquí podrías mostrar una notificación o actualizar estadísticas
+    console.log('Paciente creado:', paciente);
+  };
+
   const getEstadoColor = (estado: string) => {
     switch (estado) {
       case 'programada': return 'bg-blue-100 text-blue-800';
@@ -162,8 +170,37 @@ const PanelPsicologo: React.FC = () => {
 
       {/* Contenido Principal */}
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        {/* Estadísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {/* Pestañas */}
+        <div className="border-b border-gray-200 mb-8">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'dashboard'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Dashboard
+            </button>
+            <button
+              onClick={() => setActiveTab('pacientes')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'pacientes'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Gestión de Pacientes
+            </button>
+          </nav>
+        </div>
+
+        {/* Contenido de las pestañas */}
+        {activeTab === 'dashboard' ? (
+          <>
+            {/* Estadísticas */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white overflow-hidden shadow rounded-lg">
             <div className="p-5">
               <div className="flex items-center">
@@ -289,6 +326,10 @@ const PanelPsicologo: React.FC = () => {
             )}
           </div>
         </div>
+          </>
+        ) : (
+          <GestionPacientes onPacienteCreado={handlePacienteCreado} />
+        )}
       </div>
 
       {/* Modal Cambiar Contraseña */}

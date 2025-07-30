@@ -125,6 +125,42 @@ export const verificarSubdominioAdmin = async (req: Request, res: Response, next
   }
 };
 
+// Middleware para verificar que el usuario es psicólogo
+export const verificarPsicologo = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    if (!req.usuario) {
+      ManejadorRespuestas.noAutorizado(
+        res,
+        'Usuario no autenticado',
+        'AUTH_109'
+      );
+      return;
+    }
+
+    // Verificar que el rol_id sea 2 (psicólogo según el seeder)
+    if (req.usuario.rol_id !== 2) {
+      ManejadorRespuestas.prohibido(
+        res,
+        'Acceso denegado. Se requieren permisos de psicólogo',
+        'AUTH_110'
+      );
+      return;
+    }
+
+    next();
+  } catch (error) {
+    log.error('Error en verificarPsicologo:', error);
+    ManejadorRespuestas.errorInterno(
+      res,
+      'Error al verificar permisos de psicólogo',
+      'AUTH_111'
+    );
+  }
+};
+
 // Middleware combinado para rutas de administrador
 // En desarrollo, omitimos la verificación de subdominio
-export const authAdmin = [verificarToken, verificarAdmin]; 
+export const authAdmin = [verificarToken, verificarAdmin];
+
+// Middleware combinado para rutas de psicólogo
+export const authPsicologo = [verificarToken, verificarPsicologo]; 
