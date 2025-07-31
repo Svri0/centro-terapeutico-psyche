@@ -452,6 +452,17 @@ const encontrarPuertoDisponible = async (puertoInicial: number): Promise<number>
 const iniciarServidor = async () => {
   try {
     console.log('🔍 Verificando disponibilidad del puerto...');
+    
+    // Configurar modelos y asociaciones
+    console.log('📦 Configurando modelos y asociaciones...');
+    try {
+      // Importar modelos para configurar asociaciones
+      await import('./modelos');
+      console.log('✅ Modelos y asociaciones configurados correctamente');
+    } catch (error) {
+      console.log('⚠️  Advertencia: No se pudieron configurar los modelos TypeScript');
+      console.log('   Los modelos JavaScript seguirán funcionando normalmente');
+    }
 
     const servidor = app
       .listen(PUERTO, () => {

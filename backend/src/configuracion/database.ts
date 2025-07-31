@@ -4,12 +4,15 @@ import dotenv from 'dotenv';
 // Cargar variables de entorno
 dotenv.config();
 
+// Importar modelos para configurar asociaciones
+// Los modelos se importan desde servidor.ts para evitar importación circular
+
 // Configuración de la base de datos
 const dbConfig: Options = {
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '5432'),
   username: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'psyche_password',
+  password: process.env.DB_PASSWORD || 'Ferreteriakm6',
   database: process.env.DB_NAME || 'psyche_db',
   dialect: 'postgres',
   dialectOptions: {

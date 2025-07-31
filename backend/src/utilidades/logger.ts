@@ -27,7 +27,6 @@ export class Logger {
   private log(level: LogLevel, message: string, ...args: any[]): void {
     if (level <= this.logLevel) {
       const timestamp = new Date().toLocaleString('es-CL');
-      const levelText = LogLevel[level];
 
       switch (level) {
         case LogLevel.ERROR:

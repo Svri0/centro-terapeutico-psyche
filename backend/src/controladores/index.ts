@@ -51,4 +51,14 @@ export {
   obtenerPorId as obtenerReportePorId,
   crear as crearReporte,
   exportar as exportarReporte
-} from './reportes.controlador'; 
+} from './reportes.controlador';
+
+// Administrador
+export {
+  obtenerPsicologos,
+  obtenerPsicologoPorId,
+  crearPsicologo,
+  actualizarPsicologo,
+  desactivarPsicologo,
+  reactivarPsicologo
+} from './admin.controlador'; 

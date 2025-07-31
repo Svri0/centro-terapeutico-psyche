@@ -1,0 +1,167 @@
+import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import { ManejadorRespuestas } from '../utilidades/respuestas';
+import { log } from '../utilidades/logger';
+
+// Extender la interfaz Request para incluir el usuario
+declare global {
+  namespace Express {
+    interface Request {
+      usuario?: {
+        id: string;
+        email: string;
+        rol_id: number;
+        nombres: string;
+        apellidos: string;
+      };
+    }
+  }
+}
+
+// Middleware para verificar JWT
+export const verificarToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+
+    if (!token) {
+      ManejadorRespuestas.noAutorizado(
+        res,
+        'Token de acceso requerido',
+        'AUTH_101'
+      );
+      return;
+    }
+
+    const secret = process.env.JWT_SECRET || 'tu_secreto_super_seguro_para_jwt_tokens_2024';
+    console.log('🔍 JWT_SECRET usado en verificación:', secret);
+    
+    const decoded = jwt.verify(token, secret) as any;
+    
+    // Verificar que el usuario existe y está activo
+    // TODO: Implementar verificación en base de datos
+    req.usuario = {
+      id: decoded.id,
+      email: decoded.email,
+      rol_id: decoded.rol_id,
+      nombres: decoded.nombres,
+      apellidos: decoded.apellidos
+    };
+
+    next();
+  } catch (error) {
+    log.error('Error en verificarToken:', error);
+    
+    if (error instanceof jwt.JsonWebTokenError) {
+      ManejadorRespuestas.noAutorizado(
+        res,
+        'Token inválido o expirado',
+        'AUTH_102'
+      );
+      return;
+    }
+
+    ManejadorRespuestas.errorInterno(
+      res,
+      'Error al verificar el token',
+      'AUTH_103'
+    );
+  }
+};
+
+// Middleware para verificar que el usuario es administrador
+export const verificarAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    if (!req.usuario) {
+      ManejadorRespuestas.noAutorizado(
+        res,
+        'Usuario no autenticado',
+        'AUTH_104'
+      );
+      return;
+    }
+
+    // Verificar que el rol_id sea 1 (administrador según el seeder)
+    if (req.usuario.rol_id !== 1) {
+      ManejadorRespuestas.prohibido(
+        res,
+        'Acceso denegado. Se requieren permisos de administrador',
+        'AUTH_105'
+      );
+      return;
+    }
+
+    next();
+  } catch (error) {
+    log.error('Error en verificarAdmin:', error);
+    ManejadorRespuestas.errorInterno(
+      res,
+      'Error al verificar permisos de administrador',
+      'AUTH_106'
+    );
+  }
+};
+
+// Middleware para verificar subdominio admin
+export const verificarSubdominioAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const hostname = req.hostname;
+    
+    if (!hostname.includes('admin')) {
+      ManejadorRespuestas.prohibido(
+        res,
+        'Acceso denegado. Esta funcionalidad solo está disponible desde el subdominio admin',
+        'AUTH_107'
+      );
+      return;
+    }
+
+    next();
+  } catch (error) {
+    log.error('Error en verificarSubdominioAdmin:', error);
+    ManejadorRespuestas.errorInterno(
+      res,
+      'Error al verificar subdominio',
+      'AUTH_108'
+    );
+  }
+};
+
+// Middleware para verificar que el usuario es psicólogo
+export const verificarPsicologo = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    if (!req.usuario) {
+      ManejadorRespuestas.noAutorizado(
+        res,
+        'Usuario no autenticado',
+        'AUTH_109'
+      );
+      return;
+    }
+
+    // Verificar que el rol_id sea 2 (psicólogo según el seeder)
+    if (req.usuario.rol_id !== 2) {
+      ManejadorRespuestas.prohibido(
+        res,
+        'Acceso denegado. Se requieren permisos de psicólogo',
+        'AUTH_110'
+      );
+      return;
+    }
+
+    next();
+  } catch (error) {
+    log.error('Error en verificarPsicologo:', error);
+    ManejadorRespuestas.errorInterno(
+      res,
+      'Error al verificar permisos de psicólogo',
+      'AUTH_111'
+    );
+  }
+};
+
+// Middleware combinado para rutas de administrador
+// En desarrollo, omitimos la verificación de subdominio
+export const authAdmin = [verificarToken, verificarAdmin];
+
+// Middleware combinado para rutas de psicólogo
+export const authPsicologo = [verificarToken, verificarPsicologo]; 
