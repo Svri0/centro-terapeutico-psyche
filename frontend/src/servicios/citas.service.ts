@@ -1,145 +1,105 @@
-import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:3002/api/v1';
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Interceptor para agregar token de autenticación
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-export interface HorarioDisponible {
-  hora_inicio: string;
-  hora_fin: string;
-  disponible: boolean;
-}
-
-export interface DisponibilidadResponse {
-  fecha: string;
-  psicologo_id: string;
-  horarios: HorarioDisponible[];
-}
+import api from './api';
 
 export interface Cita {
   id: string;
+  paciente_id: string;
+  psicologo_id: string;
   fecha: string;
-  hora_inicio: string;
-  hora_fin: string;
-  duracion_minutos: number;
-  estado: 'programada' | 'confirmada' | 'en_progreso' | 'completada' | 'cancelada' | 'no_show';
-  tipo_sesion: 'individual' | 'grupal' | 'familiar' | 'evaluacion' | 'seguimiento';
-  modalidad: 'presencial' | 'virtual' | 'telefonica';
-  notas_paciente?: string;
-  notas_psicologo?: string;
+  hora: string;
+  duracion: number;
+  estado: string;
+  notas?: string;
   created_at: string;
-  psicologo_nombres?: string;
-  psicologo_apellidos?: string;
-  psicologo_email?: string;
-  paciente_nombres?: string;
-  paciente_apellidos?: string;
-  paciente_email?: string;
-  numero_ficha?: string;
+  updated_at: string;
+  paciente?: {
+    nombres: string;
+    apellidos: string;
+    email: string;
+  };
+  psicologo?: {
+    nombres: string;
+    apellidos: string;
+    email: string;
+  };
 }
 
 export interface CrearCitaData {
+  paciente_id: string;
   psicologo_id: string;
   fecha: string;
-  hora_inicio: string;
-  tipo_sesion?: 'individual' | 'grupal' | 'familiar' | 'evaluacion' | 'seguimiento';
-  modalidad?: 'presencial' | 'virtual' | 'telefonica';
-  notas_paciente?: string;
+  hora: string;
+  duracion: number;
+  notas?: string;
 }
 
-export interface CitasResponse {
-  citas: Cita[];
+export interface ActualizarCitaData {
+  fecha?: string;
+  hora?: string;
+  duracion?: number;
+  estado?: string;
+  notas?: string;
 }
 
 class CitasService {
-  // Obtener disponibilidad de un psicólogo para una fecha específica
-  async obtenerDisponibilidad(psicologoId: string, fecha: string): Promise<DisponibilidadResponse> {
+  async obtenerCitas(): Promise<Cita[]> {
     try {
-      const response = await api.get(`/citas/disponibilidad/${psicologoId}/${fecha}`);
+      const response = await api.get('/citas');
       return response.data.data;
     } catch (error: any) {
-      console.error('❌ CitasService - Error:', error);
-      console.error('❌ CitasService - Error response:', error.response);
-      throw error;
+      throw new Error(error.response?.data?.mensaje || 'Error al obtener citas');
     }
   }
 
-  // Crear una nueva cita
+  async obtenerCitaPorId(id: string): Promise<Cita> {
+    try {
+      const response = await api.get(`/citas/${id}`);
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.mensaje || 'Error al obtener cita');
+    }
+  }
+
   async crearCita(data: CrearCitaData): Promise<Cita> {
     try {
       const response = await api.post('/citas', data);
       return response.data.data;
     } catch (error: any) {
-      console.error('❌ CitasService - Error:', error);
-      console.error('❌ CitasService - Error response:', error.response);
-      throw error;
+      throw new Error(error.response?.data?.mensaje || 'Error al crear cita');
     }
   }
 
-  // Obtener citas del paciente
-  async obtenerCitasPaciente(): Promise<Cita[]> {
+  async actualizarCita(id: string, data: ActualizarCitaData): Promise<Cita> {
     try {
-      const response = await api.get('/citas/paciente');
-      return response.data.data.citas;
-    } catch (error: any) {
-      console.error('❌ CitasService - Error:', error);
-      console.error('❌ CitasService - Error response:', error.response);
-      throw error;
-    }
-  }
-
-  // Obtener citas del psicólogo
-  async obtenerCitasPsicologo(fecha?: string): Promise<Cita[]> {
-    try {
-      const params = fecha ? { fecha } : {};
-      const response = await api.get('/citas/psicologo', { params });
-      return response.data.data.citas;
-    } catch (error: any) {
-      console.error('❌ CitasService - Error:', error);
-      console.error('❌ CitasService - Error response:', error.response);
-      throw error;
-    }
-  }
-
-  // Actualizar estado de una cita (psicólogo)
-  async actualizarEstadoCita(citaId: string, estado: string, notas_psicologo?: string): Promise<any> {
-    try {
-      const data: any = { estado };
-      if (notas_psicologo !== undefined) {
-        data.notas_psicologo = notas_psicologo;
-      }
-      
-      const response = await api.put(`/citas/${citaId}/estado`, data);
+      const response = await api.put(`/citas/${id}`, data);
       return response.data.data;
     } catch (error: any) {
-      console.error('❌ CitasService - Error:', error);
-      console.error('❌ CitasService - Error response:', error.response);
-      throw error;
+      throw new Error(error.response?.data?.mensaje || 'Error al actualizar cita');
     }
   }
 
-  // Cancelar cita (paciente)
-  async cancelarCita(citaId: string): Promise<any> {
+  async eliminarCita(id: string): Promise<void> {
     try {
-      const response = await api.put(`/citas/${citaId}/cancelar`);
+      await api.delete(`/citas/${id}`);
+    } catch (error: any) {
+      throw new Error(error.response?.data?.mensaje || 'Error al eliminar cita');
+    }
+  }
+
+  async cancelarCita(id: string): Promise<Cita> {
+    try {
+      const response = await api.patch(`/citas/${id}/cancelar`);
       return response.data.data;
     } catch (error: any) {
-      console.error('❌ CitasService - Error:', error);
-      console.error('❌ CitasService - Error response:', error.response);
-      throw error;
+      throw new Error(error.response?.data?.mensaje || 'Error al cancelar cita');
+    }
+  }
+
+  async confirmarCita(id: string): Promise<Cita> {
+    try {
+      const response = await api.patch(`/citas/${id}/confirmar`);
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.mensaje || 'Error al confirmar cita');
     }
   }
 }

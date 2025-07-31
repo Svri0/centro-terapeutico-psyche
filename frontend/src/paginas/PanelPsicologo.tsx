@@ -3,6 +3,7 @@ import { authService } from '../servicios/auth.service';
 import GestionPacientes from '../componentes/GestionPacientes';
 import CitasPsicologo from '../componentes/CitasPsicologo';
 import { PacienteCreado } from '../servicios/pacientes.service';
+import Logo from '../componentes/Logo';
 
 interface Sesion {
   id: string;
@@ -138,15 +139,20 @@ const PanelPsicologo: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-soft-50 font-aesthetic">
       {/* Navbar */}
-      <nav className="bg-white shadow-sm border-b">
+      <nav className="bg-white shadow-sm border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <h1 className="text-xl font-semibold text-gray-900">
-                Panel del Psicólogo
-              </h1>
+              <div className="flex-shrink-0 mr-4">
+                <Logo size="sm" showSubtitle={false} />
+              </div>
+              <div>
+                <h1 className="text-xl font-semibold text-black">
+                  Panel del Psicólogo
+                </h1>
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-700">
@@ -154,13 +160,13 @@ const PanelPsicologo: React.FC = () => {
               </span>
               <button
                 onClick={() => setShowChangePassword(true)}
-                className="text-sm text-blue-600 hover:text-blue-800"
+                className="text-sm text-gray-600 hover:text-black transition-colors"
               >
                 Cambiar Contraseña
               </button>
               <button
                 onClick={handleLogout}
-                className="text-sm text-red-600 hover:text-red-800"
+                className="text-sm text-gray-600 hover:text-black transition-colors"
               >
                 Cerrar Sesión
               </button>

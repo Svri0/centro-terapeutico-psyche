@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { CrearPsicologoData } from '../servicios/admin.service';
+import { convertirOtroParaBackend } from '../utilidades/formateo';
+import DatePickerPersonalizado from './DatePickerPersonalizado';
+import '../styles/datepicker-custom.css';
 
 interface ModalCrearPsicologoProps {
   onClose: () => void;
@@ -16,6 +19,7 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
     fecha_nacimiento: '',
     genero: ''
   });
+  const [fechaNacimiento, setFechaNacimiento] = useState<Date | null>(null);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -31,6 +35,30 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
       setErrors(prev => ({
         ...prev,
         [name]: ''
+      }));
+    }
+  };
+
+  const handleFechaChange = (date: Date | null) => {
+    setFechaNacimiento(date);
+    if (date) {
+      const fechaFormateada = date.toISOString().split('T')[0];
+      setFormData(prev => ({
+        ...prev,
+        fecha_nacimiento: fechaFormateada
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        fecha_nacimiento: ''
+      }));
+    }
+    
+    // Limpiar error de fecha
+    if (errors.fecha_nacimiento) {
+      setErrors(prev => ({
+        ...prev,
+        fecha_nacimiento: ''
       }));
     }
   };
@@ -58,8 +86,23 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
       newErrors.password = 'La contraseña debe tener al menos 6 caracteres';
     }
 
-    if (formData.telefono && !/^\+?[\d\s\-\(\)]+$/.test(formData.telefono)) {
+    if (formData.telefono && !/^\+?[\d\s\-()]+$/.test(formData.telefono)) {
       newErrors.telefono = 'El teléfono no es válido';
+    }
+
+    // Validar fecha de nacimiento
+    if (fechaNacimiento) {
+      const today = new Date();
+      const minAge = 21;
+      const maxAge = 80;
+      const minDate = new Date(today.getFullYear() - maxAge, today.getMonth(), today.getDate());
+      const maxDate = new Date(today.getFullYear() - minAge, today.getMonth(), today.getDate());
+      
+      if (fechaNacimiento > maxDate) {
+        newErrors.fecha_nacimiento = `La edad mínima para ejercer como psicólogo es ${minAge} años`;
+      } else if (fechaNacimiento < minDate) {
+        newErrors.fecha_nacimiento = `La edad máxima permitida es ${maxAge} años`;
+      }
     }
 
     setErrors(newErrors);
@@ -68,16 +111,19 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
-
     setLoading(true);
+    
     try {
-      await onSubmit(formData);
+      // Convertir el género para el backend
+      const dataParaBackend = {
+        ...formData,
+        genero: convertirOtroParaBackend(formData.genero)
+      };
+      
+      await onSubmit(dataParaBackend);
+      onClose();
     } catch (error) {
-      // El error se maneja en el componente padre
+      console.error('Error al crear psicólogo:', error);
     } finally {
       setLoading(false);
     }
@@ -93,16 +139,16 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 animate-fade-in">
+      <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white animate-bounce-in shadow-glow">
         <div className="mt-3">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium text-gray-900">
+            <h3 className="text-lg font-medium text-gray-900 animate-fade-in">
               Crear Nuevo Psicólogo
             </h3>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-gray-400 hover:text-gray-600 hover-bounce transition-transform duration-200"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -121,9 +167,9 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
                 name="nombres"
                 value={formData.nombres}
                 onChange={handleChange}
-                className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
-                  errors.nombres ? 'border-red-300' : 'border-gray-300'
-                }`}
+                                  className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm ${
+                    errors.nombres ? 'border-red-300' : 'border-gray-300'
+                  }`}
                 placeholder="Ingrese los nombres"
               />
               {errors.nombres && (
@@ -141,9 +187,9 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
                 name="apellidos"
                 value={formData.apellidos}
                 onChange={handleChange}
-                className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
-                  errors.apellidos ? 'border-red-300' : 'border-gray-300'
-                }`}
+                                  className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm ${
+                    errors.apellidos ? 'border-red-300' : 'border-gray-300'
+                  }`}
                 placeholder="Ingrese los apellidos"
               />
               {errors.apellidos && (
@@ -161,9 +207,9 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
-                  errors.email ? 'border-red-300' : 'border-gray-300'
-                }`}
+                                  className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm ${
+                    errors.email ? 'border-red-300' : 'border-gray-300'
+                  }`}
                 placeholder="ejemplo@correo.com"
               />
               {errors.email && (
@@ -182,7 +228,7 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className={`flex-1 px-3 py-2 border rounded-l-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
+                  className={`flex-1 px-3 py-2 border rounded-l-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm ${
                     errors.password ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder="Contraseña temporal"
@@ -210,9 +256,9 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
                 name="telefono"
                 value={formData.telefono}
                 onChange={handleChange}
-                className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
-                  errors.telefono ? 'border-red-300' : 'border-gray-300'
-                }`}
+                                  className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm ${
+                    errors.telefono ? 'border-red-300' : 'border-gray-300'
+                  }`}
                 placeholder="+56 9 1234 5678"
               />
               {errors.telefono && (
@@ -225,13 +271,15 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
               <label className="block text-sm font-medium text-gray-700">
                 Fecha de Nacimiento
               </label>
-              <input
-                type="date"
-                name="fecha_nacimiento"
-                value={formData.fecha_nacimiento}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              <DatePickerPersonalizado
+                selected={fechaNacimiento}
+                onChange={handleFechaChange}
+                placeholderText="dd/mm/aaaa"
+                error={!!errors.fecha_nacimiento}
               />
+              {errors.fecha_nacimiento && (
+                <p className="mt-1 text-sm text-red-600">{errors.fecha_nacimiento}</p>
+              )}
             </div>
 
             {/* Género */}
@@ -243,12 +291,13 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
                 name="genero"
                 value={formData.genero}
                 onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
               >
                 <option value="">Seleccionar género</option>
                 <option value="masculino">Masculino</option>
                 <option value="femenino">Femenino</option>
                 <option value="no_binario">No binario</option>
+                <option value="otro">Otro</option>
                 <option value="prefiero_no_decir">Prefiero no decir</option>
               </select>
             </div>
@@ -265,7 +314,7 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
               <button
                 type="submit"
                 disabled={loading}
-                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-sm font-medium text-amber-800 bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 border border-transparent rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {loading ? 'Creando...' : 'Crear Psicólogo'}
               </button>

@@ -32,7 +32,8 @@ export const verificarToken = async (req: Request, res: Response, next: NextFunc
       return;
     }
 
-    const secret = 'tu_secreto_super_seguro_para_jwt_tokens_2024';
+    const secret = process.env.JWT_SECRET || 'tu_secreto_super_seguro_para_jwt_tokens_2024';
+    console.log('🔍 JWT_SECRET usado en verificación:', secret);
     
     const decoded = jwt.verify(token, secret) as any;
     

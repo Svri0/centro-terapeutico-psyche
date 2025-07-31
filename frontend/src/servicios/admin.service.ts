@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:3002/api/v1';
+import api from './api';
 
 export interface Psicologo {
   id: string;
@@ -10,11 +8,12 @@ export interface Psicologo {
   telefono?: string;
   fecha_nacimiento?: string;
   genero?: string;
+  especialidad?: string;
   activo: boolean;
   email_verificado: boolean;
   ultimo_acceso?: string;
   created_at: string;
-  rol_nombre: string;
+  updated_at: string;
 }
 
 export interface CrearPsicologoData {
@@ -25,6 +24,7 @@ export interface CrearPsicologoData {
   telefono?: string;
   fecha_nacimiento?: string;
   genero?: string;
+  especialidad?: string;
 }
 
 export interface ActualizarPsicologoData {
@@ -34,68 +34,116 @@ export interface ActualizarPsicologoData {
   telefono?: string;
   fecha_nacimiento?: string;
   genero?: string;
-}
-
-export interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  mensaje: string;
-  codigo: string;
-  timestamp: string;
+  especialidad?: string;
+  activo?: boolean;
 }
 
 class AdminService {
   async obtenerPsicologos(): Promise<Psicologo[]> {
     try {
-      const response = await axios.get<ApiResponse<Psicologo[]>>(`${API_BASE_URL}/admin/psicologos`);
-      return response.data.data;
+      const response = await api.get('/admin/psicologos');
+      return response.data?.data || [];
     } catch (error: any) {
-      throw new Error(error.response?.data?.mensaje || 'Error al obtener psicólogos');
+      console.error('Error al obtener psicólogos:', error);
+      return [];
     }
   }
 
-  async obtenerPsicologoPorId(id: string): Promise<Psicologo> {
+  async crearPsicologo(data: CrearPsicologoData): Promise<Psicologo> {
     try {
-      const response = await axios.get<ApiResponse<Psicologo>>(`${API_BASE_URL}/admin/psicologos/${id}`);
-      return response.data.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.mensaje || 'Error al obtener psicólogo');
-    }
-  }
-
-  async crearPsicologo(data: CrearPsicologoData): Promise<{ usuario: any; token_activacion: string }> {
-    try {
-      const response = await axios.post<ApiResponse<{ usuario: any; token_activacion: string }>>(`${API_BASE_URL}/admin/psicologos`, data);
+      const response = await api.post('/admin/psicologos', data);
       return response.data.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.mensaje || 'Error al crear psicólogo');
     }
   }
 
-  async actualizarPsicologo(id: string, data: ActualizarPsicologoData): Promise<{ id: string; campos_actualizados: number }> {
+  async actualizarPsicologo(id: string, data: ActualizarPsicologoData): Promise<Psicologo> {
     try {
-      const response = await axios.put<ApiResponse<{ id: string; campos_actualizados: number }>>(`${API_BASE_URL}/admin/psicologos/${id}`, data);
+      const response = await api.put(`/admin/psicologos/${id}`, data);
       return response.data.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.mensaje || 'Error al actualizar psicólogo');
     }
   }
 
-  async desactivarPsicologo(id: string): Promise<{ id: string; nombres: string; apellidos: string; estado: string }> {
+  async eliminarPsicologo(id: string): Promise<void> {
     try {
-      const response = await axios.patch<ApiResponse<{ id: string; nombres: string; apellidos: string; estado: string }>>(`${API_BASE_URL}/admin/psicologos/${id}/desactivar`);
+      await api.delete(`/admin/psicologos/${id}`);
+    } catch (error: any) {
+      throw new Error(error.response?.data?.mensaje || 'Error al eliminar psicólogo');
+    }
+  }
+
+  async activarPsicologo(id: string): Promise<Psicologo> {
+    try {
+      const response = await api.patch(`/admin/psicologos/${id}/reactivar`);
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.mensaje || 'Error al activar psicólogo');
+    }
+  }
+
+  async desactivarPsicologo(id: string): Promise<Psicologo> {
+    try {
+      const response = await api.patch(`/admin/psicologos/${id}/desactivar`);
       return response.data.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.mensaje || 'Error al desactivar psicólogo');
     }
   }
 
-  async reactivarPsicologo(id: string): Promise<{ id: string; nombres: string; apellidos: string; estado: string }> {
+  // Obtener pacientes de un psicólogo
+  async obtenerPacientesPsicologo(id: string): Promise<any> {
     try {
-      const response = await axios.patch<ApiResponse<{ id: string; nombres: string; apellidos: string; estado: string }>>(`${API_BASE_URL}/admin/psicologos/${id}/reactivar`);
+      const response = await api.get(`/admin/psicologos/${id}/pacientes`);
       return response.data.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.mensaje || 'Error al reactivar psicólogo');
+      throw new Error(error.response?.data?.mensaje || 'Error al obtener pacientes del psicólogo');
+    }
+  }
+
+  // Obtener citas de un psicólogo
+  async obtenerCitasPsicologo(id: string): Promise<any> {
+    try {
+      const response = await api.get(`/admin/psicologos/${id}/citas`);
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.mensaje || 'Error al obtener citas del psicólogo');
+    }
+  }
+
+  // Eliminar cita específica
+  async eliminarCita(id: string): Promise<any> {
+    try {
+      const response = await api.delete(`/admin/citas/${id}`);
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.mensaje || 'Error al eliminar cita');
+    }
+  }
+
+  // Reasignar paciente a otro psicólogo
+  async reasignarPaciente(pacienteId: string, nuevoPsicologoId: string): Promise<any> {
+    try {
+      const response = await api.post('/admin/pacientes/reasignar', {
+        pacienteId,
+        nuevoPsicologoId
+      });
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.mensaje || 'Error al reasignar paciente');
+    }
+  }
+
+  // Obtener psicólogos disponibles para reasignación
+  async obtenerPsicologosDisponibles(excludeId?: string): Promise<any> {
+    try {
+      const params = excludeId ? { excludeId } : {};
+      const response = await api.get('/admin/psicologos/disponibles', { params });
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.mensaje || 'Error al obtener psicólogos disponibles');
     }
   }
 }

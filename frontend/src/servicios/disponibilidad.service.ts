@@ -1,57 +1,81 @@
-import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:3002/api/v1';
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Interceptor para agregar token de autenticación
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+import api from './api';
 
 export interface Disponibilidad {
   id: string;
+  psicologo_id: string;
   dia_semana: number;
   hora_inicio: string;
   hora_fin: string;
   activo: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
-export interface DisponibilidadResponse {
-  disponibilidad: Disponibilidad[];
+export interface CrearDisponibilidadData {
+  psicologo_id: string;
+  dia_semana: number;
+  hora_inicio: string;
+  hora_fin: string;
+}
+
+export interface ActualizarDisponibilidadData {
+  dia_semana?: number;
+  hora_inicio?: string;
+  hora_fin?: string;
+  activo?: boolean;
 }
 
 class DisponibilidadService {
-  // Obtener disponibilidad de un psicólogo
   async obtenerDisponibilidad(psicologoId: string): Promise<Disponibilidad[]> {
     try {
-      const response = await api.get(`/disponibilidad/${psicologoId}`);
-      return response.data.data.disponibilidad;
+      const response = await api.get(`/disponibilidad/psicologo/${psicologoId}`);
+      return response.data.data;
     } catch (error: any) {
-      console.error('❌ DisponibilidadService - Error:', error);
-      console.error('❌ DisponibilidadService - Error response:', error.response);
-      throw error;
+      throw new Error(error.response?.data?.mensaje || 'Error al obtener disponibilidad');
     }
   }
 
-  // Actualizar disponibilidad (solo psicólogos)
-  async actualizarDisponibilidad(disponibilidad: Disponibilidad[]): Promise<any> {
+  async crearDisponibilidad(data: CrearDisponibilidadData): Promise<Disponibilidad> {
     try {
-      const response = await api.put('/disponibilidad', { disponibilidad });
+      const response = await api.post('/disponibilidad', data);
       return response.data.data;
     } catch (error: any) {
-      console.error('❌ DisponibilidadService - Error:', error);
-      console.error('❌ DisponibilidadService - Error response:', error.response);
-      throw error;
+      throw new Error(error.response?.data?.mensaje || 'Error al crear disponibilidad');
+    }
+  }
+
+  async actualizarDisponibilidad(id: string, data: ActualizarDisponibilidadData): Promise<Disponibilidad> {
+    try {
+      const response = await api.put(`/disponibilidad/${id}`, data);
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.mensaje || 'Error al actualizar disponibilidad');
+    }
+  }
+
+  async eliminarDisponibilidad(id: string): Promise<void> {
+    try {
+      await api.delete(`/disponibilidad/${id}`);
+    } catch (error: any) {
+      throw new Error(error.response?.data?.mensaje || 'Error al eliminar disponibilidad');
+    }
+  }
+
+  async activarDisponibilidad(id: string): Promise<Disponibilidad> {
+    try {
+      const response = await api.patch(`/disponibilidad/${id}/activar`);
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.mensaje || 'Error al activar disponibilidad');
+    }
+  }
+
+  async desactivarDisponibilidad(id: string): Promise<Disponibilidad> {
+    try {
+      const response = await api.patch(`/disponibilidad/${id}/desactivar`);
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.mensaje || 'Error al desactivar disponibilidad');
     }
   }
 }

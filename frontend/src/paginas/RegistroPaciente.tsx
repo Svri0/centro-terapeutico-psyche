@@ -261,6 +261,7 @@ const RegistroPaciente: React.FC = () => {
                     <option value="masculino">Masculino</option>
                     <option value="femenino">Femenino</option>
                     <option value="no_binario">No binario</option>
+                    <option value="otro">Otro</option>
                     <option value="prefiero_no_decir">Prefiero no decir</option>
                   </select>
                 </div>

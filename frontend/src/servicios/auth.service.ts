@@ -1,10 +1,16 @@
-import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:3002/api/v1';
+import api from './api';
 
 export interface LoginData {
   email: string;
   password: string;
+}
+
+export interface RegisterData {
+  nombres: string;
+  apellidos: string;
+  email: string;
+  password: string;
+  telefono?: string;
 }
 
 export interface User {
@@ -17,124 +23,128 @@ export interface User {
 }
 
 export interface AuthResponse {
-  success: boolean;
-  data: {
-    usuario: User;
-    token: string;
-    expira_en: string;
-  };
-  mensaje: string;
+  usuario: User;
+  token: string;
+  expira_en: string;
+  tipo_token: string;
 }
 
 class AuthService {
-  private token: string | null = localStorage.getItem('token');
-
-  // Configurar axios con interceptor para token
-  constructor() {
-    axios.defaults.baseURL = API_BASE_URL;
-    
-    // Interceptor para agregar token a todas las peticiones
-    axios.interceptors.request.use(
-      (config) => {
-        if (this.token) {
-          config.headers.Authorization = `Bearer ${this.token}`;
-        }
-        return config;
-      },
-      (error) => {
-        return Promise.reject(error);
-      }
-    );
-
-    // Interceptor para manejar errores de autenticación
-    axios.interceptors.response.use(
-      (response) => response,
-      (error) => {
-        if (error.response?.status === 401) {
-          this.logout();
-          window.location.href = '/login';
-        }
-        return Promise.reject(error);
-      }
-    );
-  }
-
-  async login(credentials: LoginData): Promise<AuthResponse> {
+  async login(credentials: LoginData): Promise<{ data: AuthResponse }> {
     try {
-      const response = await axios.post('/autenticacion/login', credentials);
-      const { token, usuario } = response.data.data;
-      
-      console.log('🔍 Login response:', response.data);
-      console.log('🔍 Usuario data:', usuario);
-      
-      this.setToken(token);
-      this.setUser(usuario);
-      
-      console.log('🔍 Token guardado:', this.getToken());
-      console.log('🔍 Usuario guardado:', this.getUser());
-      console.log('🔍 Es paciente?', this.isPaciente());
-      
+      const response = await api.post('/autenticacion/login', credentials);
+      if (response.data.success) {
+        localStorage.setItem('token', response.data.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.data.usuario));
+      }
       return response.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.mensaje || 'Error en el login');
+      if (error.response?.data?.mensaje) {
+        throw new Error(error.response.data.mensaje);
+      } else if (error.message) {
+        throw new Error(error.message);
+      } else {
+        throw new Error('Error en el login');
+      }
     }
   }
 
-  async changePassword(currentPassword: string, newPassword: string): Promise<any> {
+  async register(userData: RegisterData): Promise<any> {
     try {
-      const response = await axios.put('/autenticacion/cambiar-password', {
-        contraseña_actual: currentPassword,
-        nueva_contraseña: newPassword
+      const response = await api.post('/autenticacion/registro', userData);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data?.mensaje) {
+        throw new Error(error.response.data.mensaje);
+      } else if (error.message) {
+        throw new Error(error.message);
+      } else {
+        throw new Error('Error en el registro');
+      }
+    }
+  }
+
+  async logout(): Promise<void> {
+    try {
+      await api.post('/autenticacion/logout');
+    } catch (error) {
+      console.error('Error en logout:', error);
+    } finally {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    }
+  }
+
+  async getProfile(): Promise<User> {
+    try {
+      const response = await api.get('/autenticacion/perfil');
+      return response.data.data.usuario;
+    } catch (error: any) {
+      throw new Error('Error al obtener perfil');
+    }
+  }
+
+  async updateProfile(userData: Partial<User>): Promise<User> {
+    try {
+      const response = await api.put('/autenticacion/perfil', userData);
+      return response.data.data.usuario;
+    } catch (error: any) {
+      throw new Error('Error al actualizar perfil');
+    }
+  }
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    try {
+      await api.put('/autenticacion/cambiar-password', {
+        currentPassword,
+        newPassword
       });
-      return response.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.mensaje || 'Error al cambiar la contraseña');
+      if (error.response?.data?.mensaje) {
+        throw new Error(error.response.data.mensaje);
+      } else {
+        throw new Error('Error al cambiar contraseña');
+      }
     }
-  }
-
-  logout(): void {
-    this.token = null;
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-  }
-
-  setToken(token: string): void {
-    this.token = token;
-    localStorage.setItem('token', token);
-  }
-
-  getToken(): string | null {
-    return this.token;
   }
 
   isAuthenticated(): boolean {
-    return !!this.token;
+    const token = localStorage.getItem('token');
+    return !!token;
+  }
+
+  getCurrentUser(): User | null {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        return JSON.parse(userStr);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  getToken(): string | null {
+    return localStorage.getItem('token');
   }
 
   getUser(): User | null {
-    const userStr = localStorage.getItem('user');
-    return userStr ? JSON.parse(userStr) : null;
-  }
-
-  setUser(user: User): void {
-    localStorage.setItem('user', JSON.stringify(user));
+    return this.getCurrentUser();
   }
 
   isAdmin(): boolean {
-    const user = this.getUser();
+    const user = this.getCurrentUser();
     return user?.rol_id === 1;
   }
 
   isPsicologo(): boolean {
-    const user = this.getUser();
+    const user = this.getCurrentUser();
     return user?.rol_id === 2;
   }
 
   isPaciente(): boolean {
-    const user = this.getUser();
-    console.log('🔍 isPaciente() - User:', user);
-    console.log('🔍 isPaciente() - rol_id:', user?.rol_id);
-    console.log('🔍 isPaciente() - Result:', user?.rol_id === 3);
+    const user = this.getCurrentUser();
     return user?.rol_id === 3;
   }
 }
