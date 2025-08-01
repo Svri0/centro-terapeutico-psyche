@@ -98,8 +98,11 @@ export const enviarEmailBienvenidaPsicologo = async (
       <!-- Contenido principal -->
       <div style="padding: 40px 30px;">
         <div style="text-align: center; margin-bottom: 25px;">
-          ${avatarUrl ? `
-            <img src="${avatarUrl}" alt="Foto de perfil de ${nombrePsicologo}" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid #f59e0b; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+          ${avatarUrl && avatarUrl.trim() !== '' ? `
+            <img src="${avatarUrl}" alt="Foto de perfil de ${nombrePsicologo}" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid #f59e0b; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+            <div style="width: 120px; height: 120px; border-radius: 50%; border: 4px solid #f59e0b; background-color: #fef3c7; display: none; align-items: center; justify-content: center; margin: 0 auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+              <span style="font-size: 48px; color: #f59e0b;">👤</span>
+            </div>
           ` : `
             <div style="width: 120px; height: 120px; border-radius: 50%; border: 4px solid #f59e0b; background-color: #fef3c7; display: flex; align-items: center; justify-content: center; margin: 0 auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
               <span style="font-size: 48px; color: #f59e0b;">👤</span>
