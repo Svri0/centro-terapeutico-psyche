@@ -87,7 +87,7 @@ export const crearPsicologo = async (req: Request, res: Response) => {
     const { nombres, apellidos, email, password, telefono, fecha_nacimiento, genero, especialidad, descripcion }: CrearPsicologoData = req.body;
     
     // Obtener la URL del avatar si se subió una imagen
-    const avatar_url = req.file ? `/uploads/avatars/${req.file.filename}` : null;
+          const avatar_url = req.file ? `${process.env.BACKEND_URL || 'http://localhost:3002'}/api/v1/images/${req.file.filename}` : null;
 
     // Validar campos obligatorios
     if (!nombres || !apellidos || !email || !password) {
@@ -207,6 +207,12 @@ export const crearPsicologo = async (req: Request, res: Response) => {
 
     // Enviar email de bienvenida al psicólogo
     const nombreCompleto = `${nombres} ${apellidos}`;
+    
+    // DEBUG: Log para verificar el valor de avatar_url
+    log.info(`DEBUG - Avatar URL generada: "${avatar_url}"`);
+    log.info(`DEBUG - Tipo de avatar_url: ${typeof avatar_url}`);
+    log.info(`DEBUG - Avatar URL que se pasará al email: "${avatar_url || undefined}"`);
+    
     const emailEnviado = await enviarEmailBienvenidaPsicologo(
       email,
       nombreCompleto,

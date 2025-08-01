@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { CrearPsicologoData } from '../servicios/admin.service';
 import { convertirOtroParaBackend } from '../utilidades/formateo';
 import DatePickerPersonalizado from './DatePickerPersonalizado';
-import ImageUpload from './ImageUpload';
+import CircularImageEditor from './CircularImageEditor';
 import '../styles/datepicker-custom.css';
 
 interface ModalCrearPsicologoProps {
@@ -317,7 +317,7 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
             </div>
 
             {/* Foto de Perfil */}
-            <ImageUpload
+            <CircularImageEditor
               onImageSelect={setSelectedImage}
               className="mt-4"
             />
