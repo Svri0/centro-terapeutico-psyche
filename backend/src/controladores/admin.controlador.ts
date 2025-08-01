@@ -211,7 +211,8 @@ export const crearPsicologo = async (req: Request, res: Response) => {
       email,
       nombreCompleto,
       password,
-      especialidad
+      especialidad,
+      avatar_url || undefined
     );
 
     if (emailEnviado) {

@@ -82,12 +82,13 @@ export const enviarEmailBienvenidaPsicologo = async (
   emailPsicologo: string,
   nombrePsicologo: string,
   passwordTemporal: string,
-  especialidad?: string
+  especialidad?: string,
+  avatarUrl?: string
 ): Promise<boolean> => {
   const subject = '¡Bienvenido al Centro Terapéutico Psyche! 🧠';
   
   const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: visible; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
       <!-- Header con gradiente -->
       <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; text-align: center;">
         <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">🧠 Centro Terapéutico Psyche</h1>
@@ -96,6 +97,15 @@ export const enviarEmailBienvenidaPsicologo = async (
       
       <!-- Contenido principal -->
       <div style="padding: 40px 30px;">
+        <div style="text-align: center; margin-bottom: 25px;">
+          ${avatarUrl ? `
+            <img src="${avatarUrl}" alt="Foto de perfil de ${nombrePsicologo}" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid #f59e0b; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+          ` : `
+            <div style="width: 120px; height: 120px; border-radius: 50%; border: 4px solid #f59e0b; background-color: #fef3c7; display: flex; align-items: center; justify-content: center; margin: 0 auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+              <span style="font-size: 48px; color: #f59e0b;">👤</span>
+            </div>
+          `}
+        </div>
         <h2 style="color: #1f2937; margin-top: 0; font-size: 24px;">¡Hola ${nombrePsicologo}! 👋</h2>
         
         <p style="color: #374151; font-size: 16px; line-height: 1.6;">
@@ -105,7 +115,7 @@ export const enviarEmailBienvenidaPsicologo = async (
         
         ${especialidad ? `
         <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0;">
-          <p style="margin: 0; color: #92400e; font-weight: 500;">
+          <p style="margin: 0; color: #92400e; font-weight: 500; word-wrap: break-word; overflow-wrap: break-word;">
             <strong>Especialidad registrada:</strong> ${especialidad}
           </p>
         </div>
@@ -113,16 +123,16 @@ export const enviarEmailBienvenidaPsicologo = async (
         
         <div style="background-color: #f3f4f6; padding: 25px; border-radius: 12px; margin: 25px 0; border: 2px solid #e5e7eb;">
           <h3 style="color: #1f2937; margin-top: 0; font-size: 18px;">🔐 Credenciales de Acceso</h3>
-          <p style="color: #374151; margin: 10px 0;"><strong>Email:</strong> ${emailPsicologo}</p>
-          <p style="color: #374151; margin: 10px 0;"><strong>Contraseña temporal:</strong> ${passwordTemporal}</p>
-          <p style="color: #6b7280; font-size: 14px; margin: 15px 0 0 0;">
+          <p style="color: #374151; margin: 10px 0; word-wrap: break-word; overflow-wrap: break-word;"><strong>Email:</strong> ${emailPsicologo}</p>
+          <p style="color: #374151; margin: 10px 0; word-wrap: break-word; overflow-wrap: break-word;"><strong>Contraseña temporal:</strong> ${passwordTemporal}</p>
+          <p style="color: #6b7280; font-size: 14px; margin: 15px 0 0 0; word-wrap: break-word; overflow-wrap: break-word;">
             <strong>⚠️ Importante:</strong> Por seguridad, te recomendamos cambiar esta contraseña en tu primer inicio de sesión.
           </p>
         </div>
         
         <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 25px; border-radius: 12px; margin: 25px 0;">
           <h3 style="color: #92400e; margin-top: 0; font-size: 18px;">🚀 Próximos Pasos</h3>
-          <ol style="color: #92400e; line-height: 1.8;">
+          <ol style="color: #92400e; line-height: 1.8; word-wrap: break-word; overflow-wrap: break-word;">
             <li><strong>Accede al sistema:</strong> Visita <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}" style="color: #d97706; text-decoration: none; font-weight: 500;">nuestra plataforma</a></li>
             <li><strong>Inicia sesión:</strong> Usa las credenciales proporcionadas arriba</li>
             <li><strong>Cambia tu contraseña:</strong> Configura una contraseña segura y personal</li>
@@ -133,7 +143,7 @@ export const enviarEmailBienvenidaPsicologo = async (
         
         <div style="background-color: #ecfdf5; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0;">
           <h4 style="color: #065f46; margin-top: 0;">💡 Funcionalidades Disponibles</h4>
-          <ul style="color: #065f46; line-height: 1.6;">
+          <ul style="color: #065f46; line-height: 1.6; word-wrap: break-word; overflow-wrap: break-word;">
             <li>Gestión de pacientes y citas</li>
             <li>Registro de sesiones terapéuticas</li>
             <li>Sistema de tareas y seguimiento</li>
