@@ -699,7 +699,7 @@ export const eliminarPsicologo = async (req: Request, res: Response) => {
       { query: 'DELETE FROM logs_auditoria WHERE usuario_id = :id', name: 'logs_auditoria' },
       { query: 'DELETE FROM disponibilidad_psicologos WHERE psicologo_id = :id', name: 'disponibilidad_psicologos' },
       { query: 'DELETE FROM tareas WHERE psicologo_id = :id', name: 'tareas' },
-      { query: 'DELETE FROM mensajes WHERE psicologo_id = :id', name: 'mensajes' }
+      { query: 'DELETE FROM mensajes WHERE remitente_id = :id OR destinatario_id = :id', name: 'mensajes' }
     ];
 
     for (const deleteQuery of deleteQueries) {
