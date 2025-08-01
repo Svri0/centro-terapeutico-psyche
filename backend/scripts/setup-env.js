@@ -16,10 +16,15 @@ NODE_ENV=development
 JWT_SECRET=tu_secreto_super_seguro_para_jwt_tokens_2024
 
 # Configuración de CORS
-CORS_ORIGIN=http://localhost:5173
+CORS_ORIGIN=http://localhost:3000
 
 # Configuración de logs
 LOG_LEVEL=info
+
+# Configuración de Email (Gmail)
+# EMAIL_USER=tu_email@gmail.com
+# EMAIL_PASSWORD=tu_password_de_aplicacion
+# FRONTEND_URL=http://localhost:3000
 `;
 
 const envPath = path.join(__dirname, '..', '.env');

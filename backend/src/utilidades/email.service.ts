@@ -77,3 +77,90 @@ export const enviarEmailRegistroPaciente = async (
     html
   });
 };
+
+export const enviarEmailBienvenidaPsicologo = async (
+  emailPsicologo: string,
+  nombrePsicologo: string,
+  passwordTemporal: string,
+  especialidad?: string
+): Promise<boolean> => {
+  const subject = '¡Bienvenido al Centro Terapéutico Psyche! 🧠';
+  
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+      <!-- Header con gradiente -->
+      <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; text-align: center;">
+        <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">🧠 Centro Terapéutico Psyche</h1>
+        <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">¡Bienvenido a nuestro equipo terapéutico!</p>
+      </div>
+      
+      <!-- Contenido principal -->
+      <div style="padding: 40px 30px;">
+        <h2 style="color: #1f2937; margin-top: 0; font-size: 24px;">¡Hola ${nombrePsicologo}! 👋</h2>
+        
+        <p style="color: #374151; font-size: 16px; line-height: 1.6;">
+          Nos complace darte la bienvenida al <strong>Centro Terapéutico Psyche</strong>. 
+          Has sido registrado exitosamente en nuestro sistema como profesional de la salud mental.
+        </p>
+        
+        ${especialidad ? `
+        <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+          <p style="margin: 0; color: #92400e; font-weight: 500;">
+            <strong>Especialidad registrada:</strong> ${especialidad}
+          </p>
+        </div>
+        ` : ''}
+        
+        <div style="background-color: #f3f4f6; padding: 25px; border-radius: 12px; margin: 25px 0; border: 2px solid #e5e7eb;">
+          <h3 style="color: #1f2937; margin-top: 0; font-size: 18px;">🔐 Credenciales de Acceso</h3>
+          <p style="color: #374151; margin: 10px 0;"><strong>Email:</strong> ${emailPsicologo}</p>
+          <p style="color: #374151; margin: 10px 0;"><strong>Contraseña temporal:</strong> ${passwordTemporal}</p>
+          <p style="color: #6b7280; font-size: 14px; margin: 15px 0 0 0;">
+            <strong>⚠️ Importante:</strong> Por seguridad, te recomendamos cambiar esta contraseña en tu primer inicio de sesión.
+          </p>
+        </div>
+        
+        <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 25px; border-radius: 12px; margin: 25px 0;">
+          <h3 style="color: #92400e; margin-top: 0; font-size: 18px;">🚀 Próximos Pasos</h3>
+          <ol style="color: #92400e; line-height: 1.8;">
+            <li><strong>Accede al sistema:</strong> Visita <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}" style="color: #d97706; text-decoration: none; font-weight: 500;">nuestra plataforma</a></li>
+            <li><strong>Inicia sesión:</strong> Usa las credenciales proporcionadas arriba</li>
+            <li><strong>Cambia tu contraseña:</strong> Configura una contraseña segura y personal</li>
+            <li><strong>Completa tu perfil:</strong> Añade tu foto, descripción y disponibilidad</li>
+            <li><strong>Configura tu agenda:</strong> Define tus horarios de atención</li>
+          </ol>
+        </div>
+        
+        <div style="background-color: #ecfdf5; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+          <h4 style="color: #065f46; margin-top: 0;">💡 Funcionalidades Disponibles</h4>
+          <ul style="color: #065f46; line-height: 1.6;">
+            <li>Gestión de pacientes y citas</li>
+            <li>Registro de sesiones terapéuticas</li>
+            <li>Sistema de tareas y seguimiento</li>
+            <li>Comunicación con pacientes</li>
+            <li>Reportes y estadísticas</li>
+          </ul>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/login" 
+             style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.3);">
+            🚀 Acceder al Sistema
+          </a>
+        </div>
+        
+        <p style="color: #6b7280; font-size: 14px; text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+          Si tienes alguna pregunta o necesitas ayuda, no dudes en contactarnos.<br>
+          <strong>Equipo del Centro Terapéutico Psyche</strong><br>
+          🧠 Transformando vidas a través de la salud mental
+        </p>
+      </div>
+    </div>
+  `;
+
+  return await enviarEmail({
+    to: emailPsicologo,
+    subject,
+    html
+  });
+};

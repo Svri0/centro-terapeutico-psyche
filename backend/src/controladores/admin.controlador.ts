@@ -6,6 +6,7 @@ import { ManejadorRespuestas } from '../utilidades/respuestas';
 import { log } from '../utilidades/logger';
 import { crearDisponibilidadPorDefecto } from './disponibilidad.controlador';
 import AuditoriaService from '../utilidades/auditoria.service';
+import { enviarEmailBienvenidaPsicologo } from '../utilidades/email.service';
 
 // Interfaz para crear psicólogo
 interface CrearPsicologoData {
@@ -204,14 +205,29 @@ export const crearPsicologo = async (req: Request, res: Response) => {
     const psicologoId = nuevoUsuario[0].id;
     await crearDisponibilidadPorDefecto(psicologoId);
 
-    // TODO: Enviar email de activación con el token
+    // Enviar email de bienvenida al psicólogo
+    const nombreCompleto = `${nombres} ${apellidos}`;
+    const emailEnviado = await enviarEmailBienvenidaPsicologo(
+      email,
+      nombreCompleto,
+      password,
+      especialidad
+    );
+
+    if (emailEnviado) {
+      log.info(`Email de bienvenida enviado exitosamente a: ${email}`);
+    } else {
+      log.warn(`No se pudo enviar el email de bienvenida a: ${email}`);
+    }
+
     log.info(`Nuevo psicólogo creado: ${email} con token: ${tokenActivacion}`);
 
     return ManejadorRespuestas.creado(
       res,
-      'Psicólogo creado exitosamente. Se ha enviado un email de activación.',
+      'Psicólogo creado exitosamente. Se ha enviado un email de bienvenida.',
       {
         usuario: nuevoUsuario[0],
+        email_enviado: emailEnviado,
         token_activacion: tokenActivacion // Solo para desarrollo, en producción no enviar
       },
       'ADMIN_007'

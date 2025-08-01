@@ -324,7 +324,7 @@ const PanelAdmin: React.FC = () => {
     <div className="min-h-screen font-sans" style={{ backgroundColor: '#fff6ed' }}>
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-amber-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
               <div className="flex-shrink-0 mr-4">
@@ -359,9 +359,9 @@ const PanelAdmin: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6">
+      <main className="w-full py-6">
         {/* Page Header */}
-        <div className="px-4 py-6 sm:px-0">
+        <div className="px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-xl font-bold text-gray-900 tracking-widest uppercase">Gestión de Psicólogos</h2>
@@ -383,13 +383,13 @@ const PanelAdmin: React.FC = () => {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          <div className="mx-4 sm:mx-6 lg:mx-8 mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
             {error}
           </div>
         )}
 
         {/* Content */}
-        <div className="py-6">
+        <div className="px-4 sm:px-6 lg:px-8 py-6">
           {loading ? (
             <div className="flex justify-center items-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600"></div>
