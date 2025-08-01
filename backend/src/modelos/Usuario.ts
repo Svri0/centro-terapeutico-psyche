@@ -13,6 +13,8 @@ export interface UsuarioAttributes {
   fecha_nacimiento?: Date;
   genero?: 'masculino' | 'femenino' | 'otro' | 'prefiero_no_decir';
   avatar_url?: string;
+  especialidad?: string;
+  descripcion?: string;
   rol_id: number;
   activo: boolean;
   email_verificado: boolean;
@@ -38,6 +40,8 @@ class Usuario extends Model<UsuarioAttributes, UsuarioCreationAttributes> implem
   public fecha_nacimiento?: Date;
   public genero?: 'masculino' | 'femenino' | 'otro' | 'prefiero_no_decir';
   public avatar_url?: string;
+  public especialidad?: string;
+  public descripcion?: string;
   public rol_id!: number;
   public activo!: boolean;
   public email_verificado!: boolean;

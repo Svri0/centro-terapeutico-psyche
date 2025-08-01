@@ -64,11 +64,14 @@ const TablaPsicologos: React.FC<TablaPsicologosProps> = ({
           <table className="w-full divide-y divide-gray-100">
             <thead className="bg-gray-25">
               <tr>
-                <th className="px-3 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-widest w-1/4">
+                <th className="px-3 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-widest w-1/5">
                   Psicólogo
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-widest w-1/3">
+                <th className="px-3 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-widest w-1/5">
                   Contacto
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-widest w-1/6">
+                  Especialidad
                 </th>
                 <th className="px-3 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-widest w-1/8">
                   Estado
@@ -90,11 +93,19 @@ const TablaPsicologos: React.FC<TablaPsicologosProps> = ({
                   <td className="px-3 py-3">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-8 w-8">
-                        <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center">
-                          <span className="text-xs font-light text-amber-600">
-                            {psicologo.nombres.charAt(0)}{psicologo.apellidos.charAt(0)}
-                          </span>
-                        </div>
+                        {psicologo.avatar_url ? (
+                          <img
+                            src={psicologo.avatar_url}
+                            alt={`${psicologo.nombres} ${psicologo.apellidos}`}
+                            className="h-8 w-8 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center">
+                            <span className="text-xs font-light text-amber-600">
+                              {psicologo.nombres.charAt(0)}{psicologo.apellidos.charAt(0)}
+                            </span>
+                          </div>
+                        )}
                       </div>
                       <div className="ml-3">
                         <div className="text-sm font-semibold text-gray-900 truncate">
@@ -109,6 +120,11 @@ const TablaPsicologos: React.FC<TablaPsicologosProps> = ({
                   <td className="px-3 py-3">
                     <div className="text-sm font-semibold text-gray-900 truncate">{psicologo.email}</div>
                     <div className="text-xs font-medium text-gray-600 truncate">{psicologo.telefono || 'Sin teléfono'}</div>
+                  </td>
+                  <td className="px-3 py-3">
+                    <div className="text-sm font-medium text-gray-900 truncate">
+                      {psicologo.especialidad || 'Sin especialidad'}
+                    </div>
                   </td>
                   <td className="px-3 py-3">
                     <div className="space-y-1">

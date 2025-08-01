@@ -9,6 +9,8 @@ export interface Psicologo {
   fecha_nacimiento?: string;
   genero?: string;
   especialidad?: string;
+  descripcion?: string;
+  avatar_url?: string;
   activo: boolean;
   email_verificado: boolean;
   ultimo_acceso?: string;
@@ -25,6 +27,8 @@ export interface CrearPsicologoData {
   fecha_nacimiento?: string;
   genero?: string;
   especialidad?: string;
+  descripcion?: string;
+  avatar_url?: string;
 }
 
 export interface ActualizarPsicologoData {
@@ -35,6 +39,8 @@ export interface ActualizarPsicologoData {
   fecha_nacimiento?: string;
   genero?: string;
   especialidad?: string;
+  descripcion?: string;
+  avatar_url?: string;
   activo?: boolean;
 }
 
@@ -49,18 +55,56 @@ class AdminService {
     }
   }
 
-  async crearPsicologo(data: CrearPsicologoData): Promise<Psicologo> {
+  async crearPsicologo(data: CrearPsicologoData, avatar?: File): Promise<Psicologo> {
     try {
-      const response = await api.post('/admin/psicologos', data);
+      const formData = new FormData();
+      
+      // Agregar todos los campos de texto
+      Object.keys(data).forEach(key => {
+        const value = (data as any)[key];
+        if (value !== undefined && value !== null && value !== '') {
+          formData.append(key, value);
+        }
+      });
+      
+      // Agregar el archivo si existe
+      if (avatar) {
+        formData.append('avatar', avatar);
+      }
+      
+      const response = await api.post('/admin/psicologos', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       return response.data.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.mensaje || 'Error al crear psicólogo');
     }
   }
 
-  async actualizarPsicologo(id: string, data: ActualizarPsicologoData): Promise<Psicologo> {
+  async actualizarPsicologo(id: string, data: ActualizarPsicologoData, avatar?: File): Promise<Psicologo> {
     try {
-      const response = await api.put(`/admin/psicologos/${id}`, data);
+      const formData = new FormData();
+      
+      // Agregar todos los campos de texto
+      Object.keys(data).forEach(key => {
+        const value = (data as any)[key];
+        if (value !== undefined && value !== null && value !== '') {
+          formData.append(key, value);
+        }
+      });
+      
+      // Agregar el archivo si existe
+      if (avatar) {
+        formData.append('avatar', avatar);
+      }
+      
+      const response = await api.put(`/admin/psicologos/${id}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       return response.data.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.mensaje || 'Error al actualizar psicólogo');

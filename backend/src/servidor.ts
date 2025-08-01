@@ -24,6 +24,9 @@ app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Servir archivos estáticos para avatares
+app.use('/uploads', express.static('uploads'));
+
 // Endpoint de verificación de salud con mensaje personalizado (JSON para sistemas)
 app.get('/salud', (_req, res) => {
   const infoSalud = {

@@ -16,6 +16,9 @@ interface CrearPsicologoData {
   telefono?: string;
   fecha_nacimiento?: string;
   genero?: 'masculino' | 'femenino' | 'otro' | 'prefiero_no_decir';
+  especialidad?: string;
+  descripcion?: string;
+  avatar_url?: string;
 }
 
 // Interfaz para actualizar psicólogo
@@ -26,6 +29,9 @@ interface ActualizarPsicologoData {
   telefono?: string;
   fecha_nacimiento?: string;
   genero?: 'masculino' | 'femenino' | 'otro' | 'prefiero_no_decir';
+  especialidad?: string;
+  descripcion?: string;
+  avatar_url?: string;
 }
 
 // Obtener todos los psicólogos
@@ -40,6 +46,9 @@ export const obtenerPsicologos = async (_req: Request, res: Response) => {
         u.telefono,
         u.fecha_nacimiento,
         u.genero,
+        u.especialidad,
+        u.descripcion,
+        u.avatar_url,
         u.activo,
         u.email_verificado,
         u.ultimo_acceso,
@@ -74,7 +83,10 @@ export const crearPsicologo = async (req: Request, res: Response) => {
   const transaction = await sequelize.transaction();
   
   try {
-    const { nombres, apellidos, email, password, telefono, fecha_nacimiento, genero }: CrearPsicologoData = req.body;
+    const { nombres, apellidos, email, password, telefono, fecha_nacimiento, genero, especialidad, descripcion }: CrearPsicologoData = req.body;
+    
+    // Obtener la URL del avatar si se subió una imagen
+    const avatar_url = req.file ? `/uploads/avatars/${req.file.filename}` : null;
 
     // Validar campos obligatorios
     if (!nombres || !apellidos || !email || !password) {
@@ -151,12 +163,12 @@ export const crearPsicologo = async (req: Request, res: Response) => {
     const [nuevoUsuario] = await sequelize.query(
       `INSERT INTO usuarios (
         id, nombres, apellidos, email, password_hash, telefono, 
-        fecha_nacimiento, genero, rol_id, activo, email_verificado,
+        fecha_nacimiento, genero, especialidad, descripcion, avatar_url, rol_id, activo, email_verificado,
         token_activacion, token_activacion_expira, configuracion,
         created_at, updated_at
       ) VALUES (
         :id, :nombres, :apellidos, :email, :password_hash, :telefono,
-        :fecha_nacimiento, :genero, :rol_id, :activo, :email_verificado,
+        :fecha_nacimiento, :genero, :especialidad, :descripcion, :avatar_url, :rol_id, :activo, :email_verificado,
         :token_activacion, :token_activacion_expira, :configuracion,
         :created_at, :updated_at
       ) RETURNING id, nombres, apellidos, email, created_at`,
@@ -170,6 +182,9 @@ export const crearPsicologo = async (req: Request, res: Response) => {
           telefono: telefono || null,
           fecha_nacimiento: fecha_nacimiento || null,
           genero: genero || null,
+          especialidad: especialidad || null,
+          descripcion: descripcion || null,
+          avatar_url: avatar_url,
           rol_id: rolId,
           activo: true,
           email_verificado: false,
@@ -272,7 +287,10 @@ export const actualizarPsicologo = async (req: Request, res: Response) => {
   
   try {
     const { id } = req.params;
-    const { nombres, apellidos, email, telefono, fecha_nacimiento, genero }: ActualizarPsicologoData = req.body;
+    const { nombres, apellidos, email, telefono, fecha_nacimiento, genero, especialidad, descripcion }: ActualizarPsicologoData = req.body;
+    
+    // Obtener la URL del avatar si se subió una imagen
+    const avatar_url = req.file ? `/uploads/avatars/${req.file.filename}` : undefined;
 
     // Verificar que el psicólogo existe
     const [psicologoExistente] = await sequelize.query(
@@ -354,6 +372,18 @@ export const actualizarPsicologo = async (req: Request, res: Response) => {
     if (genero !== undefined) {
       camposActualizar.push('genero = :genero');
       replacements.genero = genero;
+    }
+    if (especialidad !== undefined) {
+      camposActualizar.push('especialidad = :especialidad');
+      replacements.especialidad = especialidad;
+    }
+    if (descripcion !== undefined) {
+      camposActualizar.push('descripcion = :descripcion');
+      replacements.descripcion = descripcion;
+    }
+    if (avatar_url !== undefined) {
+      camposActualizar.push('avatar_url = :avatar_url');
+      replacements.avatar_url = avatar_url;
     }
 
     if (camposActualizar.length === 0) {

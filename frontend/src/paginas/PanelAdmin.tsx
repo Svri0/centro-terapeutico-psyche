@@ -66,6 +66,14 @@ const PanelAdmin: React.FC = () => {
     }
   }, [notification]);
 
+  const mostrarNotificacion = (mensaje: string, tipo: 'success' | 'error') => {
+    setNotification({
+      message: mensaje,
+      type: tipo,
+      visible: true
+    });
+  };
+
   const cargarPsicologos = async () => {
     try {
       setLoading(true);
@@ -83,24 +91,28 @@ const PanelAdmin: React.FC = () => {
     }
   };
 
-  const handleCrearPsicologo = async (data: any) => {
+  const handleCrearPsicologo = async (data: any, avatar?: File | null) => {
     try {
-      await adminService.crearPsicologo(data);
+      await adminService.crearPsicologo(data, avatar || undefined);
       setShowCrearModal(false);
       cargarPsicologos();
+      mostrarNotificacion('Psicólogo creado exitosamente', 'success');
     } catch (error: any) {
       setError(error.message);
+      mostrarNotificacion(error.message, 'error');
     }
   };
 
-  const handleEditarPsicologo = async (id: string, data: any) => {
+  const handleEditarPsicologo = async (id: string, data: any, avatar?: File | null) => {
     try {
-      await adminService.actualizarPsicologo(id, data);
+      await adminService.actualizarPsicologo(id, data, avatar || undefined);
       setShowEditarModal(false);
       setPsicologoSeleccionado(null);
       cargarPsicologos();
+      mostrarNotificacion('Psicólogo actualizado exitosamente', 'success');
     } catch (error: any) {
       setError(error.message);
+      mostrarNotificacion(error.message, 'error');
     }
   };
 

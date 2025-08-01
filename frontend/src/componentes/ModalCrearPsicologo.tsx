@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { CrearPsicologoData } from '../servicios/admin.service';
 import { convertirOtroParaBackend } from '../utilidades/formateo';
 import DatePickerPersonalizado from './DatePickerPersonalizado';
+import ImageUpload from './ImageUpload';
 import '../styles/datepicker-custom.css';
 
 interface ModalCrearPsicologoProps {
   onClose: () => void;
-  onSubmit: (data: CrearPsicologoData) => void;
+  onSubmit: (data: CrearPsicologoData, avatar?: File | null) => void;
 }
 
 const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSubmit }) => {
@@ -17,13 +18,16 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
     password: '',
     telefono: '',
     fecha_nacimiento: '',
-    genero: ''
+    genero: '',
+    especialidad: '',
+    descripcion: ''
   });
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [fechaNacimiento, setFechaNacimiento] = useState<Date | null>(null);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -120,7 +124,8 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
         genero: convertirOtroParaBackend(formData.genero)
       };
       
-      await onSubmit(dataParaBackend);
+      // Pasar tanto los datos como la imagen seleccionada
+      await onSubmit(dataParaBackend, selectedImage);
       onClose();
     } catch (error) {
       console.error('Error al crear psicólogo:', error);
@@ -140,7 +145,7 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 animate-fade-in">
-      <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white animate-bounce-in shadow-glow">
+      <div className="relative top-20 mx-auto p-5 border w-4xl max-w-4xl shadow-lg rounded-md bg-white animate-bounce-in shadow-glow">
         <div className="mt-3">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-medium text-gray-900 animate-fade-in">
@@ -157,67 +162,93 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Nombres */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Nombres *
-              </label>
-              <input
-                type="text"
-                name="nombres"
-                value={formData.nombres}
-                onChange={handleChange}
-                                  className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm ${
+            {/* Primera fila: Nombres y Apellidos */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Nombres */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Nombres *
+                </label>
+                <input
+                  type="text"
+                  name="nombres"
+                  value={formData.nombres}
+                  onChange={handleChange}
+                  className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm ${
                     errors.nombres ? 'border-red-300' : 'border-gray-300'
                   }`}
-                placeholder="Ingrese los nombres"
-              />
-              {errors.nombres && (
-                <p className="mt-1 text-sm text-red-600">{errors.nombres}</p>
-              )}
-            </div>
+                  placeholder="Ingrese los nombres"
+                />
+                {errors.nombres && (
+                  <p className="mt-1 text-sm text-red-600">{errors.nombres}</p>
+                )}
+              </div>
 
-            {/* Apellidos */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Apellidos *
-              </label>
-              <input
-                type="text"
-                name="apellidos"
-                value={formData.apellidos}
-                onChange={handleChange}
-                                  className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm ${
+              {/* Apellidos */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Apellidos *
+                </label>
+                <input
+                  type="text"
+                  name="apellidos"
+                  value={formData.apellidos}
+                  onChange={handleChange}
+                  className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm ${
                     errors.apellidos ? 'border-red-300' : 'border-gray-300'
                   }`}
-                placeholder="Ingrese los apellidos"
-              />
-              {errors.apellidos && (
-                <p className="mt-1 text-sm text-red-600">{errors.apellidos}</p>
-              )}
+                  placeholder="Ingrese los apellidos"
+                />
+                {errors.apellidos && (
+                  <p className="mt-1 text-sm text-red-600">{errors.apellidos}</p>
+                )}
+              </div>
             </div>
 
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Email *
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                                  className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm ${
+            {/* Segunda fila: Email y Teléfono */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm ${
                     errors.email ? 'border-red-300' : 'border-gray-300'
                   }`}
-                placeholder="ejemplo@correo.com"
-              />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
-              )}
+                  placeholder="ejemplo@correo.com"
+                />
+                {errors.email && (
+                  <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                )}
+              </div>
+
+              {/* Teléfono */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Teléfono
+                </label>
+                <input
+                  type="tel"
+                  name="telefono"
+                  value={formData.telefono}
+                  onChange={handleChange}
+                  className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm ${
+                    errors.telefono ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                  placeholder="+56 9 1234 5678"
+                />
+                {errors.telefono && (
+                  <p className="mt-1 text-sm text-red-600">{errors.telefono}</p>
+                )}
+              </div>
             </div>
 
-            {/* Contraseña */}
+            {/* Contraseña (ancho completo) */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Contraseña Temporal *
@@ -246,60 +277,79 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
               )}
             </div>
 
-            {/* Teléfono */}
+            {/* Tercera fila: Fecha de Nacimiento y Género */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Fecha de Nacimiento */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Fecha de Nacimiento
+                </label>
+                <DatePickerPersonalizado
+                  selected={fechaNacimiento}
+                  onChange={handleFechaChange}
+                  placeholderText="dd/mm/aaaa"
+                  error={!!errors.fecha_nacimiento}
+                />
+                {errors.fecha_nacimiento && (
+                  <p className="mt-1 text-sm text-red-600">{errors.fecha_nacimiento}</p>
+                )}
+              </div>
+
+              {/* Género */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Género
+                </label>
+                <select
+                  name="genero"
+                  value={formData.genero}
+                  onChange={handleChange}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                >
+                  <option value="">Seleccionar género</option>
+                  <option value="masculino">Masculino</option>
+                  <option value="femenino">Femenino</option>
+                  <option value="no_binario">No binario</option>
+                  <option value="otro">Otro</option>
+                  <option value="prefiero_no_decir">Prefiero no decir</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Foto de Perfil */}
+            <ImageUpload
+              onImageSelect={setSelectedImage}
+              className="mt-4"
+            />
+
+            {/* Especialidad */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Teléfono
+                Especialidad
               </label>
               <input
-                type="tel"
-                name="telefono"
-                value={formData.telefono}
-                onChange={handleChange}
-                                  className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm ${
-                    errors.telefono ? 'border-red-300' : 'border-gray-300'
-                  }`}
-                placeholder="+56 9 1234 5678"
-              />
-              {errors.telefono && (
-                <p className="mt-1 text-sm text-red-600">{errors.telefono}</p>
-              )}
-            </div>
-
-            {/* Fecha de Nacimiento */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Fecha de Nacimiento
-              </label>
-              <DatePickerPersonalizado
-                selected={fechaNacimiento}
-                onChange={handleFechaChange}
-                placeholderText="dd/mm/aaaa"
-                error={!!errors.fecha_nacimiento}
-              />
-              {errors.fecha_nacimiento && (
-                <p className="mt-1 text-sm text-red-600">{errors.fecha_nacimiento}</p>
-              )}
-            </div>
-
-            {/* Género */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Género
-              </label>
-              <select
-                name="genero"
-                value={formData.genero}
+                type="text"
+                name="especialidad"
+                value={formData.especialidad}
                 onChange={handleChange}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-              >
-                <option value="">Seleccionar género</option>
-                <option value="masculino">Masculino</option>
-                <option value="femenino">Femenino</option>
-                <option value="no_binario">No binario</option>
-                <option value="otro">Otro</option>
-                <option value="prefiero_no_decir">Prefiero no decir</option>
-              </select>
+                placeholder="Ej: Psicología Clínica, Terapia Cognitivo-Conductual, etc."
+              />
+            </div>
+
+            {/* Descripción */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Descripción Profesional
+              </label>
+              <textarea
+                name="descripcion"
+                value={formData.descripcion}
+                onChange={handleChange}
+                rows={4}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                placeholder="Describe tu experiencia, enfoque terapéutico, y cómo puedes ayudar a tus pacientes..."
+              />
             </div>
 
             {/* Botones */}

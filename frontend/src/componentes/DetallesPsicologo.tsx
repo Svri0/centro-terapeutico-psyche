@@ -193,6 +193,76 @@ const DetallesPsicologo: React.FC<DetallesPsicologoProps> = ({
             </div>
           ) : (
             <div className="space-y-6">
+              {/* Información del Psicólogo */}
+              <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-6 border border-amber-200">
+                <div className="flex items-start space-x-4">
+                  {psicologo.avatar_url ? (
+                    <img
+                      src={psicologo.avatar_url}
+                      alt={`${psicologo.nombres} ${psicologo.apellidos}`}
+                      className="h-20 w-20 rounded-full object-cover border-4 border-white shadow-lg"
+                    />
+                  ) : (
+                    <div className="h-20 w-20 rounded-full bg-amber-100 flex items-center justify-center border-4 border-white shadow-lg">
+                      <span className="text-2xl font-light text-amber-600">
+                        {psicologo.nombres.charAt(0)}{psicologo.apellidos.charAt(0)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <h2 className="text-xl font-bold text-gray-900 mb-2">
+                      {psicologo.nombres} {psicologo.apellidos}
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">
+                          <span className="font-semibold">Email:</span> {psicologo.email}
+                        </p>
+                        <p className="text-sm text-gray-600 mb-1">
+                          <span className="font-semibold">Teléfono:</span> {psicologo.telefono || 'No especificado'}
+                        </p>
+                        <p className="text-sm text-gray-600 mb-1">
+                          <span className="font-semibold">Estado:</span> 
+                          <span className={`ml-1 px-2 py-1 text-xs font-semibold rounded-full ${
+                            psicologo.activo
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {psicologo.activo ? 'Activo' : 'Inactivo'}
+                          </span>
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">
+                          <span className="font-semibold">Especialidad:</span> {psicologo.especialidad || 'No especificada'}
+                        </p>
+                        <p className="text-sm text-gray-600 mb-1">
+                          <span className="font-semibold">Email verificado:</span> 
+                          <span className={`ml-1 px-2 py-1 text-xs font-semibold rounded-full ${
+                            psicologo.email_verificado
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {psicologo.email_verificado ? 'Sí' : 'No'}
+                          </span>
+                        </p>
+                        <p className="text-sm text-gray-600 mb-1">
+                          <span className="font-semibold">Último acceso:</span> {psicologo.ultimo_acceso ? new Date(psicologo.ultimo_acceso).toLocaleString('es-CL') : 'Nunca'}
+                        </p>
+                      </div>
+                    </div>
+                    {psicologo.descripcion && (
+                      <div className="mt-4">
+                        <p className="text-sm font-semibold text-gray-700 mb-2">Descripción Profesional:</p>
+                        <p className="text-sm text-gray-600 bg-white p-3 rounded-md border border-amber-200">
+                          {psicologo.descripcion}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {/* Pacientes */}
               <div>
                 <h4 className="text-md font-semibold text-gray-900 mb-3">
