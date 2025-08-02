@@ -8,6 +8,32 @@ import { log } from '../utilidades/logger';
 import { MENSAJES_AUTH } from '../utilidades/mensajes';
 import { ManejadorRespuestas } from '../utilidades/respuestas';
 
+// Función para verificar si es la primera vez que el usuario inicia sesión
+const verificarSiEsPrimeraVez = async (usuarioId: string): Promise<boolean> => {
+  try {
+    const usuarios = await sequelize.query(
+      'SELECT configuracion FROM usuarios WHERE id = :id',
+      {
+        replacements: { id: usuarioId },
+        type: QueryTypes.SELECT
+      }
+    ) as any[];
+
+    if (!Array.isArray(usuarios) || usuarios.length === 0) {
+      return false;
+    }
+
+    const usuario = usuarios[0] as any;
+    const configuracion = usuario.configuracion || {};
+    
+    // Si ya se marcó que no es la primera vez, retornar false
+    return !configuracion.password_cambiado;
+  } catch (error) {
+    log.error('Error verificando si es primera vez:', error);
+    return false;
+  }
+};
+
 // Controlador para iniciar sesión
 export const iniciarSesion = async (req: Request, res: Response) => {
   try {
@@ -28,7 +54,7 @@ export const iniciarSesion = async (req: Request, res: Response) => {
 
     // Buscar usuario en la base de datos usando parámetros preparados
     const usuarios = await sequelize.query(
-      `SELECT u.id, u.nombres, u.apellidos, u.email, u.telefono, u.especialidad, u.descripcion, u.avatar_url, u.password_hash, u.activo, u.rol_id, r.nombre as rol_nombre
+      `SELECT u.id, u.nombres, u.apellidos, u.email, u.telefono, u.especialidad, u.descripcion, u.avatar_url, u.password_hash, u.activo, u.rol_id, u.email_verificado, r.nombre as rol_nombre
        FROM usuarios u
        INNER JOIN roles r ON u.rol_id = r.id
        WHERE u.email = :email AND u.deleted_at IS NULL`,
@@ -103,26 +129,31 @@ export const iniciarSesion = async (req: Request, res: Response) => {
       }
     );
 
-    // Log de login exitoso
-    log.info(`Login exitoso para usuario: ${usuario.nombres} ${usuario.apellidos} (${usuario.rol_nombre})`);
+    // Verificar si es la primera vez que inicia sesión (password temporal)
+    const esPrimeraVez = await verificarSiEsPrimeraVez(usuario.id);
 
+    // Preparar respuesta exitosa
     const respuesta = {
+      token,
       usuario: {
         id: usuario.id,
+        email: usuario.email,
         nombres: usuario.nombres,
         apellidos: usuario.apellidos,
-        email: usuario.email,
         telefono: usuario.telefono,
         especialidad: usuario.especialidad,
         descripcion: usuario.descripcion,
         avatar_url: usuario.avatar_url,
-        rol: usuario.rol_nombre,
-        rol_id: usuario.rol_id
+        rol_id: usuario.rol_id,
+        rol_nombre: usuario.rol_nombre,
+        email_verificado: usuario.email_verificado || false
       },
-      token,
-      expira_en: '24 horas',
-      tipo_token: 'Bearer'
+      esPrimeraVez,
+      debeCambiarPassword: esPrimeraVez
     };
+
+    // Log de login exitoso
+    log.info(`Login exitoso para usuario: ${usuario.nombres} ${usuario.apellidos} (${usuario.rol_nombre})`);
 
     return ManejadorRespuestas.exito(res, MENSAJES_AUTH.LOGIN_EXITOSO, respuesta, 'AUTH_005');
 
@@ -356,20 +387,58 @@ export const cambiarPassword = async (req: Request, res: Response) => {
     const saltRounds = 12;
     const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
 
-    // Actualizar contraseña
-    await sequelize.query(
-      'UPDATE usuarios SET password_hash = :password_hash, updated_at = NOW() WHERE id = :id',
+    // Verificar si es la primera vez que cambia la contraseña
+    const usuariosConfig = await sequelize.query(
+      'SELECT configuracion, email_verificado FROM usuarios WHERE id = :id',
       {
-        replacements: { password_hash: newPasswordHash, id: usuario.id }
+        replacements: { id: usuario.id },
+        type: QueryTypes.SELECT
+      }
+    ) as any[];
+
+    const usuarioConfig = usuariosConfig[0] as any;
+    const configuracion = usuarioConfig.configuracion || {};
+    const esPrimeraVez = !configuracion.password_cambiado;
+
+    // Preparar configuración actualizada
+    const nuevaConfiguracion = {
+      ...configuracion,
+      password_cambiado: true,
+      fecha_cambio_password: new Date().toISOString()
+    };
+
+    // Actualizar contraseña, configuración y marcar email como verificado si es la primera vez
+    const actualizaciones = [
+      'password_hash = :password_hash',
+      'configuracion = :configuracion',
+      'updated_at = NOW()'
+    ];
+
+    if (esPrimeraVez && !usuarioConfig.email_verificado) {
+      actualizaciones.push('email_verificado = true');
+    }
+
+    await sequelize.query(
+      `UPDATE usuarios SET ${actualizaciones.join(', ')} WHERE id = :id`,
+      {
+        replacements: { 
+          password_hash: newPasswordHash, 
+          configuracion: JSON.stringify(nuevaConfiguracion),
+          id: usuario.id 
+        }
       }
     );
 
-    log.info(`Contraseña cambiada para usuario: ${usuario.email}`);
+    const mensaje = esPrimeraVez 
+      ? 'Contraseña cambiada exitosamente. Tu email ha sido verificado.'
+      : 'Contraseña cambiada exitosamente';
+
+    log.info(`Contraseña cambiada para usuario: ${usuario.email}${esPrimeraVez ? ' (primera vez)' : ''}`);
 
     return ManejadorRespuestas.exito(
       res,
-      'Contraseña cambiada exitosamente',
-      null,
+      mensaje,
+      { email_verificado: esPrimeraVez ? true : usuarioConfig.email_verificado },
       'AUTH_021'
     );
 
