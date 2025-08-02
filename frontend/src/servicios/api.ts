@@ -1,7 +1,7 @@
 // Servicio de API para comunicación con el backend
 import axios from 'axios';
 
-const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3003/api/v1';
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3002/api/v1';
 
 const api = axios.create({
   baseURL: API_BASE_URL,

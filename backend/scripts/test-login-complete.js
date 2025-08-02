@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const BASE_URL = 'http://localhost:3003/api/v1';
+const BASE_URL = 'http://localhost:3002/api/v1';
 
 // Función para hacer login y obtener token
 async function login() {
