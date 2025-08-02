@@ -102,6 +102,14 @@ Usuario.init(
       type: DataTypes.STRING(500),
       allowNull: true,
     },
+    especialidad: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    descripcion: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
     rol_id: {
       type: DataTypes.INTEGER,
       allowNull: false,

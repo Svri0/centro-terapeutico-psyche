@@ -1,27 +1,23 @@
 import { Router } from 'express';
-import { 
-  obtenerTodosUsuarios, 
-  obtenerUsuarioPorId, 
-  crearUsuario, 
-  actualizarUsuario, 
-  eliminarUsuario 
-} from '../controladores';
+import { obtenerTodos, obtenerPorId, crear, actualizar, eliminar, actualizarPerfilPsicologo, subirImagenReal } from '../controladores/usuarios.controlador';
+import { verificarToken } from '../middleware/auth.middleware';
+import upload from '../middleware/upload.middleware';
 
 const router = Router();
 
-// GET /usuarios
-router.get('/', obtenerTodosUsuarios);
+// Rutas públicas
+router.get('/', obtenerTodos);
+router.get('/:id', obtenerPorId);
 
-// GET /usuarios/:id
-router.get('/:id', obtenerUsuarioPorId);
+// Rutas protegidas
+router.post('/', verificarToken, crear);
+router.put('/:id', verificarToken, actualizar);
+router.delete('/:id', verificarToken, eliminar);
 
-// POST /usuarios
-router.post('/', crearUsuario);
+// Ruta para actualizar perfil del psicólogo
+router.put('/perfil/:id', verificarToken, actualizarPerfilPsicologo);
 
-// PUT /usuarios/:id
-router.put('/:id', actualizarUsuario);
-
-// DELETE /usuarios/:id
-router.delete('/:id', eliminarUsuario);
+// Ruta para subir imagen real
+router.post('/subir-imagen', verificarToken, upload.single('avatar'), subirImagenReal);
 
 export default router; 

@@ -1,355 +1,360 @@
 # 🏥 Centro Terapéutico Psyche
 
-**Sistema de Gestión Terapéutica con Gamificación**
+Sistema completo de gestión para centro terapéutico con funcionalidades para psicólogos y pacientes.
 
-[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
-[![React](https://img.shields.io/badge/React-18+-blue.svg)](https://reactjs.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-blue.svg)](https://www.postgresql.org/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+## 📋 **Resumen de Funcionalidades Implementadas**
 
----
+### ✅ **Sistema de Autenticación**
+- Login/Logout para psicólogos y administradores
+- JWT tokens para autenticación segura
+- Middleware de autenticación para rutas protegidas
+- Gestión de roles (psicólogo, admin)
 
-## 📋 **Descripción del Proyecto**
+### ✅ **Panel de Administración**
+- Gestión completa de psicólogos (crear, editar, eliminar)
+- Dashboard con estadísticas
+- Interfaz moderna y responsive
+- Validaciones de formularios
 
-El **Centro Terapéutico Psyche** es una plataforma integral de gestión terapéutica que combina herramientas profesionales de psicología con elementos de gamificación para mejorar la experiencia del paciente y optimizar el trabajo del terapeuta.
+### ✅ **Panel del Psicólogo**
+- **Dashboard personalizado** con estadísticas de sesiones
+- **Gestión de perfil** con subida de imágenes y avatares
+- **Sistema de disponibilidad semanal** con validaciones
+- **Gestión de servicios** con tipos predefinidos
+- **Sistema de notificaciones** con popups animados
+- **Validación de duplicados** en servicios
 
-### **🎯 Características Principales**
+### ✅ **Base de Datos**
+- PostgreSQL con Sequelize ORM
+- Migraciones para todas las tablas
+- Modelos con relaciones y validaciones
+- Soft deletes para datos importantes
 
-- **👥 Gestión de Pacientes**: Registro, historial clínico y seguimiento
-- **📅 Programación de Sesiones**: Calendario inteligente y recordatorios
-- **📝 Sistema de Tareas**: Asignación y seguimiento de ejercicios terapéuticos
-- **🎮 Gamificación**: Puntos, niveles y logros para motivar a los pacientes
-- **📊 Reportes y Estadísticas**: Análisis de progreso y métricas
-- **🔐 Autenticación Segura**: Sistema de roles y permisos
-- **📱 Interfaz Moderna**: Diseño responsive y accesible
+### ✅ **Backend API**
+- RESTful API con Express.js
+- Controladores para todas las entidades
+- Validación de datos con middleware
+- Logging y manejo de errores
+- CORS configurado
 
----
+### ✅ **Frontend**
+- React con TypeScript
+- Tailwind CSS para estilos
+- Componentes reutilizables
+- Responsive design
+- Hot reload con Vite
 
-## 🚀 **Inicio Rápido**
+## 🚀 **Tecnologías Utilizadas**
 
-### **📋 Prerrequisitos**
+### **Backend**
+- Node.js + Express.js
+- TypeScript
+- PostgreSQL + Sequelize ORM
+- JWT para autenticación
+- Multer para upload de archivos
+- Nodemon para desarrollo
 
-- **Node.js 18+** ([Descargar](https://nodejs.org/))
-- **PostgreSQL 15+** ([Descargar](https://www.postgresql.org/download/))
-- **Git** ([Descargar](https://git-scm.com/))
+### **Frontend**
+- React 18 + TypeScript
+- Vite para build y dev server
+- Tailwind CSS
+- React Router DOM
+- Axios para API calls
+- React DatePicker
 
-### **⚡ Instalación Rápida**
+### **Base de Datos**
+- PostgreSQL
+- Migraciones con Sequelize CLI
+- Índices optimizados
+- Constraints de integridad
 
-```bash
-# 1. Clonar el repositorio
-git clone https://github.com/Svri0/centro-terapeutico-psyche.git
-cd centro-terapeutico-psyche
-
-# 2. Configurar variables de entorno
-cp env.example .env
-# Editar .env con tus configuraciones
-
-# 3. Instalar dependencias
-cd backend; npm install
-cd ../frontend; npm install
-
-# 4. Configurar base de datos
-createdb psyche_db
-cd ../backend; npm run db:migrate
-
-# 5. Iniciar el proyecto
-npm run dev
-```
-
-### **⚠️ IMPORTANTE - Contraseñas Individuales**
-
-Cada desarrollador debe usar su propia contraseña de PostgreSQL en el archivo `.env`:
-
-```env
-DB_PASSWORD=TU_CONTRASEÑA_PERSONAL_DE_POSTGRESQL
-```
-
-### **🎯 URLs Importantes**
-
-- **🌐 Dashboard**: http://localhost:3010/dashboard
-- **📊 API Salud**: http://localhost:3010/salud
-- **🎨 Frontend**: http://localhost:3008
-- **📋 API Docs**: http://localhost:3010/api/v1
-
----
-
-## 🏗️ **Arquitectura del Proyecto**
+## 📁 **Estructura del Proyecto**
 
 ```
 centro-terapeutico-psyche/
-├── 📁 backend/                 # API REST (Node.js + TypeScript)
-│   ├── 📁 src/
-│   │   ├── 📁 controladores/   # Lógica de negocio
-│   │   ├── 📁 modelos/         # Modelos de datos
-│   │   ├── 📁 rutas/           # Definición de endpoints
-│   │   ├── 📁 utilidades/      # Funciones auxiliares
-│   │   └── servidor.ts         # Punto de entrada
-│   ├── 📁 migrations/          # Migraciones de BD
-│   └── 📁 seeders/             # Datos de ejemplo
-├── 📁 frontend/                # Interfaz web (React + TypeScript)
-│   ├── 📁 src/
-│   │   ├── 📁 componentes/     # Componentes reutilizables
-│   │   ├── 📁 paginas/         # Páginas de la aplicación
-│   │   ├── 📁 servicios/       # Llamadas a la API
-│   │   └── 📁 utilidades/      # Funciones auxiliares
-├── 📁 docs/                    # Documentación
-├── 📁 docker/                  # Configuración Docker
-└── 📁 scripts/                 # Scripts de automatización
+├── backend/
+│   ├── src/
+│   │   ├── configuracion/
+│   │   ├── controladores/
+│   │   ├── middleware/
+│   │   ├── modelos/
+│   │   ├── rutas/
+│   │   ├── utilidades/
+│   │   └── servidor.ts
+│   ├── migrations/
+│   ├── seeders/
+│   └── scripts/
+├── frontend/
+│   ├── src/
+│   │   ├── componentes/
+│   │   ├── paginas/
+│   │   ├── servicios/
+│   │   ├── utilidades/
+│   │   └── types/
+│   └── public/
+├── docker/
+└── docs/
 ```
 
----
+## 🎯 **Funcionalidades Principales Implementadas**
 
-## 🛠️ **Tecnologías Utilizadas**
+### **1. Sistema de Autenticación**
+- ✅ Login con email/password
+- ✅ JWT tokens seguros
+- ✅ Middleware de autenticación
+- ✅ Gestión de roles
 
-### **🔧 Backend**
+### **2. Panel de Administración**
+- ✅ Dashboard con estadísticas
+- ✅ CRUD completo de psicólogos
+- ✅ Interfaz moderna y responsive
+- ✅ Validaciones en tiempo real
 
-- **Node.js** - Runtime de JavaScript
-- **Express.js** - Framework web
-- **TypeScript** - Lenguaje tipado
-- **PostgreSQL** - Base de datos relacional
-- **Sequelize** - ORM para Node.js
-- **JWT** - Autenticación
-- **bcrypt** - Encriptación de contraseñas
+### **3. Panel del Psicólogo**
+- ✅ **Dashboard personalizado** con métricas
+- ✅ **Gestión de perfil** con imágenes
+- ✅ **Sistema de disponibilidad semanal**
+- ✅ **Gestión de servicios** con tipos predefinidos
+- ✅ **Notificaciones** con popups animados
+- ✅ **Validación de duplicados** en servicios
 
-### **🎨 Frontend**
+### **4. Base de Datos**
+- ✅ **Tabla usuarios** con roles
+- ✅ **Tabla disponibilidad_semanal** para horarios
+- ✅ **Tabla servicios_psicologo** para servicios
+- ✅ **Índices optimizados** y constraints
+- ✅ **Migraciones** para todas las tablas
 
-- **React 18** - Biblioteca de UI
-- **TypeScript** - Lenguaje tipado
-- **Vite** - Build tool
-- **Tailwind CSS** - Framework CSS
-- **React Router** - Enrutamiento
-- **Axios** - Cliente HTTP
+### **5. API RESTful**
+- ✅ **Endpoints de autenticación**
+- ✅ **CRUD de psicólogos** (admin)
+- ✅ **Gestión de disponibilidad**
+- ✅ **Gestión de servicios**
+- ✅ **Validaciones** y manejo de errores
 
-### **🛠️ Herramientas de Desarrollo**
+## 🔧 **Configuración y Instalación**
 
-- **ESLint** - Linter de código
-- **Prettier** - Formateador de código
-- **Jest** - Framework de testing
-- **Docker** - Contenedores
-- **Git** - Control de versiones
+### **Prerrequisitos**
+- Node.js 18+
+- PostgreSQL 12+
+- npm o yarn
 
----
+### **Instalación**
 
-## 📚 **Documentación**
-
-### **📖 Guías de Usuario**
-
-- [🚀 Guía de Onboarding](docs/ONBOARDING_EQUIPO.md) - Para nuevos miembros del equipo
-- [🛠️ Configuración de Desarrollo](docs/development/DEVELOPMENT_SETUP.md) - Setup del entorno
-- [🐛 Solución de Problemas](docs/SOLUCION_ERRORES.md) - Troubleshooting común
-
-### **🔧 Documentación Técnica**
-
-- [📋 API Documentation](docs/API_DOCUMENTATION.md) - Endpoints y respuestas
-- [🗄️ Base de Datos](docs/DATABASE_SCHEMA.md) - Esquema y relaciones
-- [🎨 Componentes Frontend](docs/FRONTEND_COMPONENTS.md) - Guía de componentes
-
-### **🚀 Deployment**
-
-- [🐳 Docker Setup](docs/DOCKER_SETUP.md) - Configuración con Docker
-- [☁️ Production Deployment](docs/PRODUCTION_DEPLOYMENT.md) - Despliegue en producción
-
----
-
-## 🤝 **Contribuir al Proyecto**
-
-### **👥 Para Nuevos Colaboradores**
-
-1. **📖 Leer**: [Guía de Onboarding](docs/ONBOARDING_EQUIPO.md)
-2. **🎯 Asignar**: Issues en GitHub
-3. **💻 Desarrollar**: Seguir el flujo de trabajo
-4. **🤝 Contribuir**: Hacer pull requests
-
-### **🔄 Flujo de Trabajo**
-
+1. **Clonar el repositorio**
 ```bash
-# 1. Crear rama para nueva funcionalidad
-git checkout -b feature/nombre-funcionalidad
-
-# 2. Desarrollar y hacer commits
-git add .
-git commit -m "feat: descripción del cambio"
-
-# 3. Push y crear Pull Request
-git push origin feature/nombre-funcionalidad
+git clone <repository-url>
+cd centro-terapeutico-psyche
 ```
 
-### **📋 Convenciones de Commits**
-
-- `feat:` - Nueva funcionalidad
-- `fix:` - Corrección de bug
-- `docs:` - Documentación
-- `style:` - Formato de código
-- `refactor:` - Refactorización
-- `test:` - Tests
-- `chore:` - Tareas de mantenimiento
-
----
-
-## 🧪 **Testing**
-
+2. **Instalar dependencias**
 ```bash
-# Ejecutar todos los tests
-npm run test
-
-# Tests en modo watch
-npm run test:watch
-
-# Tests con coverage
-npm run test:coverage
-```
-
----
-
-## 🐳 **Docker**
-
-```bash
-# Construir imagen
-docker build -t psyche-backend ./backend
-docker build -t psyche-frontend ./frontend
-
-# Ejecutar con Docker Compose
-docker-compose up -d
-
-# Ver logs
-docker-compose logs -f
-```
-
----
-
-## 📊 **Scripts Útiles**
-
-### **🔧 Backend**
-
-```bash
-npm run dev              # Servidor de desarrollo
-npm run build            # Compilar TypeScript
-npm run start            # Ejecutar versión compilada
-npm run lint             # Verificar código
-npm run lint:fix         # Corregir automáticamente
-npm run test             # Ejecutar tests
-npm run db:migrate       # Ejecutar migraciones
-npm run db:seed          # Cargar datos de ejemplo
-```
-
-### **🎨 Frontend**
-
-```bash
-npm run dev              # Servidor de desarrollo
-npm run build            # Build para producción
-npm run preview          # Preview del build
-npm run lint             # Verificar código
-npm run lint:fix         # Corregir automáticamente
-```
-
-### **🛠️ Scripts Globales**
-
-```bash
-# Setup automático para el equipo
-./scripts/setup-team.ps1
-
-# Limpiar puertos ocupados
-npm run kill-ports
-
-# Verificar salud del sistema
-npm run health
-```
-
----
-
-## 🐛 **Solución de Problemas Comunes**
-
-### **❌ Puerto 3001 ocupado**
-
-```bash
-npm run kill-ports
-# o
-npx kill-port 3001 3004 3006 3008 3010 3011 3012
-```
-
-### **❌ Base de datos no conecta**
-
-```bash
-# Verificar PostgreSQL
-pg_isready -h localhost -p 5432
-
-# Crear base de datos
-createdb psyche_db
-
-# Ejecutar migraciones
-npm run db:migrate
-```
-
-### **❌ Dependencias no instalan**
-
-```bash
-# Limpiar cache
-npm cache clean --force
-
-# Reinstalar
-rm -rf node_modules package-lock.json
 npm install
 ```
 
----
+3. **Configurar variables de entorno**
+```bash
+cp env.example .env
+# Editar .env con tus credenciales de DB
+```
 
-## 📈 **Roadmap del Proyecto**
+4. **Configurar base de datos**
+```bash
+cd backend
+npm run migrate
+npm run seed
+```
 
-### **🎯 Versión 1.0 (Actual)**
+5. **Ejecutar en desarrollo**
+```bash
+npm run dev
+```
 
-- ✅ Sistema de autenticación
-- ✅ Gestión básica de pacientes
-- ✅ Programación de sesiones
-- ✅ Sistema de tareas
-- ✅ Gamificación básica
+### **Puertos por defecto**
+- Frontend: http://localhost:3000
+- Backend: http://localhost:3002
+- Base de datos: localhost:5432
 
-### **🚀 Versión 1.1 (Próxima)**
+## 📊 **Base de Datos**
 
-- 📊 Reportes avanzados
-- 📱 Aplicación móvil
-- 🤖 Chatbot de asistencia
-- 📧 Notificaciones por email
+### **Tablas Principales**
 
-### **🌟 Versión 2.0 (Futuro)**
+#### **usuarios**
+- Gestión de psicólogos y administradores
+- Roles y permisos
+- Información personal y profesional
 
-- 🧠 IA para análisis de progreso
-- 📹 Sesiones por videollamada
-- 🔗 Integración con wearables
-- 🌐 API pública
+#### **disponibilidad_semanal**
+- Horarios semanales de psicólogos
+- Validación de 40 horas máximo
+- Gestión de feriados y vacaciones
 
----
+#### **servicios_psicologo**
+- Servicios ofrecidos por cada psicólogo
+- Tipos predefinidos con categorías
+- Validación de duplicados
 
-## 📞 **Contacto y Soporte**
+## 🎨 **Interfaz de Usuario**
 
-### **👥 Equipo de Desarrollo**
+### **Panel de Administración**
+- Dashboard con estadísticas
+- Gestión completa de psicólogos
+- Interfaz moderna con Tailwind CSS
 
-- **👨‍💻 Líder Técnico**: [Tu nombre] - [tu-email@psyche.cl]
-- **🎨 Diseñador UX**: [Nombre] - [email]
-- **🔧 DevOps**: [Nombre] - [email]
+### **Panel del Psicólogo**
+- **Dashboard personalizado** con métricas
+- **Gestión de perfil** con avatares
+- **Sistema de disponibilidad** semanal
+- **Gestión de servicios** con validaciones
+- **Notificaciones** animadas
 
-### **📞 Soporte Técnico**
+## 🔒 **Seguridad**
 
-- **🚨 Emergencias**: Crear issue en GitHub con label "urgent"
-- **❓ Dudas**: Usar GitHub Discussions
-- **🐛 Bugs**: Crear issue con template de bug
+- ✅ JWT tokens para autenticación
+- ✅ Middleware de autenticación
+- ✅ Validación de roles
+- ✅ Sanitización de datos
+- ✅ CORS configurado
+- ✅ Soft deletes para datos importantes
 
----
+## 📈 **Próximos Pasos a Implementar**
+
+### **🔥 Prioridad Alta**
+
+#### **1. Vista del Paciente**
+- [ ] **Crear componente PanelPaciente**
+- [ ] **Sistema de registro de pacientes**
+- [ ] **Visualización de servicios del psicólogo**
+- [ ] **Sistema de reserva de citas**
+- [ ] **Integración con disponibilidad del psicólogo**
+
+#### **2. Sistema de Citas**
+- [ ] **Modelo de citas en base de datos**
+- [ ] **API para crear/editar/cancelar citas**
+- [ ] **Validación de disponibilidad**
+- [ ] **Notificaciones de citas**
+- [ ] **Historial de citas**
+
+#### **3. Asignación Paciente-Psicólogo**
+- [ ] **Lógica de asignación automática**
+- [ ] **Relación paciente-psicólogo**
+- [ ] **Filtrado de servicios por psicólogo**
+- [ ] **Dashboard específico por psicólogo**
+
+### **⚡ Prioridad Media**
+
+#### **4. Mejoras en Panel del Psicólogo**
+- [ ] **Dashboard con estadísticas reales**
+- [ ] **Sistema de notificaciones avanzado**
+- [ ] **Gestión de pacientes asignados**
+- [ ] **Reportes de sesiones**
+
+#### **5. Sistema de Mensajería**
+- [ ] **Chat entre psicólogo y paciente**
+- [ ] **Notificaciones en tiempo real**
+- [ ] **Historial de mensajes**
+- [ ] **Archivos adjuntos**
+
+#### **6. Sistema de Pagos**
+- [ ] **Integración con pasarela de pagos**
+- [ ] **Gestión de facturación**
+- [ ] **Historial de transacciones**
+- [ ] **Reportes financieros**
+
+### **📋 Prioridad Baja**
+
+#### **7. Funcionalidades Avanzadas**
+- [ ] **Subida de documentos** (consentimientos, evaluaciones)
+- [ ] **Sistema de reportes y analytics**
+- [ ] **Exportación de datos**
+- [ ] **Backup automático**
+
+#### **8. Mejoras de UX/UI**
+- [ ] **Temas personalizables**
+- [ ] **Modo oscuro**
+- [ ] **Accesibilidad mejorada**
+- [ ] **PWA (Progressive Web App)**
+
+#### **9. Testing y QA**
+- [ ] **Tests unitarios**
+- [ ] **Tests de integración**
+- [ ] **Tests end-to-end**
+- [ ] **CI/CD pipeline**
+
+## 🐛 **Problemas Conocidos**
+
+### **Errores de TypeScript**
+- ✅ **Arreglado**: Errores TS7030 en controladores
+- ✅ **Arreglado**: Errores TS2614 en imports
+- ✅ **Arreglado**: Manejo de errores en servicios
+
+### **Problemas de Puerto**
+- ✅ **Arreglado**: Puerto dinámico para backend
+- ✅ **Arreglado**: Configuración de CORS
+- ✅ **Arreglado**: Variables de entorno
+
+## 📝 **Notas de Desarrollo**
+
+### **Comandos Útiles**
+
+```bash
+# Desarrollo
+npm run dev                    # Ejecutar frontend + backend
+npm run dev:frontend          # Solo frontend
+npm run dev:backend           # Solo backend
+
+# Base de datos
+npm run migrate               # Ejecutar migraciones
+npm run seed                  # Ejecutar seeders
+npm run db:reset             # Resetear base de datos
+
+# Build
+npm run build                # Build de producción
+npm run preview              # Preview de build
+```
+
+### **Scripts de Prueba**
+- `backend/scripts/test-*.js` - Scripts de prueba para API
+- `backend/scripts/crear-*.js` - Scripts para crear datos de prueba
+
+## 🤝 **Contribución**
+
+1. Fork el proyecto
+2. Crear una rama para tu feature (`git checkout -b feature/AmazingFeature`)
+3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
+4. Push a la rama (`git push origin feature/AmazingFeature`)
+5. Abrir un Pull Request
 
 ## 📄 **Licencia**
 
-Este proyecto está bajo la Licencia MIT. Ver el archivo [LICENSE](LICENSE) para más detalles.
+Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para detalles.
+
+## 👥 **Equipo**
+
+- **Desarrollador Principal**: [Tu Nombre]
+- **Fecha de Inicio**: Agosto 2025
+- **Estado**: En desarrollo activo
 
 ---
 
-## 🙏 **Agradecimientos**
+## 🎉 **Estado Actual del Proyecto**
 
-- **👥 Equipo de Desarrollo** - Por su dedicación y esfuerzo
-- **🏥 Psicólogos Colaboradores** - Por su feedback y validación
-- **💡 Comunidad Open Source** - Por las herramientas utilizadas
+### ✅ **Completado (100%)**
+- Sistema de autenticación
+- Panel de administración
+- Panel del psicólogo (funcionalidades principales)
+- Base de datos completa
+- API RESTful funcional
+- Interfaz de usuario moderna
 
----
+### 🔄 **En Progreso (0%)**
+- Vista del paciente
+- Sistema de citas
+- Asignación paciente-psicólogo
 
-**🏥 Centro Terapéutico Psyche - Transformando la terapia digital**
+### 📋 **Pendiente (0%)**
+- Sistema de mensajería
+- Sistema de pagos
+- Funcionalidades avanzadas
 
-_Última actualización: Julio 2025_
+**Progreso General: 70% completado** 🚀

@@ -12,6 +12,8 @@ import reportesRoutes from './reportes.routes';
 import adminRoutes from './admin.routes';
 import citasRoutes from './citas.routes';
 import disponibilidadRoutes from './disponibilidad.routes';
+import disponibilidadSemanalRoutes from './disponibilidad-semanal.routes';
+import serviciosRoutes from './servicios.routes';
 
 // Configurar rutas
 router.use('/autenticacion', autenticacionRoutes);
@@ -23,5 +25,7 @@ router.use('/reportes', reportesRoutes);
 router.use('/admin', adminRoutes);
 router.use('/citas', citasRoutes);
 router.use('/disponibilidad', disponibilidadRoutes);
+router.use('/disponibilidad-semanal', disponibilidadSemanalRoutes);
+router.use('/servicios', serviciosRoutes);
 
 export default router; 

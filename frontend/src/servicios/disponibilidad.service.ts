@@ -26,10 +26,10 @@ export interface ActualizarDisponibilidadData {
 }
 
 class DisponibilidadService {
-  async obtenerDisponibilidad(psicologoId: string): Promise<Disponibilidad[]> {
+  async obtenerDisponibilidad(): Promise<Disponibilidad[]> {
     try {
-      const response = await api.get(`/disponibilidad/psicologo/${psicologoId}`);
-      return response.data.data;
+      const response = await api.get('/disponibilidad');
+      return response.data.data.disponibilidad;
     } catch (error: any) {
       throw new Error(error.response?.data?.mensaje || 'Error al obtener disponibilidad');
     }
@@ -44,10 +44,10 @@ class DisponibilidadService {
     }
   }
 
-  async actualizarDisponibilidad(id: string, data: ActualizarDisponibilidadData): Promise<Disponibilidad> {
+  async actualizarDisponibilidad(disponibilidad: Disponibilidad[]): Promise<any> {
     try {
-      const response = await api.put(`/disponibilidad/${id}`, data);
-      return response.data.data;
+      const response = await api.put('/disponibilidad', { disponibilidad });
+      return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.mensaje || 'Error al actualizar disponibilidad');
     }

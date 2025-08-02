@@ -7,7 +7,6 @@ import { log } from '../utilidades/logger';
 // Obtener disponibilidad de un psicólogo
 export const obtenerDisponibilidadPsicologo = async (req: Request, res: Response) => {
   try {
-    const { psicologoId } = req.params;
     const usuarioId = req.usuario?.id;
 
     if (!usuarioId) {
@@ -18,11 +17,18 @@ export const obtenerDisponibilidadPsicologo = async (req: Request, res: Response
       );
     }
 
-    if (!psicologoId) {
-      return ManejadorRespuestas.errorValidacion(
+    // Validar que el usuario es psicólogo
+    const [usuario] = await sequelize.query(`
+      SELECT rol_id FROM usuarios
+      WHERE id = :usuarioId
+    `, {
+      replacements: { usuarioId }
+    }) as [any[], unknown];
+
+    if (!Array.isArray(usuario) || usuario.length === 0 || usuario[0].rol_id !== 2) {
+      return ManejadorRespuestas.prohibido(
         res,
-        'ID de psicólogo es requerido',
-        { psicologoId },
+        'Solo los psicólogos pueden ver su disponibilidad',
         'DISP_002'
       );
     }
@@ -35,10 +41,10 @@ export const obtenerDisponibilidadPsicologo = async (req: Request, res: Response
         hora_fin,
         activo
       FROM disponibilidad_psicologos
-      WHERE psicologo_id = :psicologoId
+      WHERE psicologo_id = :usuarioId
       ORDER BY dia_semana, hora_inicio
     `, {
-      replacements: { psicologoId }
+      replacements: { usuarioId }
     }) as [any[], unknown];
 
     return ManejadorRespuestas.exito(
@@ -146,13 +152,14 @@ export const actualizarDisponibilidad = async (req: Request, res: Response) => {
 // Crear disponibilidad por defecto para un psicólogo (24/7)
 export const crearDisponibilidadPorDefecto = async (psicologoId: string): Promise<void> => {
   try {
-    // Horarios por defecto: Lunes a Viernes, 9:00 - 18:00
+    // Horarios por defecto: Lunes a Sábado, 9:00 - 18:00
     const disponibilidadPorDefecto = [
       { dia_semana: 1, hora_inicio: '09:00', hora_fin: '18:00' }, // Lunes
       { dia_semana: 2, hora_inicio: '09:00', hora_fin: '18:00' }, // Martes
       { dia_semana: 3, hora_inicio: '09:00', hora_fin: '18:00' }, // Miércoles
       { dia_semana: 4, hora_inicio: '09:00', hora_fin: '18:00' }, // Jueves
       { dia_semana: 5, hora_inicio: '09:00', hora_fin: '18:00' }, // Viernes
+      { dia_semana: 6, hora_inicio: '09:00', hora_fin: '18:00' }, // Sábado
     ];
 
     for (const disp of disponibilidadPorDefecto) {

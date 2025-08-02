@@ -129,7 +129,7 @@ const TablaPsicologos: React.FC<TablaPsicologosProps> = ({
                   </td>
                                      <td className="px-3 py-3">
                      <div className="text-sm font-medium text-gray-900" title={psicologo.especialidad || 'Sin especialidad'}>
-                       {truncarEspecialidad(psicologo.especialidad)}
+                       {truncarEspecialidad(psicologo.especialidad || '')}
                      </div>
                    </td>
                   <td className="px-3 py-3">

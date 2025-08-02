@@ -1,23 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Cita, citasService } from '../servicios/citas.service';
-import { EditarDisponibilidad } from './EditarDisponibilidad';
 
 const CitasPsicologo: React.FC = () => {
   const [citas, setCitas] = useState<Cita[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [fechaSeleccionada, setFechaSeleccionada] = useState<string>('');
-  const [mostrarEditarDisponibilidad, setMostrarEditarDisponibilidad] = useState(false);
 
   useEffect(() => {
     cargarCitas();
-  }, [fechaSeleccionada]);
+  }, []);
 
   const cargarCitas = async () => {
     try {
       setLoading(true);
       setError(null);
-      const citasData = await citasService.obtenerCitasPsicologo(fechaSeleccionada);
+      const citasData = await citasService.obtenerCitasPsicologo('');
       setCitas(citasData);
     } catch (err: any) {
       setError(err.response?.data?.mensaje || 'Error al cargar las citas');
@@ -99,6 +96,8 @@ const CitasPsicologo: React.FC = () => {
     }
   };
 
+
+
   // Agrupar citas por fecha
   const citasPorFecha = citas.reduce((acc, cita) => {
     const fecha = cita.fecha;
@@ -124,33 +123,9 @@ const CitasPsicologo: React.FC = () => {
   return (
     <div className="max-w-6xl mx-auto p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Mis Citas</h1>
-          <p className="text-gray-600 mt-2">Gestiona las citas de tus pacientes</p>
-        </div>
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={() => setMostrarEditarDisponibilidad(true)}
-            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-          >
-            📅 Editar Horarios
-          </button>
-          <input
-            type="date"
-            value={fechaSeleccionada}
-            onChange={(e) => setFechaSeleccionada(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
-          {fechaSeleccionada && (
-            <button
-              onClick={() => setFechaSeleccionada('')}
-              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
-            >
-              Ver Todas
-            </button>
-          )}
-        </div>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Mis Citas</h1>
+        <p className="text-gray-600 mt-2">Gestiona las citas de tus pacientes</p>
       </div>
 
       {/* Mensajes de error */}
@@ -169,13 +144,10 @@ const CitasPsicologo: React.FC = () => {
           <div className="text-center py-12">
             <div className="text-gray-400 text-6xl mb-4">📅</div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              {fechaSeleccionada ? 'No hay citas para esta fecha' : 'No tienes citas programadas'}
+              No tienes citas programadas
             </h3>
             <p className="text-gray-600">
-              {fechaSeleccionada 
-                ? 'Los pacientes pueden agendar citas en los horarios disponibles'
-                : 'Los pacientes podrán agendar citas cuando estén disponibles'
-              }
+              Los pacientes podrán agendar citas cuando estén disponibles
             </p>
           </div>
         ) : (
@@ -275,15 +247,6 @@ const CitasPsicologo: React.FC = () => {
         )}
       </div>
 
-      {/* Modal de Editar Disponibilidad */}
-      <EditarDisponibilidad
-        isOpen={mostrarEditarDisponibilidad}
-        onClose={() => setMostrarEditarDisponibilidad(false)}
-        onSuccess={() => {
-          setMostrarEditarDisponibilidad(false);
-          // Opcional: recargar citas si es necesario
-        }}
-      />
     </div>
   );
 };

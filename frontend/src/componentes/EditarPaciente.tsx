@@ -119,7 +119,7 @@ const EditarPaciente: React.FC<EditarPacienteProps> = ({ pacienteId, onClose, on
             <div className="flex justify-center space-x-4">
               <button
                 onClick={cargarPaciente}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-4 py-2 bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 text-amber-800 rounded-lg transition-colors"
               >
                 Reintentar
               </button>
@@ -383,7 +383,7 @@ const EditarPaciente: React.FC<EditarPacienteProps> = ({ pacienteId, onClose, on
             <button
               type="submit"
               disabled={saving}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2 bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 text-amber-800 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? 'Guardando...' : 'Guardar Cambios'}
             </button>

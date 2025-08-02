@@ -63,7 +63,7 @@ const DetallesPaciente: React.FC<DetallesPacienteProps> = ({ pacienteId, onClose
             <div className="flex justify-center space-x-4">
               <button
                 onClick={cargarPaciente}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-4 py-2 bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 text-amber-800 rounded-lg transition-colors"
               >
                 Reintentar
               </button>
@@ -115,7 +115,7 @@ const DetallesPaciente: React.FC<DetallesPacienteProps> = ({ pacienteId, onClose
           <div className="flex space-x-3">
             <button
               onClick={onEdit}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-4 py-2 bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 text-amber-800 rounded-lg transition-colors"
             >
               Editar
             </button>

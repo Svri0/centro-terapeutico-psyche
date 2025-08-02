@@ -7,8 +7,8 @@ import { authPsicologo } from '../middleware/auth.middleware';
 
 const router = Router();
 
-// Obtener disponibilidad de un psicólogo
-router.get('/:psicologoId', obtenerDisponibilidadPsicologo);
+// Obtener disponibilidad del psicólogo autenticado
+router.get('/', authPsicologo, obtenerDisponibilidadPsicologo);
 
 // Actualizar disponibilidad (solo psicólogos)
 router.put('/', authPsicologo, actualizarDisponibilidad);

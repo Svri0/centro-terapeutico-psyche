@@ -18,6 +18,10 @@ export interface User {
   nombres: string;
   apellidos: string;
   email: string;
+  telefono?: string;
+  especialidad?: string;
+  descripcion?: string;
+  avatar_url?: string;
   rol: string;
   rol_id: number;
 }

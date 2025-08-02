@@ -3,10 +3,15 @@ import { logger } from './logger';
 
 // Configuración del transportador de correo
 const transporter = nodemailer.createTransport({
-  service: 'gmail', // Puedes cambiar a otro servicio
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // true for 465, false for other ports
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD // Usar contraseña de aplicación de Gmail
+    pass: process.env.EMAIL_PASSWORD?.replace(/\s/g, '') // Usar contraseña de aplicación de Gmail sin espacios
+  },
+  tls: {
+    rejectUnauthorized: false
   }
 });
 
@@ -99,15 +104,15 @@ export const enviarEmailBienvenidaPsicologo = async (
       <div style="padding: 40px 30px;">
         <div style="text-align: center; margin-bottom: 30px; padding: 20px; background-color: #fef3c7; border-radius: 15px; border: 3px solid #f59e0b;">
           ${avatarUrl && avatarUrl.trim() !== '' ? `
-            <div style="width: 200px; height: 200px; border-radius: 50%; border: 6px solid #f59e0b; overflow: hidden; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); margin: 0 auto; position: relative;">
-              <img src="${avatarUrl}" alt="Foto de perfil de ${nombrePsicologo}" style="width: 100%; height: 100%; object-fit: cover; object-position: center; display: block;" onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\\"width: 100%; height: 100%; background-color: #fde68a; display: flex; align-items: center; justify-content: center;\\"><span style=\\"font-size: 80px; color: #f59e0b;\\">👤</span></div>';" onload="this.style.opacity='1';" style="opacity: 0; transition: opacity 0.3s;">
+            <div style="width: 200px; height: 200px; border-radius: 50%; border: 6px solid #f59e0b; overflow: hidden; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); margin: 0 auto; position: relative; background-color: #fde68a;">
+              <img src="${avatarUrl}" alt="Tu avatar" style="width: 100%; height: 100%; object-fit: contain; object-position: center; display: block;">
             </div>
           ` : `
             <div style="width: 200px; height: 200px; border-radius: 50%; border: 6px solid #f59e0b; background-color: #fde68a; display: flex; align-items: center; justify-content: center; margin: 0 auto; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);">
               <span style="font-size: 80px; color: #f59e0b;">👤</span>
             </div>
           `}
-          <p style="margin-top: 15px; color: #92400e; font-weight: bold; font-size: 16px;">Foto de Perfil</p>
+          <p style="margin-top: 15px; color: #92400e; font-weight: bold; font-size: 16px;">Tu Avatar</p>
         </div>
         <h2 style="color: #1f2937; margin-top: 0; font-size: 24px;">¡Hola ${nombrePsicologo}! 👋</h2>
         

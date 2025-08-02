@@ -52,6 +52,11 @@ const PanelAdmin: React.FC = () => {
     cargarPsicologos();
   }, []);
 
+  // Debug para el modal de cambiar contraseña
+  useEffect(() => {
+    console.log('🔍 Estado showChangePassword cambiado:', showChangePassword);
+  }, [showChangePassword]);
+
   // Efecto para ocultar notificaciones después de 3 segundos
   useEffect(() => {
     if (notification?.visible) {
@@ -342,7 +347,10 @@ const PanelAdmin: React.FC = () => {
                 Bienvenido, {user.nombres} {user.apellidos}
               </div>
               <button
-                onClick={() => setShowChangePassword(true)}
+                onClick={() => {
+                  console.log('🔍 Botón Cambiar Contraseña clickeado');
+                  setShowChangePassword(true);
+                }}
                 className="text-sm text-amber-600 hover:text-amber-800 transition-colors"
               >
                 Cambiar Contraseña
@@ -430,7 +438,7 @@ const PanelAdmin: React.FC = () => {
 
       {/* Modal Cambiar Contraseña */}
       {showChangePassword && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 animate-fade-in">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999] animate-fade-in">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white animate-slide-in-right shadow-glow">
             <div className="mt-3">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Cambiar Contraseña</h3>
@@ -502,7 +510,7 @@ const PanelAdmin: React.FC = () => {
 
       {/* Modal de Confirmación */}
       {showConfirmModal && confirmAction && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 animate-fade-in">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9998] animate-fade-in">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white animate-slide-in-right shadow-glow">
             <div className="mt-3">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Confirmar Acción</h3>

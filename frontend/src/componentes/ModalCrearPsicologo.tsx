@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { CrearPsicologoData } from '../servicios/admin.service';
 import { convertirOtroParaBackend } from '../utilidades/formateo';
 import DatePickerPersonalizado from './DatePickerPersonalizado';
-import CircularImageEditor from './CircularImageEditor';
+import AvatarSelector from './AvatarSelector';
+import { getRandomAvatar } from '../assets/avatars/default-avatars';
 import '../styles/datepicker-custom.css';
 
 interface ModalCrearPsicologoProps {
@@ -22,7 +23,8 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
     especialidad: '',
     descripcion: ''
   });
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [selectedAvatarId, setSelectedAvatarId] = useState<string>(getRandomAvatar().id);
+  const [selectedAvatarUrl, setSelectedAvatarUrl] = useState<string>(getRandomAvatar().url);
   const [fechaNacimiento, setFechaNacimiento] = useState<Date | null>(null);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -65,6 +67,11 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
         fecha_nacimiento: ''
       }));
     }
+  };
+
+  const handleAvatarSelect = (avatarId: string, avatarUrl: string) => {
+    setSelectedAvatarId(avatarId);
+    setSelectedAvatarUrl(avatarUrl);
   };
 
   const validateForm = (): boolean => {
@@ -121,11 +128,12 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
       // Convertir el género para el backend
       const dataParaBackend = {
         ...formData,
-        genero: convertirOtroParaBackend(formData.genero)
+        genero: convertirOtroParaBackend(formData.genero),
+        avatar_url: selectedAvatarUrl
       };
       
       // Pasar tanto los datos como la imagen seleccionada
-      await onSubmit(dataParaBackend, selectedImage);
+      await onSubmit(dataParaBackend, null);
       onClose();
     } catch (error) {
       console.error('Error al crear psicólogo:', error);
@@ -316,11 +324,23 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
               </div>
             </div>
 
-            {/* Foto de Perfil */}
-            <CircularImageEditor
-              onImageSelect={setSelectedImage}
-              className="mt-4"
-            />
+            {/* Avatar asignado automáticamente */}
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-16 h-16 rounded-full overflow-hidden border-4 border-orange-300">
+                  <img
+                    src={selectedAvatarUrl}
+                    alt="Avatar asignado"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-800">
+                    Su avatar ha sido asignado automáticamente
+                  </p>
+                </div>
+              </div>
+            </div>
 
             {/* Especialidad */}
             <div>

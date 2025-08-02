@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
+import fs from 'fs';
+import path from 'path';
 import sequelize from '../configuracion/database';
 import { ManejadorRespuestas } from '../utilidades/respuestas';
 import { log } from '../utilidades/logger';
@@ -84,10 +86,24 @@ export const crearPsicologo = async (req: Request, res: Response) => {
   const transaction = await sequelize.transaction();
   
   try {
-    const { nombres, apellidos, email, password, telefono, fecha_nacimiento, genero, especialidad, descripcion }: CrearPsicologoData = req.body;
+    const { nombres, apellidos, email, password, telefono, fecha_nacimiento, genero, especialidad, descripcion, avatar_url }: CrearPsicologoData = req.body;
     
-    // Obtener la URL del avatar si se subió una imagen
-          const avatar_url = req.file ? `${process.env.BACKEND_URL || 'http://localhost:3002'}/api/v1/images/${req.file.filename}` : null;
+    // Usar el avatar_url del body si se proporciona, o usar uno aleatorio de robots
+    const avataresRobots = [
+      'https://api.dicebear.com/7.x/bottts/svg?seed=lion&backgroundColor=ffdfbf&scale=80&mouth=smile&eyes=happy',
+      'https://api.dicebear.com/7.x/bottts/svg?seed=dolphin&backgroundColor=bfdfff&scale=80&mouth=smile&eyes=happy',
+      'https://api.dicebear.com/7.x/bottts/svg?seed=owl&backgroundColor=8b4513&scale=80&mouth=smile&eyes=happy',
+      'https://api.dicebear.com/7.x/bottts/svg?seed=butterfly&backgroundColor=ffb6c1&scale=80&mouth=smile&eyes=happy',
+      'https://api.dicebear.com/7.x/bottts/svg?seed=bee&backgroundColor=ffff00&scale=80&mouth=smile&eyes=happy',
+      'https://api.dicebear.com/7.x/bottts/svg?seed=turtle&backgroundColor=90ee90&scale=80&mouth=smile&eyes=happy',
+      'https://api.dicebear.com/7.x/bottts/svg?seed=rabbit&backgroundColor=ffffff&scale=80&mouth=smile&eyes=happy',
+      'https://api.dicebear.com/7.x/bottts/svg?seed=penguin&backgroundColor=000000&scale=80&mouth=smile&eyes=happy',
+      'https://api.dicebear.com/7.x/bottts/svg?seed=giraffe&backgroundColor=daa520&scale=80&mouth=smile&eyes=happy',
+      'https://api.dicebear.com/7.x/bottts/svg?seed=koala&backgroundColor=8b4513&scale=80&mouth=smile&eyes=happy',
+      'https://api.dicebear.com/7.x/bottts/svg?seed=panda&backgroundColor=000000&scale=80&mouth=smile&eyes=happy'
+    ];
+    
+    const avatarUrl = avatar_url || avataresRobots[Math.floor(Math.random() * avataresRobots.length)];
 
     // Validar campos obligatorios
     if (!nombres || !apellidos || !email || !password) {
@@ -185,7 +201,7 @@ export const crearPsicologo = async (req: Request, res: Response) => {
           genero: genero || null,
           especialidad: especialidad || null,
           descripcion: descripcion || null,
-          avatar_url: avatar_url,
+          avatar_url: avatarUrl,
           rol_id: rolId,
           activo: true,
           email_verificado: false,
@@ -208,17 +224,34 @@ export const crearPsicologo = async (req: Request, res: Response) => {
     // Enviar email de bienvenida al psicólogo
     const nombreCompleto = `${nombres} ${apellidos}`;
     
-    // DEBUG: Log para verificar el valor de avatar_url
-    log.info(`DEBUG - Avatar URL generada: "${avatar_url}"`);
-    log.info(`DEBUG - Tipo de avatar_url: ${typeof avatar_url}`);
-    log.info(`DEBUG - Avatar URL que se pasará al email: "${avatar_url || undefined}"`);
+    // Función para convertir imagen a base64
+    const convertirImagenABase64 = (filePath: string): string | null => {
+      try {
+        const fullPath = path.join(__dirname, '..', '..', 'uploads', 'avatars', path.basename(filePath));
+        log.info(`DEBUG - Intentando leer imagen desde: ${fullPath}`);
+        
+        if (fs.existsSync(fullPath)) {
+          const imageBuffer = fs.readFileSync(fullPath);
+          const base64 = imageBuffer.toString('base64');
+          const mimeType = 'image/png'; // Asumimos PNG por el componente CircularImageEditor
+          return `data:${mimeType};base64,${base64}`;
+        } else {
+          log.warn(`DEBUG - Archivo no encontrado: ${fullPath}`);
+          return null;
+        }
+      } catch (error) {
+        log.error('Error al convertir imagen a base64:', error);
+        return null;
+      }
+    };
     
+    // Usar la URL del avatar directamente para el email
     const emailEnviado = await enviarEmailBienvenidaPsicologo(
       email,
       nombreCompleto,
       password,
       especialidad,
-      avatar_url || undefined
+      avatarUrl
     );
 
     if (emailEnviado) {

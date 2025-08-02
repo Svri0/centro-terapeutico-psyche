@@ -6,7 +6,9 @@ import Tarea from './Tarea';
 import Mensaje from './Mensaje';
 import LogAuditoria from './LogAuditoria';
 import DisponibilidadPsicologo from './DisponibilidadPsicologo';
+import DisponibilidadSemanal from './DisponibilidadSemanal';
 import Cita from './Cita';
+import ServicioPsicologo from './ServicioPsicologo';
 
 // Configurar asociaciones
 
@@ -153,6 +155,17 @@ DisponibilidadPsicologo.belongsTo(Usuario, {
   as: 'psicologo',
 });
 
+// Usuario - DisponibilidadSemanal (1:N)
+Usuario.hasMany(DisponibilidadSemanal, {
+  foreignKey: 'psicologo_id',
+  as: 'disponibilidad_semanal',
+});
+
+DisponibilidadSemanal.belongsTo(Usuario, {
+  foreignKey: 'psicologo_id',
+  as: 'psicologo',
+});
+
 // Usuario - Cita (1:N) - Psicólogo
 Usuario.hasMany(Cita, {
   foreignKey: 'psicologo_id',
@@ -175,6 +188,17 @@ Cita.belongsTo(Paciente, {
   as: 'paciente',
 });
 
+// Usuario - ServicioPsicologo (1:N)
+Usuario.hasMany(ServicioPsicologo, {
+  foreignKey: 'psicologo_id',
+  as: 'servicios',
+});
+
+ServicioPsicologo.belongsTo(Usuario, {
+  foreignKey: 'psicologo_id',
+  as: 'psicologo',
+});
+
 export {
   Rol,
   Usuario,
@@ -184,5 +208,7 @@ export {
   Mensaje,
   LogAuditoria,
   DisponibilidadPsicologo,
+  DisponibilidadSemanal,
   Cita,
+  ServicioPsicologo,
 }; 

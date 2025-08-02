@@ -33,6 +33,11 @@ export interface ActualizarPacienteData {
   activo?: boolean;
 }
 
+export interface PacienteCreado extends Paciente {
+  numero_ficha: string;
+  password_temporal: string;
+}
+
 class PacientesService {
   async obtenerPacientes(): Promise<Paciente[]> {
     try {
