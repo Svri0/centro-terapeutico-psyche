@@ -372,20 +372,34 @@ const PanelAdmin: React.FC = () => {
         <div className="px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-xl font-bold text-gray-900 tracking-widest uppercase">Gestión de Psicólogos</h2>
+              <h2 className="text-xl font-bold text-gray-900 tracking-widest uppercase">Gestión de Usuarios</h2>
               <p className="mt-1 text-xs font-semibold text-gray-600 tracking-widest uppercase">
-                Administra las cuentas de psicólogos del sistema
+                Administra las cuentas de psicólogos y recepcionistas del sistema
               </p>
             </div>
-            <button
-              onClick={() => setShowCrearModal(true)}
-              className="bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 text-amber-800 px-4 py-2 rounded-md text-sm font-medium flex items-center transition-all duration-200 hover-bounce shadow-sm hover:shadow-md animate-bounce-in"
-            >
-              <svg className="w-4 h-4 mr-2 hover-rotate" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              Nuevo Psicólogo
-            </button>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowCrearModal(true)}
+                className="bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 text-amber-800 px-4 py-2 rounded-md text-sm font-medium flex items-center transition-all duration-200 hover-bounce shadow-sm hover:shadow-md animate-bounce-in"
+              >
+                <svg className="w-4 h-4 mr-2 hover-rotate" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Nuevo Psicólogo
+              </button>
+              <button
+                onClick={() => {
+                  // Por ahora solo mostrar un mensaje, luego se implementará la funcionalidad
+                  alert('Funcionalidad de crear recepcionista en desarrollo');
+                }}
+                className="bg-gradient-to-r from-blue-100 to-blue-200 hover:from-blue-200 hover:to-blue-300 text-blue-800 px-4 py-2 rounded-md text-sm font-medium flex items-center transition-all duration-200 hover-bounce shadow-sm hover:shadow-md animate-bounce-in"
+              >
+                <svg className="w-4 h-4 mr-2 hover-rotate" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                Nueva Recepcionista
+              </button>
+            </div>
           </div>
         </div>
 

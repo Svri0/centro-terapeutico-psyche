@@ -48,7 +48,7 @@ async function crearAdmin() {
       id: uuidv4(),
       nombres: 'Admin',
       apellidos: 'Sistema',
-      email: 'admin@admin.com',
+      email: 'admin@admin.cl',
       password_hash: passwordHash,
       telefono: '+56912345678',
       rol_id: adminRole[0].id,

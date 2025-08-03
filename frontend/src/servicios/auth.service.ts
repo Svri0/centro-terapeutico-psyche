@@ -151,6 +151,11 @@ class AuthService {
     const user = this.getCurrentUser();
     return user?.rol_id === 3;
   }
+
+  isRecepcionista(): boolean {
+    const user = this.getCurrentUser();
+    return user?.rol_id === 4;
+  }
 }
 
 export const authService = new AuthService(); 

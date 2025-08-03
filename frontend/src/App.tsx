@@ -4,6 +4,7 @@ import Login from './paginas/Login';
 import PanelAdmin from './paginas/PanelAdmin';
 import PanelPsicologo from './paginas/PanelPsicologo';
 import PanelPaciente from './paginas/PanelPaciente';
+import PanelRecepcionista from './paginas/PanelRecepcionista';
 import { authService } from './servicios/auth.service';
 
 function App() {
@@ -11,11 +12,13 @@ function App() {
   const isAdmin = authService.isAdmin();
   const isPsicologo = authService.isPsicologo();
   const isPaciente = authService.isPaciente();
+  const isRecepcionista = authService.isRecepcionista();
 
   console.log('🔍 App.tsx - isAuthenticated:', isAuthenticated);
   console.log('🔍 App.tsx - isAdmin:', isAdmin);
   console.log('🔍 App.tsx - isPsicologo:', isPsicologo);
   console.log('🔍 App.tsx - isPaciente:', isPaciente);
+  console.log('🔍 App.tsx - isRecepcionista:', isRecepcionista);
   console.log('🔍 App.tsx - User:', authService.getUser());
 
   // Si no está autenticado, mostrar login
@@ -31,6 +34,11 @@ function App() {
   // Si está autenticado y es psicólogo, mostrar panel del psicólogo
   if (isPsicologo) {
     return <PanelPsicologo />;
+  }
+
+  // Si está autenticado y es recepcionista, mostrar panel del recepcionista
+  if (isRecepcionista) {
+    return <PanelRecepcionista />;
   }
 
   // Si está autenticado y es paciente, mostrar panel del paciente

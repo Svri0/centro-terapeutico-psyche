@@ -37,6 +37,29 @@ interface ActualizarPsicologoData {
   avatar_url?: string;
 }
 
+// Interfaz para crear recepcionista
+interface CrearRecepcionistaData {
+  nombres: string;
+  apellidos: string;
+  email: string;
+  password: string;
+  telefono?: string;
+  fecha_nacimiento?: string;
+  genero?: 'masculino' | 'femenino' | 'otro' | 'prefiero_no_decir';
+  avatar_url?: string;
+}
+
+// Interfaz para actualizar recepcionista
+interface ActualizarRecepcionistaData {
+  nombres?: string;
+  apellidos?: string;
+  email?: string;
+  telefono?: string;
+  fecha_nacimiento?: string;
+  genero?: 'masculino' | 'femenino' | 'otro' | 'prefiero_no_decir';
+  avatar_url?: string;
+}
+
 // Obtener todos los psicólogos
 export const obtenerPsicologos = async (_req: Request, res: Response) => {
   try {
@@ -1484,6 +1507,721 @@ export const obtenerEstadisticasAuditoria = async (req: Request, res: Response) 
       res,
       'Error al obtener las estadísticas de auditoría',
       'ADMIN_051'
+    );
+  }
+}; 
+
+// Interfaz para crear recepcionista
+interface CrearRecepcionistaData {
+  nombres: string;
+  apellidos: string;
+  email: string;
+  password: string;
+  telefono?: string;
+  fecha_nacimiento?: string;
+  genero?: 'masculino' | 'femenino' | 'otro' | 'prefiero_no_decir';
+  avatar_url?: string;
+}
+
+// Interfaz para actualizar recepcionista
+interface ActualizarRecepcionistaData {
+  nombres?: string;
+  apellidos?: string;
+  email?: string;
+  telefono?: string;
+  fecha_nacimiento?: string;
+  genero?: 'masculino' | 'femenino' | 'otro' | 'prefiero_no_decir';
+  avatar_url?: string;
+}
+
+// Obtener todos los recepcionistas
+export const obtenerRecepcionistas = async (_req: Request, res: Response) => {
+  try {
+    const query = `
+      SELECT 
+        u.id,
+        u.nombres,
+        u.apellidos,
+        u.email,
+        u.telefono,
+        u.fecha_nacimiento,
+        u.genero,
+        u.avatar_url,
+        u.activo,
+        u.email_verificado,
+        u.ultimo_acceso,
+        u.created_at,
+        r.nombre as rol_nombre
+      FROM usuarios u
+      INNER JOIN roles r ON u.rol_id = r.id
+      WHERE r.nombre = 'recepcionista'
+      ORDER BY u.created_at DESC
+    `;
+
+    const [recepcionistas] = await sequelize.query(query) as [any[], unknown];
+
+    return ManejadorRespuestas.exito(
+      res,
+      'Recepcionistas obtenidos exitosamente',
+      recepcionistas,
+      'ADMIN_052'
+    );
+  } catch (error) {
+    log.error('Error en obtenerRecepcionistas:', error);
+    return ManejadorRespuestas.errorInterno(
+      res,
+      'Error al obtener la lista de recepcionistas',
+      'ADMIN_053'
+    );
+  }
+};
+
+// Crear nuevo recepcionista
+export const crearRecepcionista = async (req: Request, res: Response) => {
+  const transaction = await sequelize.transaction();
+  
+  try {
+    const { nombres, apellidos, email, password, telefono, fecha_nacimiento, genero, avatar_url }: CrearRecepcionistaData = req.body;
+    
+    // Usar el avatar_url del body si se proporciona, o usar uno aleatorio de robots
+    const avataresRobots = [
+      'https://api.dicebear.com/7.x/bottts/svg?seed=lion&backgroundColor=ffdfbf&scale=80&mouth=smile&eyes=happy',
+      'https://api.dicebear.com/7.x/bottts/svg?seed=dolphin&backgroundColor=bfdfff&scale=80&mouth=smile&eyes=happy',
+      'https://api.dicebear.com/7.x/bottts/svg?seed=owl&backgroundColor=8b4513&scale=80&mouth=smile&eyes=happy',
+      'https://api.dicebear.com/7.x/bottts/svg?seed=butterfly&backgroundColor=ffb6c1&scale=80&mouth=smile&eyes=happy',
+      'https://api.dicebear.com/7.x/bottts/svg?seed=bee&backgroundColor=ffff00&scale=80&mouth=smile&eyes=happy',
+      'https://api.dicebear.com/7.x/bottts/svg?seed=turtle&backgroundColor=90ee90&scale=80&mouth=smile&eyes=happy',
+      'https://api.dicebear.com/7.x/bottts/svg?seed=rabbit&backgroundColor=ffffff&scale=80&mouth=smile&eyes=happy',
+      'https://api.dicebear.com/7.x/bottts/svg?seed=penguin&backgroundColor=000000&scale=80&mouth=smile&eyes=happy',
+      'https://api.dicebear.com/7.x/bottts/svg?seed=giraffe&backgroundColor=daa520&scale=80&mouth=smile&eyes=happy',
+      'https://api.dicebear.com/7.x/bottts/svg?seed=koala&backgroundColor=8b4513&scale=80&mouth=smile&eyes=happy',
+      'https://api.dicebear.com/7.x/bottts/svg?seed=panda&backgroundColor=000000&scale=80&mouth=smile&eyes=happy'
+    ];
+    
+    const avatarUrl = avatar_url || avataresRobots[Math.floor(Math.random() * avataresRobots.length)];
+
+    // Validar campos obligatorios
+    if (!nombres || !apellidos || !email || !password) {
+      await transaction.rollback();
+      return ManejadorRespuestas.errorValidacion(
+        res,
+        'Nombres, apellidos, email y contraseña son requeridos',
+        { camposRequeridos: ['nombres', 'apellidos', 'email', 'password'] },
+        'ADMIN_054'
+      );
+    }
+
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      await transaction.rollback();
+      return ManejadorRespuestas.errorValidacion(
+        res,
+        'Formato de email inválido',
+        { email },
+        'ADMIN_055'
+      );
+    }
+
+    // Verificar si el email ya existe
+    const [usuarioExistente] = await sequelize.query(
+      'SELECT id FROM usuarios WHERE email = :email',
+      {
+        replacements: { email },
+        transaction
+      }
+    ) as [any[], unknown];
+
+    if (Array.isArray(usuarioExistente) && usuarioExistente.length > 0) {
+      await transaction.rollback();
+      return ManejadorRespuestas.conflicto(
+        res,
+        'El email ya está registrado en el sistema',
+        { email },
+        'ADMIN_056'
+      );
+    }
+
+    // Obtener el rol_id de recepcionista
+    const [rolRecepcionista] = await sequelize.query(
+      'SELECT id FROM roles WHERE nombre = :nombre',
+      {
+        replacements: { nombre: 'recepcionista' },
+        transaction
+      }
+    ) as [any[], unknown];
+
+    if (!Array.isArray(rolRecepcionista) || rolRecepcionista.length === 0) {
+      await transaction.rollback();
+      return ManejadorRespuestas.errorInterno(
+        res,
+        'Error: Rol de recepcionista no encontrado en el sistema',
+        'ADMIN_057'
+      );
+    }
+
+    const rolId = (rolRecepcionista[0] as any).id;
+
+    // Hashear la contraseña
+    const saltRounds = 12;
+    const passwordHash = await bcrypt.hash(password, saltRounds);
+
+    // Generar token de activación
+    const tokenActivacion = uuidv4();
+    const tokenExpira = new Date();
+    tokenExpira.setHours(tokenExpira.getHours() + 24); // Expira en 24 horas
+
+    // Crear el usuario
+    const [nuevoUsuario] = await sequelize.query(
+      `INSERT INTO usuarios (
+        id, nombres, apellidos, email, password_hash, telefono, 
+        fecha_nacimiento, genero, avatar_url, rol_id, activo, email_verificado,
+        token_activacion, token_activacion_expira, configuracion,
+        created_at, updated_at
+      ) VALUES (
+        :id, :nombres, :apellidos, :email, :password_hash, :telefono,
+        :fecha_nacimiento, :genero, :avatar_url, :rol_id, :activo, :email_verificado,
+        :token_activacion, :token_activacion_expira, :configuracion,
+        :created_at, :updated_at
+      ) RETURNING id, nombres, apellidos, email, created_at`,
+      {
+        replacements: {
+          id: uuidv4(),
+          nombres,
+          apellidos,
+          email,
+          password_hash: passwordHash,
+          telefono: telefono || null,
+          fecha_nacimiento: fecha_nacimiento || null,
+          genero: genero || null,
+          avatar_url: avatarUrl,
+          rol_id: rolId,
+          activo: true,
+          email_verificado: false,
+          token_activacion: tokenActivacion,
+          token_activacion_expira: tokenExpira,
+          configuracion: JSON.stringify({}),
+          created_at: new Date(),
+          updated_at: new Date()
+        },
+        transaction
+      }
+    ) as [any[], unknown];
+
+    await transaction.commit();
+
+    log.info(`Nuevo recepcionista creado: ${email} con token: ${tokenActivacion}`);
+
+    return ManejadorRespuestas.creado(
+      res,
+      'Recepcionista creado exitosamente.',
+      {
+        usuario: nuevoUsuario[0],
+        token_activacion: tokenActivacion // Solo para desarrollo, en producción no enviar
+      },
+      'ADMIN_058'
+    );
+
+  } catch (error) {
+    await transaction.rollback();
+    log.error('Error en crearRecepcionista:', error);
+    return ManejadorRespuestas.errorInterno(
+      res,
+      'Error al crear el recepcionista',
+      'ADMIN_059'
+    );
+  }
+};
+
+// Obtener recepcionista por ID
+export const obtenerRecepcionistaPorId = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const [recepcionista] = await sequelize.query(
+      `SELECT 
+        u.id,
+        u.nombres,
+        u.apellidos,
+        u.email,
+        u.telefono,
+        u.fecha_nacimiento,
+        u.genero,
+        u.avatar_url,
+        u.activo,
+        u.email_verificado,
+        u.ultimo_acceso,
+        u.created_at,
+        u.updated_at,
+        r.nombre as rol_nombre
+      FROM usuarios u
+      INNER JOIN roles r ON u.rol_id = r.id
+      WHERE u.id = :id AND r.nombre = 'recepcionista'`,
+      {
+        replacements: { id }
+      }
+    ) as [any[], unknown];
+
+    if (!Array.isArray(recepcionista) || recepcionista.length === 0) {
+      return ManejadorRespuestas.noEncontrado(
+        res,
+        'Recepcionista no encontrado',
+        'ADMIN_060'
+      );
+    }
+
+    return ManejadorRespuestas.exito(
+      res,
+      'Recepcionista obtenido exitosamente',
+      recepcionista[0],
+      'ADMIN_061'
+    );
+
+  } catch (error) {
+    log.error('Error en obtenerRecepcionistaPorId:', error);
+    return ManejadorRespuestas.errorInterno(
+      res,
+      'Error al obtener el recepcionista',
+      'ADMIN_062'
+    );
+  }
+};
+
+// Actualizar recepcionista
+export const actualizarRecepcionista = async (req: Request, res: Response) => {
+  const transaction = await sequelize.transaction();
+  
+  try {
+    const { id } = req.params;
+    const { nombres, apellidos, email, telefono, fecha_nacimiento, genero }: ActualizarRecepcionistaData = req.body;
+    
+    // Obtener la URL del avatar si se subió una imagen
+    const avatar_url = req.file ? `/uploads/avatars/${req.file.filename}` : undefined;
+
+    // Verificar que el recepcionista existe
+    const [recepcionistaExistente] = await sequelize.query(
+      `SELECT u.id, u.email, r.nombre as rol_nombre
+       FROM usuarios u
+       INNER JOIN roles r ON u.rol_id = r.id
+       WHERE u.id = :id AND r.nombre = 'recepcionista'`,
+      {
+        replacements: { id },
+        transaction
+      }
+    ) as [any[], unknown];
+
+    if (!Array.isArray(recepcionistaExistente) || recepcionistaExistente.length === 0) {
+      await transaction.rollback();
+      return ManejadorRespuestas.noEncontrado(
+        res,
+        'Recepcionista no encontrado',
+        'ADMIN_063'
+      );
+    }
+
+    // Si se está actualizando el email, verificar que no exista
+    if (email && email !== (recepcionistaExistente[0] as any).email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        await transaction.rollback();
+        return ManejadorRespuestas.errorValidacion(
+          res,
+          'Formato de email inválido',
+          { email },
+          'ADMIN_064'
+        );
+      }
+
+      const [emailExistente] = await sequelize.query(
+        'SELECT id FROM usuarios WHERE email = :email AND id != :id',
+        {
+          replacements: { email, id },
+          transaction
+        }
+      ) as [any[], unknown];
+
+      if (Array.isArray(emailExistente) && emailExistente.length > 0) {
+        await transaction.rollback();
+        return ManejadorRespuestas.conflicto(
+          res,
+          'El email ya está registrado por otro usuario',
+          { email },
+          'ADMIN_065'
+        );
+      }
+    }
+
+    // Construir query de actualización dinámicamente
+    const camposActualizar: string[] = [];
+    const replacements: any = { id };
+
+    if (nombres) {
+      camposActualizar.push('nombres = :nombres');
+      replacements.nombres = nombres;
+    }
+    if (apellidos) {
+      camposActualizar.push('apellidos = :apellidos');
+      replacements.apellidos = apellidos;
+    }
+    if (email) {
+      camposActualizar.push('email = :email');
+      replacements.email = email;
+    }
+    if (telefono !== undefined) {
+      camposActualizar.push('telefono = :telefono');
+      replacements.telefono = telefono;
+    }
+    if (fecha_nacimiento !== undefined) {
+      camposActualizar.push('fecha_nacimiento = :fecha_nacimiento');
+      replacements.fecha_nacimiento = fecha_nacimiento;
+    }
+    if (genero !== undefined) {
+      camposActualizar.push('genero = :genero');
+      replacements.genero = genero;
+    }
+    if (avatar_url !== undefined) {
+      camposActualizar.push('avatar_url = :avatar_url');
+      replacements.avatar_url = avatar_url;
+    }
+
+    if (camposActualizar.length === 0) {
+      await transaction.rollback();
+      return ManejadorRespuestas.errorValidacion(
+        res,
+        'No se proporcionaron campos para actualizar',
+        'ADMIN_066'
+      );
+    }
+
+    // Agregar updated_at
+    camposActualizar.push('updated_at = NOW()');
+
+    const query = `UPDATE usuarios SET ${camposActualizar.join(', ')} WHERE id = :id`;
+
+    await sequelize.query(query, {
+      replacements,
+      transaction
+    });
+
+    await transaction.commit();
+
+    return ManejadorRespuestas.exito(
+      res,
+      'Recepcionista actualizado exitosamente',
+      { id, campos_actualizados: camposActualizar.length - 1 }, // -1 por updated_at
+      'ADMIN_067'
+    );
+
+  } catch (error) {
+    await transaction.rollback();
+    log.error('Error en actualizarRecepcionista:', error);
+    return ManejadorRespuestas.errorInterno(
+      res,
+      'Error al actualizar el recepcionista',
+      'ADMIN_068'
+    );
+  }
+};
+
+// Desactivar recepcionista (desactivación lógica)
+export const desactivarRecepcionista = async (req: Request, res: Response) => {
+  const transaction = await sequelize.transaction();
+  
+  try {
+    const { id } = req.params;
+
+    // Validar que el ID existe
+    if (!id) {
+      await transaction.rollback();
+      return ManejadorRespuestas.errorValidacion(
+        res,
+        'ID del recepcionista es requerido',
+        'ADMIN_069'
+      );
+    }
+
+    // Verificar que el recepcionista existe y está activo
+    const [recepcionista] = await sequelize.query(
+      `SELECT u.id, u.nombres, u.apellidos, u.activo, r.nombre as rol_nombre
+       FROM usuarios u
+       INNER JOIN roles r ON u.rol_id = r.id
+       WHERE u.id = :id AND r.nombre = 'recepcionista'`,
+      {
+        replacements: { id },
+        transaction
+      }
+    ) as [any[], unknown];
+
+    if (!Array.isArray(recepcionista) || recepcionista.length === 0) {
+      await transaction.rollback();
+      return ManejadorRespuestas.noEncontrado(
+        res,
+        'Recepcionista no encontrado',
+        'ADMIN_070'
+      );
+    }
+
+    if (!(recepcionista[0] as any).activo) {
+      await transaction.rollback();
+      return ManejadorRespuestas.conflicto(
+        res,
+        'El recepcionista ya está desactivado',
+        'ADMIN_071'
+      );
+    }
+
+    // Desactivar el usuario
+    await sequelize.query(
+      'UPDATE usuarios SET activo = false, updated_at = NOW() WHERE id = :id',
+      {
+        replacements: { id },
+        transaction
+      }
+    ) as [any[], unknown];
+
+    await transaction.commit();
+
+    // Log de auditoría
+    const recepcionistaData = recepcionista[0] as any;
+    const usuarioId = (req as any).usuario?.id;
+    if (usuarioId && typeof usuarioId === 'string') {
+      await AuditoriaService.logDesactivacionRecepcionista(
+        id,
+        `${recepcionistaData.nombres} ${recepcionistaData.apellidos}`,
+        usuarioId,
+        req
+      );
+    }
+
+    return ManejadorRespuestas.exito(
+      res,
+      'Recepcionista desactivado exitosamente',
+      { 
+        id,
+        nombres: recepcionistaData.nombres,
+        apellidos: recepcionistaData.apellidos,
+        estado: 'desactivado'
+      },
+      'ADMIN_072'
+    );
+
+  } catch (error) {
+    await transaction.rollback();
+    log.error('Error en desactivarRecepcionista:', error);
+    return ManejadorRespuestas.errorInterno(
+      res,
+      'Error al desactivar el recepcionista',
+      'ADMIN_073'
+    );
+  }
+};
+
+// Reactivar recepcionista
+export const reactivarRecepcionista = async (req: Request, res: Response) => {
+  const transaction = await sequelize.transaction();
+  
+  try {
+    const { id } = req.params;
+
+    // Validar que el ID existe
+    if (!id) {
+      await transaction.rollback();
+      return ManejadorRespuestas.errorValidacion(
+        res,
+        'ID del recepcionista es requerido',
+        'ADMIN_074'
+      );
+    }
+
+    // Verificar que el recepcionista existe y está desactivado
+    const [recepcionista] = await sequelize.query(
+      `SELECT u.id, u.nombres, u.apellidos, u.activo, r.nombre as rol_nombre
+       FROM usuarios u
+       INNER JOIN roles r ON u.rol_id = r.id
+       WHERE u.id = :id AND r.nombre = 'recepcionista'`,
+      {
+        replacements: { id },
+        transaction
+      }
+    ) as [any[], unknown];
+
+    if (!Array.isArray(recepcionista) || recepcionista.length === 0) {
+      await transaction.rollback();
+      return ManejadorRespuestas.noEncontrado(
+        res,
+        'Recepcionista no encontrado',
+        'ADMIN_075'
+      );
+    }
+
+    if ((recepcionista[0] as any).activo) {
+      await transaction.rollback();
+      return ManejadorRespuestas.conflicto(
+        res,
+        'El recepcionista ya está activo',
+        'ADMIN_076'
+      );
+    }
+
+    // Reactivar el usuario
+    await sequelize.query(
+      'UPDATE usuarios SET activo = true, updated_at = NOW() WHERE id = :id',
+      {
+        replacements: { id },
+        transaction
+      }
+    ) as [any[], unknown];
+
+    await transaction.commit();
+
+    // Log de auditoría
+    const recepcionistaData = recepcionista[0] as any;
+    const usuarioId = (req as any).usuario?.id;
+    if (usuarioId && typeof usuarioId === 'string') {
+      await AuditoriaService.logReactivacionRecepcionista(
+        id,
+        `${recepcionistaData.nombres} ${recepcionistaData.apellidos}`,
+        usuarioId,
+        req
+      );
+    }
+
+    return ManejadorRespuestas.exito(
+      res,
+      'Recepcionista reactivado exitosamente',
+      { 
+        id,
+        nombres: recepcionistaData.nombres,
+        apellidos: recepcionistaData.apellidos,
+        estado: 'activado'
+      },
+      'ADMIN_077'
+    );
+
+  } catch (error) {
+    await transaction.rollback();
+    log.error('Error en reactivarRecepcionista:', error);
+    return ManejadorRespuestas.errorInterno(
+      res,
+      'Error al reactivar el recepcionista',
+      'ADMIN_078'
+    );
+  }
+};
+
+// Eliminar recepcionista (eliminación física)
+export const eliminarRecepcionista = async (req: Request, res: Response) => {
+  const transaction = await sequelize.transaction();
+  
+  try {
+    const { id } = req.params;
+
+    // Validar que el ID existe
+    if (!id) {
+      await transaction.rollback();
+      return ManejadorRespuestas.errorValidacion(
+        res,
+        'ID del recepcionista es requerido',
+        'ADMIN_079'
+      );
+    }
+
+    // Verificar que el recepcionista existe
+    const [recepcionista] = await sequelize.query(
+      `SELECT u.id, u.nombres, u.apellidos, r.nombre as rol_nombre
+       FROM usuarios u
+       INNER JOIN roles r ON u.rol_id = r.id
+       WHERE u.id = :id AND r.nombre = 'recepcionista'`,
+      {
+        replacements: { id },
+        transaction
+      }
+    ) as [any[], unknown];
+
+    if (!Array.isArray(recepcionista) || recepcionista.length === 0) {
+      await transaction.rollback();
+      return ManejadorRespuestas.noEncontrado(
+        res,
+        'Recepcionista no encontrado',
+        'ADMIN_080'
+      );
+    }
+
+    // Eliminar registros relacionados de forma segura
+    const deleteQueries = [
+      { query: 'DELETE FROM logs_auditoria WHERE usuario_id = :id', name: 'logs_auditoria' },
+      { query: 'DELETE FROM mensajes WHERE remitente_id = :id OR destinatario_id = :id', name: 'mensajes' }
+    ];
+
+    for (const deleteQuery of deleteQueries) {
+      try {
+        await sequelize.query(deleteQuery.query, {
+          replacements: { id },
+          transaction
+        }) as [any[], unknown];
+        log.info(`Registros eliminados de ${deleteQuery.name} para recepcionista ${id}`);
+      } catch (deleteError: any) {
+        log.warn(`Error al eliminar registros de ${deleteQuery.name}:`, deleteError);
+        // Continuar con la siguiente tabla
+      }
+    }
+
+    // Finalmente eliminar el usuario
+    await sequelize.query(
+      'DELETE FROM usuarios WHERE id = :id',
+      {
+        replacements: { id },
+        transaction
+      }
+    ) as [any[], unknown];
+
+    await transaction.commit();
+
+    // Log de auditoría para eliminación exitosa
+    const recepcionistaData = recepcionista[0] as any;
+    const usuarioId = (req as any).usuario?.id;
+    if (usuarioId && typeof usuarioId === 'string') {
+      await AuditoriaService.logEliminacionRecepcionista(
+        id,
+        `${recepcionistaData.nombres} ${recepcionistaData.apellidos}`,
+        usuarioId,
+        req
+      );
+    }
+
+    return ManejadorRespuestas.exito(
+      res,
+      'Recepcionista eliminado exitosamente',
+      { 
+        id,
+        nombres: recepcionistaData.nombres,
+        apellidos: recepcionistaData.apellidos,
+        estado: 'eliminado'
+      },
+      'ADMIN_081'
+    );
+
+  } catch (error: any) {
+    await transaction.rollback();
+    log.error('Error en eliminarRecepcionista:', error);
+    
+    // Verificar si es un error de restricción de clave foránea
+    if (error.code === '23503' || error.message?.includes('foreign key constraint')) {
+      return ManejadorRespuestas.conflicto(
+        res,
+        'No se puede eliminar al recepcionista porque tiene registros relacionados que no se pueden eliminar automáticamente. Considere desactivar la cuenta en lugar de eliminarla.',
+        { 
+          error_code: error.code,
+          error_message: error.message 
+        },
+        'ADMIN_082'
+      );
+    }
+    
+    return ManejadorRespuestas.errorInterno(
+      res,
+      'Error al eliminar el recepcionista',
+      'ADMIN_083'
     );
   }
 }; 

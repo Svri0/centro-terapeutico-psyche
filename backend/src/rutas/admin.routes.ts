@@ -15,7 +15,15 @@ import {
   reasignarPaciente,
   obtenerPsicologosDisponibles,
   obtenerLogsAuditoria,
-  obtenerEstadisticasAuditoria
+  obtenerEstadisticasAuditoria,
+  // Funciones para recepcionistas
+  obtenerRecepcionistas,
+  obtenerRecepcionistaPorId,
+  crearRecepcionista,
+  actualizarRecepcionista,
+  desactivarRecepcionista,
+  reactivarRecepcionista,
+  eliminarRecepcionista
 } from '../controladores/admin.controlador';
 
 const router = Router();
@@ -64,5 +72,27 @@ router.get('/auditoria/logs', obtenerLogsAuditoria);
 
 // GET /admin/auditoria/estadisticas - Obtener estadísticas de auditoría
 router.get('/auditoria/estadisticas', obtenerEstadisticasAuditoria);
+
+// Rutas para recepcionistas
+// GET /admin/recepcionistas - Obtener todos los recepcionistas
+router.get('/recepcionistas', obtenerRecepcionistas);
+
+// GET /admin/recepcionistas/:id - Obtener recepcionista por ID
+router.get('/recepcionistas/:id', obtenerRecepcionistaPorId);
+
+// POST /admin/recepcionistas - Crear nuevo recepcionista
+router.post('/recepcionistas', upload.single('avatar'), handleUploadError, crearRecepcionista);
+
+// PUT /admin/recepcionistas/:id - Actualizar recepcionista
+router.put('/recepcionistas/:id', upload.single('avatar'), handleUploadError, actualizarRecepcionista);
+
+// PATCH /admin/recepcionistas/:id/desactivar - Desactivar recepcionista
+router.patch('/recepcionistas/:id/desactivar', desactivarRecepcionista);
+
+// PATCH /admin/recepcionistas/:id/reactivar - Reactivar recepcionista
+router.patch('/recepcionistas/:id/reactivar', reactivarRecepcionista);
+
+// DELETE /admin/recepcionistas/:id - Eliminar recepcionista
+router.delete('/recepcionistas/:id', eliminarRecepcionista);
 
 export default router; 

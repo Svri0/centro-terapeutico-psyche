@@ -206,6 +206,81 @@ export class AuditoriaService {
       req
     });
   }
+
+  /**
+   * Log para eliminación de recepcionistas
+   */
+  static async logEliminacionRecepcionista(
+    recepcionistaId: string,
+    recepcionistaNombre: string,
+    usuarioId: string | undefined,
+    req: Request,
+    detalles?: any
+  ): Promise<void> {
+    await this.crearLog({
+      usuario_id: usuarioId,
+      accion: 'ELIMINACION_RECEPCIONISTA',
+      tabla_afectada: 'usuarios',
+      registro_id: recepcionistaId,
+      valores_anteriores: { nombre: recepcionistaNombre },
+      metadatos: {
+        tipo: 'eliminacion_permanente',
+        recepcionista_nombre: recepcionistaNombre,
+        detalles: detalles
+      },
+      req
+    });
+  }
+
+  /**
+   * Log para desactivación de recepcionistas
+   */
+  static async logDesactivacionRecepcionista(
+    recepcionistaId: string,
+    recepcionistaNombre: string,
+    usuarioId: string | undefined,
+    req: Request,
+    motivo?: string
+  ): Promise<void> {
+    await this.crearLog({
+      usuario_id: usuarioId,
+      accion: 'DESACTIVACION_RECEPCIONISTA',
+      tabla_afectada: 'usuarios',
+      registro_id: recepcionistaId,
+      valores_anteriores: { activo: true },
+      valores_nuevos: { activo: false },
+      metadatos: {
+        tipo: 'desactivacion',
+        recepcionista_nombre: recepcionistaNombre,
+        motivo: motivo
+      },
+      req
+    });
+  }
+
+  /**
+   * Log para reactivación de recepcionistas
+   */
+  static async logReactivacionRecepcionista(
+    recepcionistaId: string,
+    recepcionistaNombre: string,
+    usuarioId: string | undefined,
+    req: Request
+  ): Promise<void> {
+    await this.crearLog({
+      usuario_id: usuarioId,
+      accion: 'REACTIVACION_RECEPCIONISTA',
+      tabla_afectada: 'usuarios',
+      registro_id: recepcionistaId,
+      valores_anteriores: { activo: false },
+      valores_nuevos: { activo: true },
+      metadatos: {
+        tipo: 'reactivacion',
+        recepcionista_nombre: recepcionistaNombre
+      },
+      req
+    });
+  }
 }
 
 export default AuditoriaService; 
