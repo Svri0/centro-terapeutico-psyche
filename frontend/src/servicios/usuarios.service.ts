@@ -1,4 +1,4 @@
-import { api } from './api';
+import api from './api';
 
 export interface ActualizarPerfilData {
   nombres: string;
@@ -10,8 +10,21 @@ export interface ActualizarPerfilData {
   avatar_url: string;
 }
 
+export interface ActualizarPerfilRecepcionistaData {
+  nombres: string;
+  apellidos: string;
+  email: string;
+  telefono: string;
+  avatar_url: string;
+}
+
 export const actualizarPerfilPsicologo = async (id: string, data: ActualizarPerfilData) => {
   const response = await api.put(`/usuarios/perfil/${id}`, data);
+  return response.data;
+};
+
+export const actualizarPerfilRecepcionista = async (data: ActualizarPerfilRecepcionistaData) => {
+  const response = await api.put('/autenticacion/perfil', data);
   return response.data;
 };
 
