@@ -106,6 +106,8 @@ const Login: React.FC = () => {
         window.location.href = '/psicologo';
       } else if (usuario.rol_id === 3) {
         window.location.href = '/paciente';
+      } else if (usuario.rol_id === 4) {
+        window.location.href = '/recepcionista';
       } else {
         window.location.href = '/admin';
       }
@@ -312,6 +314,7 @@ const Login: React.FC = () => {
                 <div className="space-y-1 text-xs text-gray-600">
                   <p><strong>Administrador:</strong> admin@admin.cl / admin123</p>
                   <p><strong>Psicólogo:</strong> laura.fernandez@psyche.cl / psicologo123</p>
+                  <p><strong>Recepcionista:</strong> lil_oso@gmail.cl / recepcionista123</p>
                 </div>
               </div>
             </div>
