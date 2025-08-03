@@ -1,22 +1,13 @@
-import React, { useState } from 'react';
-import { Psicologo } from '../servicios/admin.service';
+import React, { useState, useEffect } from 'react';
+import { Recepcionista } from '../servicios/admin.service';
 import { formatearGenero } from '../utilidades/formateo';
 
-interface DetallesPsicologoProps {
-  psicologo: Psicologo;
-  isOpen: boolean;
+interface DetallesRecepcionistaProps {
+  recepcionista: Recepcionista;
   onClose: () => void;
-  onEliminarCita: (citaId: string) => Promise<void>;
-  onReasignarPaciente: (pacienteId: string, nuevoPsicologoId: string) => Promise<void>;
 }
 
-const DetallesPsicologo: React.FC<DetallesPsicologoProps> = ({
-  psicologo,
-  isOpen,
-  onClose,
-  onEliminarCita,
-  onReasignarPaciente
-}) => {
+const DetallesRecepcionista: React.FC<DetallesRecepcionistaProps> = ({ recepcionista, onClose }) => {
   const [activeTab, setActiveTab] = useState<'general' | 'actividad'>('general');
 
   const formatearFecha = (fecha: string) => {
@@ -59,8 +50,6 @@ const DetallesPsicologo: React.FC<DetallesPsicologoProps> = ({
     return edad;
   };
 
-  if (!isOpen) return null;
-
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999] animate-fade-in">
       <div className="relative top-10 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white animate-slide-in-right shadow-glow">
@@ -69,32 +58,32 @@ const DetallesPsicologo: React.FC<DetallesPsicologoProps> = ({
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center">
               <div className="flex-shrink-0 h-16 w-16 mr-4">
-                {psicologo.avatar_url ? (
+                {recepcionista.avatar_url ? (
                   <img
                     className="h-16 w-16 rounded-full object-cover"
-                    src={psicologo.avatar_url}
-                    alt={`${psicologo.nombres} ${psicologo.apellidos}`}
+                    src={recepcionista.avatar_url}
+                    alt={`${recepcionista.nombres} ${recepcionista.apellidos}`}
                   />
                 ) : (
-                  <div className="h-16 w-16 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 flex items-center justify-center text-white font-semibold text-lg">
-                    {obtenerIniciales(psicologo.nombres, psicologo.apellidos)}
+                  <div className="h-16 w-16 rounded-full bg-gradient-to-r from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold text-lg">
+                    {obtenerIniciales(recepcionista.nombres, recepcionista.apellidos)}
                   </div>
                 )}
               </div>
               <div>
                 <h3 className="text-2xl font-bold text-gray-900">
-                  {psicologo.nombres} {psicologo.apellidos}
+                  {recepcionista.nombres} {recepcionista.apellidos}
                 </h3>
-                <p className="text-amber-600 font-medium">Psicólogo</p>
+                <p className="text-blue-600 font-medium">Recepcionista</p>
                 <div className="flex items-center mt-1">
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    psicologo.activo 
+                    recepcionista.activo 
                       ? 'bg-green-100 text-green-800' 
                       : 'bg-red-100 text-red-800'
                   }`}>
-                    {psicologo.activo ? 'Activo' : 'Inactivo'}
+                    {recepcionista.activo ? 'Activo' : 'Inactivo'}
                   </span>
-                  {!psicologo.email_verificado && (
+                  {!recepcionista.email_verificado && (
                     <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 ml-2">
                       Email no verificado
                     </span>
@@ -119,7 +108,7 @@ const DetallesPsicologo: React.FC<DetallesPsicologoProps> = ({
                 onClick={() => setActiveTab('general')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'general'
-                    ? 'border-amber-500 text-amber-600'
+                    ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -129,7 +118,7 @@ const DetallesPsicologo: React.FC<DetallesPsicologoProps> = ({
                 onClick={() => setActiveTab('actividad')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'actividad'
-                    ? 'border-amber-500 text-amber-600'
+                    ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -147,42 +136,23 @@ const DetallesPsicologo: React.FC<DetallesPsicologoProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Nombres</label>
-                    <p className="mt-1 text-sm text-gray-900">{psicologo.nombres}</p>
+                    <p className="mt-1 text-sm text-gray-900">{recepcionista.nombres}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Apellidos</label>
-                    <p className="mt-1 text-sm text-gray-900">{psicologo.apellidos}</p>
+                    <p className="mt-1 text-sm text-gray-900">{recepcionista.apellidos}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Género</label>
-                    <p className="mt-1 text-sm text-gray-900">{formatearGenero(psicologo.genero)}</p>
+                    <p className="mt-1 text-sm text-gray-900">{formatearGenero(recepcionista.genero)}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Fecha de Nacimiento</label>
                     <p className="mt-1 text-sm text-gray-900">
-                      {psicologo.fecha_nacimiento 
-                        ? `${formatearFecha(psicologo.fecha_nacimiento)} (${calcularEdad(psicologo.fecha_nacimiento)} años)`
+                      {recepcionista.fecha_nacimiento 
+                        ? `${formatearFecha(recepcionista.fecha_nacimiento)} (${calcularEdad(recepcionista.fecha_nacimiento)} años)`
                         : 'No especificada'
                       }
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Información Profesional */}
-              <div className="bg-gray-50 rounded-lg p-6">
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">Información Profesional</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Especialidad</label>
-                    <p className="mt-1 text-sm text-gray-900">
-                      {psicologo.especialidad || 'No especificada'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Descripción</label>
-                    <p className="mt-1 text-sm text-gray-900">
-                      {psicologo.descripcion || 'No especificada'}
                     </p>
                   </div>
                 </div>
@@ -194,12 +164,12 @@ const DetallesPsicologo: React.FC<DetallesPsicologoProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Email</label>
-                    <p className="mt-1 text-sm text-gray-900">{psicologo.email}</p>
+                    <p className="mt-1 text-sm text-gray-900">{recepcionista.email}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Teléfono</label>
                     <p className="mt-1 text-sm text-gray-900">
-                      {psicologo.telefono || 'No especificado'}
+                      {recepcionista.telefono || 'No especificado'}
                     </p>
                   </div>
                 </div>
@@ -211,17 +181,17 @@ const DetallesPsicologo: React.FC<DetallesPsicologoProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700">ID de Usuario</label>
-                    <p className="mt-1 text-sm text-gray-900 font-mono">{psicologo.id}</p>
+                    <p className="mt-1 text-sm text-gray-900 font-mono">{recepcionista.id}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Estado de la Cuenta</label>
                     <p className="mt-1 text-sm text-gray-900">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        psicologo.activo 
+                        recepcionista.activo 
                           ? 'bg-green-100 text-green-800' 
                           : 'bg-red-100 text-red-800'
                       }`}>
-                        {psicologo.activo ? 'Activo' : 'Inactivo'}
+                        {recepcionista.activo ? 'Activo' : 'Inactivo'}
                       </span>
                     </p>
                   </div>
@@ -229,17 +199,17 @@ const DetallesPsicologo: React.FC<DetallesPsicologoProps> = ({
                     <label className="block text-sm font-medium text-gray-700">Verificación de Email</label>
                     <p className="mt-1 text-sm text-gray-900">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        psicologo.email_verificado 
+                        recepcionista.email_verificado 
                           ? 'bg-green-100 text-green-800' 
                           : 'bg-yellow-100 text-yellow-800'
                       }`}>
-                        {psicologo.email_verificado ? 'Verificado' : 'No verificado'}
+                        {recepcionista.email_verificado ? 'Verificado' : 'No verificado'}
                       </span>
                     </p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Fecha de Creación</label>
-                    <p className="mt-1 text-sm text-gray-900">{formatearFecha(psicologo.created_at)}</p>
+                    <p className="mt-1 text-sm text-gray-900">{formatearFecha(recepcionista.created_at)}</p>
                   </div>
                 </div>
               </div>
@@ -255,13 +225,13 @@ const DetallesPsicologo: React.FC<DetallesPsicologoProps> = ({
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Último Acceso</label>
                     <p className="mt-1 text-sm text-gray-900">
-                      {formatearUltimoAcceso(psicologo.ultimo_acceso)}
+                      {formatearUltimoAcceso(recepcionista.ultimo_acceso)}
                     </p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Última Actualización</label>
                     <p className="mt-1 text-sm text-gray-900">
-                      {formatearFecha(psicologo.updated_at)}
+                      {formatearFecha(recepcionista.updated_at)}
                     </p>
                   </div>
                 </div>
@@ -272,20 +242,20 @@ const DetallesPsicologo: React.FC<DetallesPsicologoProps> = ({
                 <h4 className="text-lg font-semibold text-gray-900 mb-4">Estadísticas</h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-amber-600">0</div>
-                    <div className="text-sm text-gray-600">Pacientes Activos</div>
+                    <div className="text-2xl font-bold text-blue-600">0</div>
+                    <div className="text-sm text-gray-600">Citas Gestionadas</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-green-600">0</div>
-                    <div className="text-sm text-gray-600">Citas Pendientes</div>
+                    <div className="text-sm text-gray-600">Pacientes Atendidos</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-purple-600">0</div>
-                    <div className="text-sm text-gray-600">Sesiones Completadas</div>
+                    <div className="text-sm text-gray-600">Horas Trabajadas</div>
                   </div>
                 </div>
                 <p className="text-xs text-gray-500 mt-4 text-center">
-                  Las estadísticas se mostrarán cuando se implementen las funcionalidades de gestión de pacientes y citas
+                  Las estadísticas se mostrarán cuando se implementen las funcionalidades de gestión de citas
                 </p>
               </div>
 
@@ -297,7 +267,7 @@ const DetallesPsicologo: React.FC<DetallesPsicologoProps> = ({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                   <p className="mt-2 text-sm text-gray-500">
-                    No hay notas registradas para este psicólogo
+                    No hay notas registradas para este recepcionista
                   </p>
                 </div>
               </div>
@@ -319,4 +289,4 @@ const DetallesPsicologo: React.FC<DetallesPsicologoProps> = ({
   );
 };
 
-export default DetallesPsicologo; 
+export default DetallesRecepcionista; 

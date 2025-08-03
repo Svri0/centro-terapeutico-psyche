@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Psicologo } from '../servicios/admin.service';
+import { Psicologo, Recepcionista } from '../servicios/admin.service';
 import { adminService } from '../servicios/admin.service';
 import { authService } from '../servicios/auth.service';
-import TablaPsicologos from '../componentes/TablaPsicologos';
+import TablaUsuarios from '../componentes/TablaUsuarios';
 import ModalCrearPsicologo from '../componentes/ModalCrearPsicologo';
 import ModalEditarPsicologo from '../componentes/ModalEditarPsicologo';
+import ModalCrearRecepcionista from '../componentes/ModalCrearRecepcionista';
 import Logo from '../componentes/Logo';
 
 const PanelAdmin: React.FC = () => {
   const [psicologos, setPsicologos] = useState<Psicologo[]>([]);
+  const [recepcionistas, setRecepcionistas] = useState<Recepcionista[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCrearModal, setShowCrearModal] = useState(false);
+  const [showCrearRecepcionistaModal, setShowCrearRecepcionistaModal] = useState(false);
   const [showEditarModal, setShowEditarModal] = useState(false);
   const [psicologoSeleccionado, setPsicologoSeleccionado] = useState<Psicologo | null>(null);
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -29,6 +32,7 @@ const PanelAdmin: React.FC = () => {
     type: 'desactivar' | 'reactivar' | 'eliminar';
     id: string;
     nombre: string;
+    tipo: 'psicologo' | 'recepcionista';
   } | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
 
@@ -49,7 +53,7 @@ const PanelAdmin: React.FC = () => {
   const user = authService.getCurrentUser();
 
   useEffect(() => {
-    cargarPsicologos();
+    cargarUsuarios();
   }, []);
 
   // Debug para el modal de cambiar contraseña
@@ -79,17 +83,26 @@ const PanelAdmin: React.FC = () => {
     });
   };
 
-  const cargarPsicologos = async () => {
+  const cargarUsuarios = async () => {
     try {
       setLoading(true);
-      console.log('🔍 Intentando cargar psicólogos...');
+      console.log('🔍 Intentando cargar usuarios...');
       console.log('🔍 Token:', localStorage.getItem('token'));
       console.log('🔍 Usuario:', localStorage.getItem('user'));
-      const data = await adminService.obtenerPsicologos();
-      console.log('🔍 Psicólogos cargados:', data);
-      setPsicologos(data);
+      
+      // Cargar psicólogos y recepcionistas en paralelo
+      const [psicologosData, recepcionistasData] = await Promise.all([
+        adminService.obtenerPsicologos(),
+        adminService.obtenerRecepcionistas()
+      ]);
+      
+      console.log('🔍 Psicólogos cargados:', psicologosData);
+      console.log('🔍 Recepcionistas cargados:', recepcionistasData);
+      
+      setPsicologos(psicologosData);
+      setRecepcionistas(recepcionistasData);
     } catch (error: any) {
-      console.error('❌ Error al cargar psicólogos:', error);
+      console.error('❌ Error al cargar usuarios:', error);
       setError(error.message);
     } finally {
       setLoading(false);
@@ -100,8 +113,20 @@ const PanelAdmin: React.FC = () => {
     try {
       await adminService.crearPsicologo(data, avatar || undefined);
       setShowCrearModal(false);
-      cargarPsicologos();
+      cargarUsuarios();
       mostrarNotificacion('Psicólogo creado exitosamente', 'success');
+    } catch (error: any) {
+      setError(error.message);
+      mostrarNotificacion(error.message, 'error');
+    }
+  };
+
+  const handleCrearRecepcionista = async (data: any, avatar?: File | null) => {
+    try {
+      await adminService.crearRecepcionista(data, avatar || undefined);
+      setShowCrearRecepcionistaModal(false);
+      cargarUsuarios();
+      mostrarNotificacion('Recepcionista creada exitosamente', 'success');
     } catch (error: any) {
       setError(error.message);
       mostrarNotificacion(error.message, 'error');
@@ -113,7 +138,7 @@ const PanelAdmin: React.FC = () => {
       await adminService.actualizarPsicologo(id, data, avatar || undefined);
       setShowEditarModal(false);
       setPsicologoSeleccionado(null);
-      cargarPsicologos();
+      cargarUsuarios();
       mostrarNotificacion('Psicólogo actualizado exitosamente', 'success');
     } catch (error: any) {
       setError(error.message);
@@ -121,14 +146,21 @@ const PanelAdmin: React.FC = () => {
     }
   };
 
-  const handleDesactivarPsicologo = async (id: string) => {
+  const handleDesactivarUsuario = async (id: string, tipo: 'psicologo' | 'recepcionista') => {
     if (isConfirming) return;
-    const psicologo = psicologos.find(p => p.id === id);
-    if (psicologo) {
+    let usuario;
+    if (tipo === 'psicologo') {
+      usuario = psicologos.find(p => p.id === id);
+    } else {
+      usuario = recepcionistas.find(r => r.id === id);
+    }
+    
+    if (usuario) {
       setConfirmAction({
         type: 'desactivar',
         id,
-        nombre: `${psicologo.nombres} ${psicologo.apellidos}`
+        nombre: `${usuario.nombres} ${usuario.apellidos}`,
+        tipo
       });
       setShowConfirmModal(true);
       setConfirmText('');
@@ -137,14 +169,21 @@ const PanelAdmin: React.FC = () => {
     }
   };
 
-  const handleReactivarPsicologo = async (id: string) => {
+  const handleReactivarUsuario = async (id: string, tipo: 'psicologo' | 'recepcionista') => {
     if (isConfirming) return;
-    const psicologo = psicologos.find(p => p.id === id);
-    if (psicologo) {
+    let usuario;
+    if (tipo === 'psicologo') {
+      usuario = psicologos.find(p => p.id === id);
+    } else {
+      usuario = recepcionistas.find(r => r.id === id);
+    }
+    
+    if (usuario) {
       setConfirmAction({
         type: 'reactivar',
         id,
-        nombre: `${psicologo.nombres} ${psicologo.apellidos}`
+        nombre: `${usuario.nombres} ${usuario.apellidos}`,
+        tipo
       });
       setShowConfirmModal(true);
       setConfirmText('');
@@ -153,14 +192,21 @@ const PanelAdmin: React.FC = () => {
     }
   };
 
-  const handleEliminarPsicologo = async (id: string) => {
+  const handleEliminarUsuario = async (id: string, tipo: 'psicologo' | 'recepcionista') => {
     if (isConfirming) return;
-    const psicologo = psicologos.find(p => p.id === id);
-    if (psicologo) {
+    let usuario;
+    if (tipo === 'psicologo') {
+      usuario = psicologos.find(p => p.id === id);
+    } else {
+      usuario = recepcionistas.find(r => r.id === id);
+    }
+    
+    if (usuario) {
       setConfirmAction({
         type: 'eliminar',
         id,
-        nombre: `${psicologo.nombres} ${psicologo.apellidos}`
+        nombre: `${usuario.nombres} ${usuario.apellidos}`,
+        tipo
       });
       setShowConfirmModal(true);
       setConfirmText('');
@@ -231,29 +277,41 @@ const PanelAdmin: React.FC = () => {
     
     try {
       if (confirmAction.type === 'desactivar') {
-        await adminService.desactivarPsicologo(confirmAction.id);
+        if (confirmAction.tipo === 'psicologo') {
+          await adminService.desactivarPsicologo(confirmAction.id);
+        } else {
+          await adminService.desactivarRecepcionista(confirmAction.id);
+        }
         setNotification({
-          message: `La cuenta del psicólogo ${confirmAction.nombre} ha sido desactivada correctamente`,
+          message: `La cuenta del ${confirmAction.tipo === 'psicologo' ? 'psicólogo' : 'recepcionista'} ${confirmAction.nombre} ha sido desactivada correctamente`,
           type: 'success',
           visible: true
         });
       } else if (confirmAction.type === 'reactivar') {
-        await adminService.activarPsicologo(confirmAction.id);
+        if (confirmAction.tipo === 'psicologo') {
+          await adminService.activarPsicologo(confirmAction.id);
+        } else {
+          await adminService.activarRecepcionista(confirmAction.id);
+        }
         setNotification({
-          message: `La cuenta del psicólogo ${confirmAction.nombre} ha sido reactivada correctamente`,
+          message: `La cuenta del ${confirmAction.tipo === 'psicologo' ? 'psicólogo' : 'recepcionista'} ${confirmAction.nombre} ha sido reactivada correctamente`,
           type: 'success',
           visible: true
         });
       } else if (confirmAction.type === 'eliminar') {
-        await adminService.eliminarPsicologo(confirmAction.id);
+        if (confirmAction.tipo === 'psicologo') {
+          await adminService.eliminarPsicologo(confirmAction.id);
+        } else {
+          await adminService.eliminarRecepcionista(confirmAction.id);
+        }
         setNotification({
-          message: `La cuenta del psicólogo ${confirmAction.nombre} ha sido eliminada correctamente`,
+          message: `La cuenta del ${confirmAction.tipo === 'psicologo' ? 'psicólogo' : 'recepcionista'} ${confirmAction.nombre} ha sido eliminada correctamente`,
           type: 'success',
           visible: true
         });
       }
       
-      cargarPsicologos();
+      cargarUsuarios();
       setShowConfirmModal(false);
       setConfirmText('');
       setConfirmError('');
@@ -316,9 +374,15 @@ const PanelAdmin: React.FC = () => {
     window.location.href = '/login';
   };
 
-  const abrirModalEditar = (psicologo: Psicologo) => {
-    setPsicologoSeleccionado(psicologo);
-    setShowEditarModal(true);
+  const abrirModalEditar = (usuario: Psicologo | Recepcionista) => {
+    // Por ahora solo manejamos edición de psicólogos
+    if ('especialidad' in usuario) {
+      setPsicologoSeleccionado(usuario as Psicologo);
+      setShowEditarModal(true);
+    } else {
+      // TODO: Implementar modal de editar recepcionista
+      mostrarNotificacion('Funcionalidad de editar recepcionista en desarrollo', 'error');
+    }
   };
 
   if (!user) {
@@ -388,10 +452,7 @@ const PanelAdmin: React.FC = () => {
                 Nuevo Psicólogo
               </button>
               <button
-                onClick={() => {
-                  // Por ahora solo mostrar un mensaje, luego se implementará la funcionalidad
-                  alert('Funcionalidad de crear recepcionista en desarrollo');
-                }}
+                onClick={() => setShowCrearRecepcionistaModal(true)}
                 className="bg-gradient-to-r from-blue-100 to-blue-200 hover:from-blue-200 hover:to-blue-300 text-blue-800 px-4 py-2 rounded-md text-sm font-medium flex items-center transition-all duration-200 hover-bounce shadow-sm hover:shadow-md animate-bounce-in"
               >
                 <svg className="w-4 h-4 mr-2 hover-rotate" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -412,22 +473,23 @@ const PanelAdmin: React.FC = () => {
 
         {/* Content */}
         <div className="px-4 sm:px-6 lg:px-8 py-6">
-          {loading ? (
-            <div className="flex justify-center items-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600"></div>
-              <span className="ml-2 text-amber-600 text-sm tracking-wide">Cargando psicólogos...</span>
-            </div>
-          ) : (
-            <TablaPsicologos
-              psicologos={psicologos}
-              onEditar={abrirModalEditar}
-              onDesactivar={handleDesactivarPsicologo}
-              onReactivar={handleReactivarPsicologo}
-              onEliminar={handleEliminarPsicologo}
-              onEliminarCita={handleEliminarCita}
-              onReasignarPaciente={handleReasignarPaciente}
-            />
-          )}
+                     {loading ? (
+             <div className="flex justify-center items-center py-12">
+               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600"></div>
+               <span className="ml-2 text-amber-600 text-sm tracking-wide">Cargando usuarios...</span>
+             </div>
+           ) : (
+             <TablaUsuarios
+               psicologos={psicologos}
+               recepcionistas={recepcionistas}
+               onEditar={abrirModalEditar}
+               onDesactivar={handleDesactivarUsuario}
+               onReactivar={handleReactivarUsuario}
+               onEliminar={handleEliminarUsuario}
+               onEliminarCita={handleEliminarCita}
+               onReasignarPaciente={handleReasignarPaciente}
+             />
+           )}
         </div>
       </main>
 
@@ -436,6 +498,13 @@ const PanelAdmin: React.FC = () => {
         <ModalCrearPsicologo
           onClose={() => setShowCrearModal(false)}
           onSubmit={handleCrearPsicologo}
+        />
+      )}
+
+      {showCrearRecepcionistaModal && (
+        <ModalCrearRecepcionista
+          onClose={() => setShowCrearRecepcionistaModal(false)}
+          onSubmit={handleCrearRecepcionista}
         />
       )}
 
@@ -528,9 +597,9 @@ const PanelAdmin: React.FC = () => {
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white animate-slide-in-right shadow-glow">
             <div className="mt-3">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Confirmar Acción</h3>
-              <p className="text-sm text-gray-700 mb-4">
-                ¿Estás seguro de que quieres {confirmAction.type === 'desactivar' ? 'desactivar' : confirmAction.type === 'reactivar' ? 'reactivar' : 'eliminar'} el psicólogo "{confirmAction.nombre}"?
-              </p>
+                             <p className="text-sm text-gray-700 mb-4">
+                 ¿Estás seguro de que quieres {confirmAction.type === 'desactivar' ? 'desactivar' : confirmAction.type === 'reactivar' ? 'reactivar' : 'eliminar'} el {confirmAction.tipo === 'psicologo' ? 'psicólogo' : 'recepcionista'} "{confirmAction.nombre}"?
+               </p>
               
               {/* Campo de confirmación para desactivar y eliminar */}
               {(confirmAction.type === 'desactivar' || confirmAction.type === 'eliminar') && (
@@ -575,9 +644,9 @@ const PanelAdmin: React.FC = () => {
                       />
                     </div>
                     <div className="ml-3 text-sm">
-                      <label htmlFor="confirm-checkbox" className="font-medium text-gray-700">
-                        Estoy seguro/a de reactivar la cuenta del psicólogo {confirmAction.nombre}
-                      </label>
+                                             <label htmlFor="confirm-checkbox" className="font-medium text-gray-700">
+                         Estoy seguro/a de reactivar la cuenta del {confirmAction.tipo === 'psicologo' ? 'psicólogo' : 'recepcionista'} {confirmAction.nombre}
+                       </label>
                     </div>
                   </div>
                   {confirmError && (
@@ -604,9 +673,9 @@ const PanelAdmin: React.FC = () => {
                       />
                     </div>
                     <div className="ml-3 text-sm">
-                      <label htmlFor="confirm-eliminar-checkbox" className="font-medium text-gray-700">
-                        ¿Estás seguro/a que quieres <span className="text-red-600 font-bold">eliminar</span> de los registros al psicólogo/a <span className="font-bold">{confirmAction.nombre}</span> para siempre?
-                      </label>
+                                             <label htmlFor="confirm-eliminar-checkbox" className="font-medium text-gray-700">
+                         ¿Estás seguro/a que quieres <span className="text-red-600 font-bold">eliminar</span> de los registros al {confirmAction.tipo === 'psicologo' ? 'psicólogo/a' : 'recepcionista'} <span className="font-bold">{confirmAction.nombre}</span> para siempre?
+                       </label>
                     </div>
                   </div>
                   {confirmError && (

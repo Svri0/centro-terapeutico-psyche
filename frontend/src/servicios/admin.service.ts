@@ -44,6 +44,44 @@ export interface ActualizarPsicologoData {
   activo?: boolean;
 }
 
+export interface Recepcionista {
+  id: string;
+  nombres: string;
+  apellidos: string;
+  email: string;
+  telefono?: string;
+  fecha_nacimiento?: string;
+  genero?: string;
+  avatar_url?: string;
+  activo: boolean;
+  email_verificado: boolean;
+  ultimo_acceso?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CrearRecepcionistaData {
+  nombres: string;
+  apellidos: string;
+  email: string;
+  password: string;
+  telefono?: string;
+  fecha_nacimiento?: string;
+  genero?: string;
+  avatar_url?: string;
+}
+
+export interface ActualizarRecepcionistaData {
+  nombres?: string;
+  apellidos?: string;
+  email?: string;
+  telefono?: string;
+  fecha_nacimiento?: string;
+  genero?: string;
+  avatar_url?: string;
+  activo?: boolean;
+}
+
 class AdminService {
   async obtenerPsicologos(): Promise<Psicologo[]> {
     try {
@@ -185,9 +223,103 @@ class AdminService {
     try {
       const params = excludeId ? { excludeId } : {};
       const response = await api.get('/admin/psicologos/disponibles', { params });
+      return response.data?.data || [];
+    } catch (error: any) {
+      console.error('Error al obtener psicólogos disponibles:', error);
+      return [];
+    }
+  }
+
+  // Funciones para recepcionistas
+  async obtenerRecepcionistas(): Promise<Recepcionista[]> {
+    try {
+      const response = await api.get('/admin/recepcionistas');
+      return response.data?.data || [];
+    } catch (error: any) {
+      console.error('Error al obtener recepcionistas:', error);
+      return [];
+    }
+  }
+
+  async crearRecepcionista(data: CrearRecepcionistaData, avatar?: File): Promise<Recepcionista> {
+    try {
+      const formData = new FormData();
+      
+      // Agregar todos los campos de texto
+      Object.keys(data).forEach(key => {
+        const value = (data as any)[key];
+        if (value !== undefined && value !== null && value !== '') {
+          formData.append(key, value);
+        }
+      });
+      
+      // Agregar el archivo si existe
+      if (avatar) {
+        formData.append('avatar', avatar);
+      }
+      
+      const response = await api.post('/admin/recepcionistas', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       return response.data.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.mensaje || 'Error al obtener psicólogos disponibles');
+      throw new Error(error.response?.data?.mensaje || 'Error al crear recepcionista');
+    }
+  }
+
+  async actualizarRecepcionista(id: string, data: ActualizarRecepcionistaData, avatar?: File): Promise<Recepcionista> {
+    try {
+      const formData = new FormData();
+      
+      // Agregar todos los campos de texto
+      Object.keys(data).forEach(key => {
+        const value = (data as any)[key];
+        if (value !== undefined && value !== null && value !== '') {
+          formData.append(key, value);
+        }
+      });
+      
+      // Agregar el archivo si existe
+      if (avatar) {
+        formData.append('avatar', avatar);
+      }
+      
+      const response = await api.put(`/admin/recepcionistas/${id}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.mensaje || 'Error al actualizar recepcionista');
+    }
+  }
+
+  async eliminarRecepcionista(id: string): Promise<void> {
+    try {
+      await api.delete(`/admin/recepcionistas/${id}`);
+    } catch (error: any) {
+      throw new Error(error.response?.data?.mensaje || 'Error al eliminar recepcionista');
+    }
+  }
+
+  async activarRecepcionista(id: string): Promise<Recepcionista> {
+    try {
+      const response = await api.patch(`/admin/recepcionistas/${id}/reactivar`);
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.mensaje || 'Error al activar recepcionista');
+    }
+  }
+
+  async desactivarRecepcionista(id: string): Promise<Recepcionista> {
+    try {
+      const response = await api.patch(`/admin/recepcionistas/${id}/desactivar`);
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.mensaje || 'Error al desactivar recepcionista');
     }
   }
 }
