@@ -14,5 +14,20 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Verificación de autenticación
+      console.log('🔍 Verificando autenticación...');
+      const token = localStorage.getItem('token');
+      const user = localStorage.getItem('user');
+      console.log('Token disponible:', !!token);
+      console.log('Usuario disponible:', !!user);
+      
+      if (!token && window.location.pathname !== '/login' && window.location.pathname !== '/registro') {
+        console.log('❌ No hay token, redirigiendo a login...');
+        window.location.href = '/login';
+      } else if (token) {
+        console.log('✅ Token encontrado, usuario autenticado');
+      }
+    </script>
   </body>
 </html> 

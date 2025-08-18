@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { authService } from '../servicios/auth.service';
 import GestionPacientes from '../componentes/GestionPacientes';
-import CitasPsicologo from '../componentes/CitasPsicologo';
-import VisualizarDisponibilidad from '../componentes/VisualizarDisponibilidad';
-import { EditarDisponibilidad } from '../componentes/EditarDisponibilidad';
+
 import AvatarSelector from '../componentes/AvatarSelector';
 import ImageUpload from '../componentes/ImageUpload';
+import GestionTareas from '../componentes/GestionTareas';
+import CitasPsicologo from '../componentes/CitasPsicologo';
+import EstadisticasPsicologo from '../componentes/EstadisticasPsicologo';
+import GestionDisponibilidadMensual from '../componentes/GestionDisponibilidadMensual';
 import { TIPOS_SERVICIOS, TipoServicio, obtenerCategorias } from '../utilidades/tipos-servicios';
 import { obtenerServicios, crearServicio, eliminarServicio, ServicioPsicologo } from '../servicios/servicios.service';
 import Notificacion from '../componentes/Notificacion';
@@ -36,7 +38,7 @@ const PanelPsicologo: React.FC = () => {
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'pacientes' | 'citas' | 'disponibilidad' | 'servicios' | 'perfil'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'pacientes' | 'citas' | 'disponibilidad' | 'servicios' | 'tareas' | 'perfil'>('dashboard');
   const [perfilData, setPerfilData] = useState({
     nombres: '',
     apellidos: '',
@@ -50,8 +52,7 @@ const PanelPsicologo: React.FC = () => {
   const [selectedAvatarUrl, setSelectedAvatarUrl] = useState<string>('');
   const [uploadedImage, setUploadedImage] = useState<File | null>(null);
   const [useRealImage, setUseRealImage] = useState(false);
-  const [mostrarEditarDisponibilidad, setMostrarEditarDisponibilidad] = useState(false);
-  const [refreshAvailabilityTrigger, setRefreshAvailabilityTrigger] = useState(0);
+
   const [mostrarAgregarServicio, setMostrarAgregarServicio] = useState(false);
   const [servicios, setServicios] = useState<ServicioPsicologo[]>([]);
   const [servicioSeleccionado, setServicioSeleccionado] = useState<TipoServicio | null>(null);
@@ -64,7 +65,7 @@ const PanelPsicologo: React.FC = () => {
     tipo: 'info' as 'exito' | 'error' | 'advertencia' | 'info'
   });
 
-  const [disponibilidadFiltrada, setDisponibilidadFiltrada] = useState<any[]>([]);
+
 
   // Frase motivadora elegante
   const fraseMotivadora = "Transformando vidas a través de la salud mental";
@@ -85,9 +86,10 @@ const PanelPsicologo: React.FC = () => {
 
 
   const user = authService.getUser();
+  console.log('🔍 Debug - PanelPsicologo - user:', user);
 
   useEffect(() => {
-    // Simular carga de datos
+    // Cargar datos reales
     cargarDatos();
     cargarPerfil();
     cargarServicios();
@@ -116,47 +118,52 @@ const PanelPsicologo: React.FC = () => {
     }
   };
 
-  const cargarDatos = () => {
-    // Datos simulados - en producción vendrían de la API
-    const sesionesHoyData: Sesion[] = [
-      {
-        id: '1',
-        paciente: 'María González',
-        fecha: '2025-07-29',
-        hora: '10:00',
-        estado: 'programada'
-      },
-      {
-        id: '2',
-        paciente: 'Carlos Rodríguez',
-        fecha: '2025-07-29',
-        hora: '14:30',
-        estado: 'programada'
-      }
-    ];
+  const cargarDatos = async () => {
+    try {
+      if (!user?.id) return;
 
-    const sesionesRealizadasData: Sesion[] = [
-      {
-        id: '3',
-        paciente: 'Ana Silva',
-        fecha: '2025-07-28',
-        hora: '09:00',
-        estado: 'completada',
-        notas: 'Sesión muy productiva, paciente muestra mejoría'
-      },
-      {
-        id: '4',
-        paciente: 'Luis Pérez',
-        fecha: '2025-07-27',
-        hora: '16:00',
-        estado: 'completada',
-        notas: 'Continuar con ejercicios de respiración'
-      }
-    ];
-
-    setSesionesHoy(sesionesHoyData);
-    setSesionesRealizadas(sesionesRealizadasData);
-    setTotalSesiones(sesionesRealizadasData.length);
+      // Importar el servicio de citas dinámicamente para evitar dependencias circulares
+      const { citasService } = await import('../servicios/citas.service');
+      
+      // Obtener citas del psicólogo
+      const citasData = await citasService.obtenerCitasPsicologo(user.id);
+      
+      // Obtener fecha de hoy
+      const hoy = new Date().toISOString().split('T')[0];
+      
+      // Filtrar citas de hoy
+      const citasHoy = citasData.filter(cita => cita.fecha === hoy);
+      
+      // Filtrar citas realizadas (completadas o en progreso)
+      const citasRealizadas = citasData.filter(cita => 
+        cita.estado === 'completada' || cita.estado === 'en_progreso'
+      );
+      
+      setSesionesHoy(citasHoy.map(cita => ({
+        id: cita.id,
+        paciente: `${cita.paciente_nombres} ${cita.paciente_apellidos}`,
+        fecha: cita.fecha,
+        hora: cita.hora_inicio,
+        estado: cita.estado,
+        notas: cita.notas_psicologo
+      })));
+      
+      setSesionesRealizadas(citasRealizadas.map(cita => ({
+        id: cita.id,
+        paciente: `${cita.paciente_nombres} ${cita.paciente_apellidos}`,
+        fecha: cita.fecha,
+        hora: cita.hora_inicio,
+        estado: cita.estado,
+        notas: cita.notas_psicologo
+      })));
+      
+      setTotalSesiones(citasData.length);
+    } catch (error) {
+      console.error('Error al cargar datos:', error);
+      setSesionesHoy([]);
+      setSesionesRealizadas([]);
+      setTotalSesiones(0);
+    }
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -433,17 +440,19 @@ const PanelPsicologo: React.FC = () => {
               <h2 className="text-lg sm:text-xl font-bold text-gray-900 tracking-widest uppercase truncate">
                 {activeTab === 'dashboard' && 'Dashboard'}
                 {activeTab === 'pacientes' && 'Gestión de Pacientes'}
-                {activeTab === 'citas' && 'Gestión de Citas'}
-                {activeTab === 'disponibilidad' && 'Mi Disponibilidad'}
+                {activeTab === 'citas' && 'Mis Citas'}
+                {activeTab === 'disponibilidad' && 'Disponibilidad'}
                 {activeTab === 'servicios' && 'Mis Servicios'}
+                {activeTab === 'tareas' && 'Gestión de Tareas'}
                 {activeTab === 'perfil' && 'Mi Perfil'}
               </h2>
               <p className="mt-1 text-xs font-semibold text-gray-600 tracking-widest uppercase truncate">
                 {activeTab === 'dashboard' && 'Resumen de actividades y estadísticas'}
                 {activeTab === 'pacientes' && 'Administra la información de tus pacientes'}
-                {activeTab === 'citas' && 'Gestiona las citas y sesiones programadas'}
-                {activeTab === 'disponibilidad' && 'Visualiza tus horarios disponibles para citas'}
+                {activeTab === 'citas' && 'Gestiona las citas de tus pacientes'}
+                {activeTab === 'disponibilidad' && 'Configura tus horarios disponibles'}
                 {activeTab === 'servicios' && 'Configura los servicios que ofreces a los pacientes'}
+                {activeTab === 'tareas' && 'Asigna y gestiona tareas para tus pacientes'}
                 {activeTab === 'perfil' && 'Actualiza tu información personal y profesional'}
               </p>
             </div>
@@ -474,6 +483,7 @@ const PanelPsicologo: React.FC = () => {
               >
                 Gestión de Pacientes
               </button>
+
               <button
                 onClick={() => setActiveTab('citas')}
                 className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
@@ -484,26 +494,38 @@ const PanelPsicologo: React.FC = () => {
               >
                 Citas
               </button>
-                                      <button
-              onClick={() => setActiveTab('disponibilidad')}
-              className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
-                activeTab === 'disponibilidad'
-                  ? 'border-amber-500 text-amber-600'
-                  : 'border-transparent text-gray-500 hover:text-amber-600 hover:border-amber-300'
-              }`}
-            >
-              Disponibilidad
-            </button>
-            <button
-              onClick={() => setActiveTab('servicios')}
-              className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
-                activeTab === 'servicios'
-                  ? 'border-amber-500 text-amber-600'
-                  : 'border-transparent text-gray-500 hover:text-amber-600 hover:border-amber-300'
-              }`}
-            >
-              Servicios
-            </button>
+
+              <button
+                onClick={() => setActiveTab('disponibilidad')}
+                className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
+                  activeTab === 'disponibilidad'
+                    ? 'border-amber-500 text-amber-600'
+                    : 'border-transparent text-gray-500 hover:text-amber-600 hover:border-amber-300'
+                }`}
+              >
+                Disponibilidad
+              </button>
+
+              <button
+                onClick={() => setActiveTab('servicios')}
+                className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
+                  activeTab === 'servicios'
+                    ? 'border-amber-500 text-amber-600'
+                    : 'border-transparent text-gray-500 hover:text-amber-600 hover:border-amber-300'
+                }`}
+              >
+                Servicios
+              </button>
+              <button
+                onClick={() => setActiveTab('tareas')}
+                className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
+                  activeTab === 'tareas'
+                    ? 'border-amber-500 text-amber-600'
+                    : 'border-transparent text-gray-500 hover:text-amber-600 hover:border-amber-300'
+                }`}
+              >
+                Tareas
+              </button>
               <button
                 onClick={() => setActiveTab('perfil')}
                 className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
@@ -521,7 +543,10 @@ const PanelPsicologo: React.FC = () => {
         {/* Contenido de las pestañas */}
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
-            {/* Estadísticas */}
+            {/* Estadísticas detalladas */}
+            <EstadisticasPsicologo psicologoId={user?.id || ''} />
+            
+            {/* Estadísticas básicas */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               <div className="bg-white rounded-lg shadow-sm border border-amber-100 p-4 sm:p-6">
                 <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 mb-2">Sesiones Hoy</h3>
@@ -533,7 +558,9 @@ const PanelPsicologo: React.FC = () => {
               </div>
               <div className="bg-white rounded-lg shadow-sm border border-amber-100 p-4 sm:p-6 sm:col-span-2 lg:col-span-1">
                 <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 mb-2">Pacientes Activos</h3>
-                <p className="text-2xl sm:text-3xl font-bold text-amber-600">12</p>
+                <p className="text-2xl sm:text-3xl font-bold text-amber-600">
+                  {new Set(sesionesHoy.map(s => s.paciente)).size + new Set(sesionesRealizadas.map(s => s.paciente)).size}
+                </p>
               </div>
             </div>
 
@@ -604,6 +631,10 @@ const PanelPsicologo: React.FC = () => {
           <CitasPsicologo />
         )}
 
+        {activeTab === 'disponibilidad' && (
+          <GestionDisponibilidadMensual psicologoId={user?.id || ''} />
+        )}
+
         {activeTab === 'servicios' && (
           <div className="space-y-6">
             {/* Botón de agregar servicio */}
@@ -672,33 +703,9 @@ const PanelPsicologo: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'disponibilidad' && (
-            <div className="space-y-6">
-              {/* Header con botón de editar */}
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Mi Disponibilidad</h2>
-                  <p className="text-gray-600 mt-2">Gestiona tus horarios disponibles para citas</p>
-                </div>
-                <button
-                  onClick={() => setMostrarEditarDisponibilidad(true)}
-                  className="px-4 py-2 bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 text-amber-800 rounded-lg transition-colors flex items-center space-x-2 font-medium"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <span>Editar Horarios</span>
-                </button>
-              </div>
-              
-
-              
-              {/* Visualizar disponibilidad */}
-              <VisualizarDisponibilidad key={refreshAvailabilityTrigger} />
-            </div>
-          )}
-
-
+        {activeTab === 'tareas' && (
+          <GestionTareas />
+        )}
 
         {activeTab === 'perfil' && (
           <div className="bg-white rounded-lg shadow">
@@ -925,19 +932,7 @@ const PanelPsicologo: React.FC = () => {
         </div>
       )}
 
-      {/* Modal Editar Disponibilidad */}
-      {mostrarEditarDisponibilidad && (
-        <EditarDisponibilidad
-          isOpen={mostrarEditarDisponibilidad}
-          onClose={() => setMostrarEditarDisponibilidad(false)}
-          onSuccess={() => {
-            setMostrarEditarDisponibilidad(false);
-            // Mantener la pestaña activa y forzar re-render del componente
-            setActiveTab('disponibilidad');
-            setRefreshAvailabilityTrigger(prev => prev + 1);
-          }}
-        />
-      )}
+
 
       {/* Modal Agregar Servicio */}
       {mostrarAgregarServicio && (

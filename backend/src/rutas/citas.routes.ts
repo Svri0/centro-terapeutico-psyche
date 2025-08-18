@@ -1,35 +1,47 @@
 import { Router } from 'express';
-import {
-  obtenerDisponibilidad,
-  crearCita,
-  obtenerCitasPaciente,
-  obtenerCitasPsicologo,
-  actualizarEstadoCita,
-  cancelarCita
-} from '../controladores/citas.controlador';
 import { verificarToken } from '../middleware/auth.middleware';
+import {
+  obtenerCitasPsicologo,
+  obtenerCitasPaciente,
+  obtenerCita,
+  crearCita,
+  actualizarCita,
+  actualizarEstadoCita,
+  cancelarCita,
+  obtenerDisponibilidad,
+  obtenerEstadisticasCitas
+} from '../controladores/citas.controlador';
 
 const router = Router();
 
-// Rutas públicas (requieren autenticación)
+// Rutas protegidas (requieren autenticación)
 router.use(verificarToken);
 
-// Obtener disponibilidad de un psicólogo para una fecha
-router.get('/disponibilidad/:psicologoId/:fecha', obtenerDisponibilidad);
-
-// Crear una nueva cita (paciente)
-router.post('/', crearCita);
-
-// Obtener citas del paciente
-router.get('/paciente', obtenerCitasPaciente);
-
-// Obtener citas del psicólogo
+// Obtener citas del psicólogo autenticado
 router.get('/psicologo', obtenerCitasPsicologo);
 
-// Actualizar estado de una cita (psicólogo)
-router.put('/:id/estado', actualizarEstadoCita);
+// Obtener citas del paciente autenticado
+router.get('/paciente', obtenerCitasPaciente);
 
-// Cancelar cita (paciente)
-router.put('/:id/cancelar', cancelarCita);
+// Obtener disponibilidad del psicólogo
+router.get('/psicologos/:psicologoId/disponibilidad', obtenerDisponibilidad);
+
+// Obtener estadísticas de citas
+router.get('/psicologos/estadisticas-citas', obtenerEstadisticasCitas);
+
+// Crear una nueva cita
+router.post('/', crearCita);
+
+// Obtener una cita específica
+router.get('/:id', obtenerCita);
+
+// Actualizar una cita
+router.put('/:id', actualizarCita);
+
+// Actualizar estado de una cita
+router.patch('/:id/estado', actualizarEstadoCita);
+
+// Cancelar una cita
+router.delete('/:id', cancelarCita);
 
 export default router; 

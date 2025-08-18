@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { pacientesService, Paciente, DatosPaciente, PacienteCreado } from '../servicios/pacientes.service';
+import { pacientesService, Paciente, CrearPacienteData, PacienteCreado } from '../servicios/pacientes.service';
 import DetallesPaciente from './DetallesPaciente';
 import EditarPaciente from './EditarPaciente';
 
@@ -24,7 +24,7 @@ const GestionPacientes: React.FC<GestionPacientesProps> = ({ onPacienteCreado })
   const [showEditar, setShowEditar] = useState(false);
 
   // Formulario de creación
-  const [formData, setFormData] = useState<DatosPaciente>({
+  const [formData, setFormData] = useState<CrearPacienteData>({
     nombres: '',
     apellidos: '',
     email: '',
@@ -56,12 +56,21 @@ const GestionPacientes: React.FC<GestionPacientesProps> = ({ onPacienteCreado })
     setError('');
     try {
       const resultado = await pacientesService.obtenerPacientes();
-      setPacientes(resultado.pacientes);
-      setPacientesFiltrados(resultado.pacientes);
-      setTotalPacientes(resultado.total);
-      setPacientesActivos(resultado.activos);
+      console.log('Resultado de pacientes:', resultado);
+      
+      // Asegurar que tenemos un array de pacientes
+      const pacientesArray = Array.isArray(resultado) ? resultado : [];
+      setPacientes(pacientesArray);
+      setPacientesFiltrados(pacientesArray);
+      setTotalPacientes(pacientesArray.length);
+      setPacientesActivos(pacientesArray.filter(p => p.activo).length);
     } catch (err: any) {
+      console.error('Error al cargar pacientes:', err);
       setError(err.message);
+      setPacientes([]);
+      setPacientesFiltrados([]);
+      setTotalPacientes(0);
+      setPacientesActivos(0);
     } finally {
       setLoading(false);
     }
@@ -74,9 +83,15 @@ const GestionPacientes: React.FC<GestionPacientesProps> = ({ onPacienteCreado })
     setError('');
     try {
       const resultado = await pacientesService.buscarPacientes(searchTerm);
-      setPacientesFiltrados(resultado.pacientes);
+      console.log('Resultado de búsqueda:', resultado);
+      
+      // Asegurar que tenemos un array de pacientes
+      const pacientesArray = Array.isArray(resultado) ? resultado : [];
+      setPacientesFiltrados(pacientesArray);
     } catch (err: any) {
+      console.error('Error al buscar pacientes:', err);
       setError(err.message);
+      setPacientesFiltrados([]);
     } finally {
       setLoading(false);
     }
@@ -231,13 +246,13 @@ const GestionPacientes: React.FC<GestionPacientesProps> = ({ onPacienteCreado })
         </div>
       ) : (
         <div className="bg-white shadow overflow-hidden sm:rounded-md">
-          {pacientesFiltrados.length === 0 ? (
+          {!Array.isArray(pacientesFiltrados) || pacientesFiltrados.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               {searchTerm ? 'No se encontraron pacientes con ese criterio' : 'No hay pacientes registrados'}
             </div>
           ) : (
             <ul className="divide-y divide-gray-200">
-              {pacientesFiltrados.map((paciente) => (
+              {Array.isArray(pacientesFiltrados) && pacientesFiltrados.map((paciente) => (
                 <li key={paciente.id} className="px-6 py-4 hover:bg-gray-50">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">

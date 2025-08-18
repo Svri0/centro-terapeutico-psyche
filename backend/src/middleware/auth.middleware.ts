@@ -20,10 +20,17 @@ declare global {
 
 // Middleware para verificar JWT
 export const verificarToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  console.log('🔍 verificarToken - INICIANDO');
+  console.log('🔍 URL:', req.url);
+  console.log('🔍 Method:', req.method);
   try {
+    console.log('🔍 Headers recibidos:', req.headers);
+    console.log('🔍 Authorization header:', req.headers.authorization);
+    
     const token = req.headers.authorization?.replace('Bearer ', '');
 
     if (!token) {
+      console.log('❌ No se encontró token en headers');
       ManejadorRespuestas.noAutorizado(
         res,
         'Token de acceso requerido',
@@ -32,10 +39,13 @@ export const verificarToken = async (req: Request, res: Response, next: NextFunc
       return;
     }
 
+    console.log('🔍 Token extraído:', token.substring(0, 50) + '...');
+    
     const secret = process.env.JWT_SECRET || 'tu_secreto_super_seguro_para_jwt_tokens_2024';
     console.log('🔍 JWT_SECRET usado en verificación:', secret);
     
     const decoded = jwt.verify(token, secret) as any;
+    console.log('🔍 Token decodificado:', decoded);
     
     // Verificar que el usuario existe y está activo
     // TODO: Implementar verificación en base de datos
@@ -47,6 +57,7 @@ export const verificarToken = async (req: Request, res: Response, next: NextFunc
       apellidos: decoded.apellidos
     };
 
+    console.log('🔍 Usuario configurado en req:', req.usuario);
     next();
   } catch (error) {
     log.error('Error en verificarToken:', error);
@@ -157,6 +168,52 @@ export const verificarPsicologo = async (req: Request, res: Response, next: Next
       'AUTH_111'
     );
   }
+};
+
+// Middleware para verificar roles específicos
+export const verificarRol = (rolesPermitidos: string[]) => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    console.log('🔍 verificarRol - INICIANDO');
+    console.log('🔍 Roles permitidos:', rolesPermitidos);
+    console.log('🔍 Usuario:', req.usuario);
+    try {
+      if (!req.usuario) {
+        ManejadorRespuestas.noAutorizado(
+          res,
+          'Usuario no autenticado',
+          'AUTH_112'
+        );
+        return;
+      }
+
+      // Mapear rol_id a nombres de roles
+      const rolMap: { [key: number]: string } = {
+        1: 'admin',
+        2: 'psicologo',
+        3: 'paciente'
+      };
+
+      const rolUsuario = rolMap[req.usuario.rol_id];
+      
+      if (!rolUsuario || !rolesPermitidos.includes(rolUsuario)) {
+        ManejadorRespuestas.prohibido(
+          res,
+          `Acceso denegado. Se requieren permisos de: ${rolesPermitidos.join(', ')}`,
+          'AUTH_113'
+        );
+        return;
+      }
+
+      next();
+    } catch (error) {
+      log.error('Error en verificarRol:', error);
+      ManejadorRespuestas.errorInterno(
+        res,
+        'Error al verificar permisos',
+        'AUTH_114'
+      );
+    }
+  };
 };
 
 // Middleware combinado para rutas de administrador

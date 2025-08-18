@@ -5,10 +5,9 @@ import Sesion from './Sesion';
 import Tarea from './Tarea';
 import Mensaje from './Mensaje';
 import LogAuditoria from './LogAuditoria';
-import DisponibilidadPsicologo from './DisponibilidadPsicologo';
-import DisponibilidadSemanal from './DisponibilidadSemanal';
-import Cita from './Cita';
 import ServicioPsicologo from './ServicioPsicologo';
+import RespuestaTarea from './RespuestaTarea';
+import DisponibilidadMensual from './DisponibilidadMensual';
 
 // Configurar asociaciones
 
@@ -144,49 +143,29 @@ LogAuditoria.belongsTo(Usuario, {
   as: 'usuario',
 });
 
-// Usuario - DisponibilidadPsicologo (1:N)
-Usuario.hasMany(DisponibilidadPsicologo, {
-  foreignKey: 'psicologo_id',
-  as: 'disponibilidad',
+// Tarea - RespuestaTarea (1:N)
+Tarea.hasMany(RespuestaTarea, {
+  foreignKey: 'tarea_id',
+  as: 'respuestas',
 });
 
-DisponibilidadPsicologo.belongsTo(Usuario, {
-  foreignKey: 'psicologo_id',
-  as: 'psicologo',
+RespuestaTarea.belongsTo(Tarea, {
+  foreignKey: 'tarea_id',
+  as: 'tarea',
 });
 
-// Usuario - DisponibilidadSemanal (1:N)
-Usuario.hasMany(DisponibilidadSemanal, {
-  foreignKey: 'psicologo_id',
-  as: 'disponibilidad_semanal',
-});
-
-DisponibilidadSemanal.belongsTo(Usuario, {
-  foreignKey: 'psicologo_id',
-  as: 'psicologo',
-});
-
-// Usuario - Cita (1:N) - Psicólogo
-Usuario.hasMany(Cita, {
-  foreignKey: 'psicologo_id',
-  as: 'citas_psicologo',
-});
-
-Cita.belongsTo(Usuario, {
-  foreignKey: 'psicologo_id',
-  as: 'psicologo',
-});
-
-// Paciente - Cita (1:N)
-Paciente.hasMany(Cita, {
+// Paciente - RespuestaTarea (1:N)
+Paciente.hasMany(RespuestaTarea, {
   foreignKey: 'paciente_id',
-  as: 'citas',
+  as: 'respuestas_tareas',
 });
 
-Cita.belongsTo(Paciente, {
+RespuestaTarea.belongsTo(Paciente, {
   foreignKey: 'paciente_id',
   as: 'paciente',
 });
+
+
 
 // Usuario - ServicioPsicologo (1:N)
 Usuario.hasMany(ServicioPsicologo, {
@@ -199,6 +178,17 @@ ServicioPsicologo.belongsTo(Usuario, {
   as: 'psicologo',
 });
 
+// Usuario - DisponibilidadMensual (1:N)
+Usuario.hasMany(DisponibilidadMensual, {
+  foreignKey: 'psicologo_id',
+  as: 'disponibilidad_mensual',
+});
+
+DisponibilidadMensual.belongsTo(Usuario, {
+  foreignKey: 'psicologo_id',
+  as: 'psicologo',
+});
+
 export {
   Rol,
   Usuario,
@@ -207,8 +197,7 @@ export {
   Tarea,
   Mensaje,
   LogAuditoria,
-  DisponibilidadPsicologo,
-  DisponibilidadSemanal,
-  Cita,
   ServicioPsicologo,
+  RespuestaTarea,
+  DisponibilidadMensual,
 }; 

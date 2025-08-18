@@ -1,0 +1,395 @@
+import React, { useState, useEffect } from 'react';
+import disponibilidadMensualService, { DisponibilidadMensual } from '../servicios/disponibilidadMensual.service';
+
+interface GestionDisponibilidadMensualProps {
+  psicologoId: string;
+}
+
+const GestionDisponibilidadMensual: React.FC<GestionDisponibilidadMensualProps> = ({ psicologoId }) => {
+  const [disponibilidad, setDisponibilidad] = useState<DisponibilidadMensual[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [modoEdicion, setModoEdicion] = useState(false);
+  const [mesActual, setMesActual] = useState(new Date().getMonth() + 1);
+  const [añoActual, setAñoActual] = useState(new Date().getFullYear());
+  const [disponibilidadTemporal, setDisponibilidadTemporal] = useState<DisponibilidadMensual[]>([]);
+
+  const horariosPredefinidos = [
+    { nombre: 'Mañana', inicio: '08:00', fin: '12:00' },
+    { nombre: 'Tarde', inicio: '13:00', fin: '17:00' },
+    { nombre: 'Jornada Completa', inicio: '08:00', fin: '17:00' },
+    { nombre: 'Media Jornada', inicio: '09:00', fin: '13:00' }
+  ];
+
+  useEffect(() => {
+    cargarDisponibilidadMensual();
+  }, [psicologoId, mesActual, añoActual]);
+
+  const cargarDisponibilidadMensual = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const disponibilidadData = await disponibilidadMensualService.obtenerDisponibilidadMensual(
+        psicologoId, 
+        mesActual, 
+        añoActual
+      );
+      
+      setDisponibilidad(disponibilidadData);
+      setDisponibilidadTemporal([...disponibilidadData]);
+    } catch (err: any) {
+      console.error('Error al cargar disponibilidad mensual:', err);
+      setError(err.message || 'Error al cargar la disponibilidad mensual');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const iniciarEdicion = () => {
+    setDisponibilidadTemporal([...disponibilidad]);
+    setModoEdicion(true);
+  };
+
+  const cancelarEdicion = () => {
+    setDisponibilidadTemporal([...disponibilidad]);
+    setModoEdicion(false);
+  };
+
+  const guardarCambios = async () => {
+    try {
+      setLoading(true);
+      
+      await disponibilidadMensualService.actualizarDisponibilidadMensualMultiple(
+        psicologoId, 
+        disponibilidadTemporal
+      );
+      
+      setDisponibilidad([...disponibilidadTemporal]);
+      setModoEdicion(false);
+      
+      alert('Disponibilidad mensual actualizada correctamente');
+    } catch (err: any) {
+      console.error('Error al guardar disponibilidad mensual:', err);
+      alert(err.message || 'Error al actualizar la disponibilidad mensual');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generarDisponibilidadRecurrente = async () => {
+    try {
+      const fechaInicio = `${añoActual}-${String(mesActual).padStart(2, '0')}-01`;
+      const fechaFin = `${añoActual}-${String(mesActual).padStart(2, '0')}-31`;
+      
+      // Horarios por defecto para días laborables
+      const horarios = {
+        1: { hora_inicio: '09:00', hora_fin: '17:00', activo: true }, // Lunes
+        2: { hora_inicio: '09:00', hora_fin: '17:00', activo: true }, // Martes
+        3: { hora_inicio: '09:00', hora_fin: '17:00', activo: true }, // Miércoles
+        4: { hora_inicio: '09:00', hora_fin: '17:00', activo: true }, // Jueves
+        5: { hora_inicio: '09:00', hora_fin: '17:00', activo: true }, // Viernes
+        6: { hora_inicio: '09:00', hora_fin: '13:00', activo: true }, // Sábado
+        0: { hora_inicio: '00:00', hora_fin: '00:00', activo: false }  // Domingo
+      };
+
+      console.log('🔍 Debug - Generando disponibilidad recurrente:', {
+        psicologoId,
+        fechaInicio,
+        fechaFin,
+        horarios
+      });
+
+      await disponibilidadMensualService.generarDisponibilidadRecurrente(
+        psicologoId,
+        fechaInicio,
+        fechaFin,
+        horarios
+      );
+
+      await cargarDisponibilidadMensual();
+      alert('Disponibilidad recurrente generada correctamente');
+    } catch (err: any) {
+      console.error('Error al generar disponibilidad recurrente:', err);
+      alert(err.message || 'Error al generar disponibilidad recurrente');
+    }
+  };
+
+  const aplicarHorarioPredefinido = (horario: any) => {
+    const nuevaDisponibilidad = disponibilidadTemporal.map(disp => ({
+      ...disp,
+      hora_inicio: horario.inicio,
+      hora_fin: horario.fin
+    }));
+    setDisponibilidadTemporal(nuevaDisponibilidad);
+  };
+
+  const handleCambiarHorario = (fecha: string, campo: 'hora_inicio' | 'hora_fin', valor: string) => {
+    const nuevaDisponibilidad = disponibilidadTemporal.map(disp => 
+      disp.fecha === fecha ? { ...disp, [campo]: valor } : disp
+    );
+    setDisponibilidadTemporal(nuevaDisponibilidad);
+  };
+
+  const handleToggleDia = (fecha: string) => {
+    const disponibilidadExistente = disponibilidadTemporal.find(disp => disp.fecha === fecha);
+    
+    if (disponibilidadExistente) {
+      // Si ya existe, cambiar el estado activo
+      const nuevaDisponibilidad = disponibilidadTemporal.map(disp => 
+        disp.fecha === fecha ? { ...disp, activo: !disp.activo } : disp
+      );
+      setDisponibilidadTemporal(nuevaDisponibilidad);
+    } else {
+      // Si no existe, crear una nueva entrada
+      const nuevaDisponibilidad = [
+        ...disponibilidadTemporal,
+        {
+          psicologo_id: psicologoId,
+          fecha,
+          hora_inicio: '09:00',
+          hora_fin: '17:00',
+          activo: true,
+          tipo_disponibilidad: 'individual' as const
+        }
+      ];
+      setDisponibilidadTemporal(nuevaDisponibilidad);
+    }
+  };
+
+  const obtenerDiasDelMes = () => {
+    const primerDia = new Date(añoActual, mesActual - 1, 1);
+    const ultimoDia = new Date(añoActual, mesActual, 0);
+    const dias = [];
+
+    for (let dia = 1; dia <= ultimoDia.getDate(); dia++) {
+      const fecha = new Date(añoActual, mesActual - 1, dia);
+      const fechaString = fecha.toISOString().split('T')[0];
+      const diaSemana = fecha.getDay();
+      const esDomingo = diaSemana === 0; // 0 = Domingo
+      
+      dias.push({
+        dia,
+        fecha: fechaString,
+        diaSemana,
+        esDomingo,
+        nombreDia: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][diaSemana]
+      });
+    }
+
+    return dias;
+  };
+
+  const obtenerDisponibilidadFecha = (fecha: string) => {
+    return disponibilidadTemporal.find(d => d.fecha === fecha);
+  };
+
+  const obtenerDisponibilidadFechaOriginal = (fecha: string) => {
+    return disponibilidad.find(d => d.fecha === fecha);
+  };
+
+  const cambiarMes = (incremento: number) => {
+    let nuevoMes = mesActual + incremento;
+    let nuevoAño = añoActual;
+
+    if (nuevoMes > 12) {
+      nuevoMes = 1;
+      nuevoAño++;
+    } else if (nuevoMes < 1) {
+      nuevoMes = 12;
+      nuevoAño--;
+    }
+
+    setMesActual(nuevoMes);
+    setAñoActual(nuevoAño);
+  };
+
+  const nombresMeses = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span className="ml-2 text-gray-600">Cargando disponibilidad mensual...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="flex items-center">
+          <span className="text-red-600 mr-2">⚠️</span>
+          <span className="text-red-800">{error}</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900">Gestión de Disponibilidad Mensual</h2>
+          <p className="text-sm text-gray-600">Configura tu disponibilidad por fechas específicas</p>
+        </div>
+        
+        <div className="flex space-x-2">
+          <button
+            onClick={generarDisponibilidadRecurrente}
+            className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            🔄 Generar Recurrente
+          </button>
+          
+          {!modoEdicion ? (
+            <button
+              onClick={iniciarEdicion}
+              className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              ✏️ Editar Disponibilidad
+            </button>
+          ) : (
+            <div className="flex space-x-2">
+              <button
+                onClick={cancelarEdicion}
+                className="px-4 py-2 text-sm bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                ❌ Cancelar
+              </button>
+              <button
+                onClick={guardarCambios}
+                className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                💾 Guardar
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Navegación de Mes */}
+      <div className="flex justify-between items-center bg-white rounded-lg border border-gray-200 p-4">
+        <button
+          onClick={() => cambiarMes(-1)}
+          className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+        >
+          ← Mes Anterior
+        </button>
+        
+        <h3 className="text-lg font-semibold text-gray-900">
+          {nombresMeses[mesActual - 1]} {añoActual}
+        </h3>
+        
+        <button
+          onClick={() => cambiarMes(1)}
+          className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+        >
+          Mes Siguiente →
+        </button>
+      </div>
+
+      {/* Horarios Predefinidos */}
+      {modoEdicion && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h3 className="text-sm font-semibold text-blue-900 mb-3">Horarios Predefinidos</h3>
+          <div className="flex flex-wrap gap-2">
+            {horariosPredefinidos.map((horario, index) => (
+              <button
+                key={index}
+                onClick={() => aplicarHorarioPredefinido(horario)}
+                className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
+              >
+                {horario.nombre} ({horario.inicio}-{horario.fin})
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Calendario Mensual */}
+      <div className="bg-white rounded-lg border border-gray-200">
+        <div className="p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Calendario Mensual</h3>
+          <p className="text-sm text-gray-600 mb-6">Configura la disponibilidad para cada día del mes</p>
+          
+          <div className="grid grid-cols-7 gap-2 mb-4">
+            {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(dia => (
+              <div key={dia} className="text-center text-sm font-medium text-gray-500 py-2">
+                {dia}
+              </div>
+            ))}
+          </div>
+          
+                     <div className="grid grid-cols-7 gap-2">
+             {obtenerDiasDelMes().map(({ dia, fecha, diaSemana, esDomingo, nombreDia }) => {
+               const disponibilidadDia = obtenerDisponibilidadFecha(fecha);
+               const disponibilidadOriginal = obtenerDisponibilidadFechaOriginal(fecha);
+               const esActivo = disponibilidadDia?.activo || disponibilidadOriginal?.activo || false;
+              
+              return (
+                <div
+                  key={fecha}
+                  className={`
+                    p-3 rounded-lg border-2 transition-all min-h-[80px]
+                    ${esActivo 
+                      ? 'bg-green-50 border-green-200' 
+                      : 'bg-red-50 border-red-200'
+                    }
+                    ${modoEdicion && !esDomingo ? 'cursor-pointer hover:shadow-md' : ''}
+                    ${esDomingo ? 'bg-gray-50 border-gray-200' : ''}
+                  `}
+                  onClick={() => modoEdicion && !esDomingo && handleToggleDia(fecha)}
+                >
+                  <div className="text-center">
+                    <div className="text-sm font-medium text-gray-900 mb-1">{dia}</div>
+                    
+                    {esDomingo ? (
+                      <div className="text-xs text-gray-500">No laborable</div>
+                    ) : (
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-center">
+                          <div className={`w-2 h-2 rounded-full mr-1 ${esActivo ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                          <span className={`text-xs ${esActivo ? 'text-green-600' : 'text-red-600'}`}>
+                            {esActivo ? 'Activo' : 'Inactivo'}
+                          </span>
+                        </div>
+                        
+                                                 {esActivo && (disponibilidadDia || disponibilidadOriginal) && (
+                           <div className="text-xs text-gray-600">
+                             <div>{disponibilidadDia?.hora_inicio || disponibilidadOriginal?.hora_inicio || '09:00'}</div>
+                             <div>{disponibilidadDia?.hora_fin || disponibilidadOriginal?.hora_fin || '17:00'}</div>
+                           </div>
+                         )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Información Importante */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex items-center mb-3">
+          <span className="text-blue-600 mr-2">⚠️</span>
+          <h3 className="text-sm font-semibold text-blue-900">Información Importante</h3>
+        </div>
+        <ul className="text-sm text-blue-800 space-y-1">
+          <li>• Domingos: No se trabaja en Chile (automáticamente deshabilitado)</li>
+          <li>• Feriados 2025: Se consideran automáticamente como no laborables</li>
+          <li>• "Generar Recurrente": Crea disponibilidad semanal para todo el mes</li>
+          <li>• Los pacientes solo verán los días marcados como "Activo"</li>
+        </ul>
+      </div>
+    </div>
+  );
+};
+
+export default GestionDisponibilidadMensual;

@@ -40,7 +40,7 @@ const EditarPaciente: React.FC<EditarPacienteProps> = ({ pacienteId, onClose, on
     try {
       setLoading(true);
       setError(null);
-      const datos = await pacientesService.obtenerPaciente(pacienteId);
+      const datos = await pacientesService.obtenerPacientePorId(pacienteId);
       setPaciente(datos);
       
       // Llenar formulario con datos existentes
@@ -165,14 +165,7 @@ const EditarPaciente: React.FC<EditarPacienteProps> = ({ pacienteId, onClose, on
           </div>
         )}
 
-        {success && (
-          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <div className="flex">
-              <div className="text-green-500">✅</div>
-              <p className="ml-2 text-green-700">{success}</p>
-            </div>
-          </div>
-        )}
+        {/* Mensaje de éxito mostrado como toast abajo */}
 
         {/* Formulario */}
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -390,6 +383,18 @@ const EditarPaciente: React.FC<EditarPacienteProps> = ({ pacienteId, onClose, on
           </div>
         </form>
       </div>
+
+      {/* Toast de éxito fijo abajo con animación */}
+      {success && (
+        <div className="pointer-events-none fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+          <div className="pointer-events-auto bg-green-50 border border-green-200 text-green-800 rounded-lg shadow-md px-4 py-3 flex items-center space-x-2 animate-[fadeSlideUp_0.3s_ease-out]">
+            <span>✅</span>
+            <span className="font-medium">{success}</span>
+          </div>
+
+          <style>{`@keyframes fadeSlideUp { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }`}</style>
+        </div>
+      )}
     </div>
   );
 };

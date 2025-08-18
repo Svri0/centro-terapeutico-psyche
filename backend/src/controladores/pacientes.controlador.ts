@@ -188,12 +188,13 @@ export const crear = async (req: Request, res: Response) => {
     // Generar número de ficha autoincremental por psicólogo
     log.info('🔍 Buscando última ficha para psicólogo:', psicologoId);
     
+    // Buscar el siguiente número de ficha disponible
     const [ultimaFicha] = await sequelize.query(`
       SELECT numero_ficha 
       FROM pacientes 
       WHERE psicologo_id = :psicologoId 
       AND deleted_at IS NULL 
-      ORDER BY id DESC 
+      ORDER BY numero_ficha DESC 
       LIMIT 1
     `, {
       replacements: { psicologoId }
@@ -232,7 +233,37 @@ export const crear = async (req: Request, res: Response) => {
       log.info('🔍 No hay fichas existentes, usando 0001');
     }
     
-    log.info('🎯 Número de ficha generado:', numeroFicha);
+    // Verificar que el número de ficha no exista ya
+    const [fichaExistente] = await sequelize.query(`
+      SELECT id FROM pacientes WHERE numero_ficha = :numeroFicha AND deleted_at IS NULL
+    `, {
+      replacements: { numeroFicha }
+    }) as [any[], unknown];
+    
+    if (Array.isArray(fichaExistente) && fichaExistente.length > 0) {
+      // Si existe, buscar el siguiente número disponible
+      const [siguienteFicha] = await sequelize.query(`
+        SELECT numero_ficha 
+        FROM pacientes 
+        WHERE numero_ficha LIKE :patron 
+        AND deleted_at IS NULL 
+        ORDER BY numero_ficha DESC 
+        LIMIT 1
+      `, {
+        replacements: { patron: `PSI-${numeroPsicologo}-%` }
+      }) as [any[], unknown];
+      
+      if (Array.isArray(siguienteFicha) && siguienteFicha.length > 0) {
+        const match = siguienteFicha[0].numero_ficha.match(/PSI-(\d+)-(\d+)/);
+        if (match) {
+          const ultimoNumero = parseInt(match[2]) || 0;
+          numeroFicha = `PSI-${numeroPsicologo}-${String(ultimoNumero + 1).padStart(4, '0')}`;
+          log.info('🔍 Número de ficha ajustado:', numeroFicha);
+        }
+      }
+    }
+    
+    log.info('🎯 Número de ficha final generado:', numeroFicha);
 
     // Crear paciente
     const [pacienteCreado] = await sequelize.query(`
@@ -329,7 +360,10 @@ export const obtenerPorId = async (req: Request, res: Response) => {
         u.email,
         u.telefono,
         u.fecha_nacimiento,
-        u.genero
+        u.genero,
+        CASE WHEN p.estado = 'activo' THEN true ELSE false END as activo,
+        p.created_at,
+        p.updated_at
       FROM pacientes p
       INNER JOIN usuarios u ON p.usuario_id = u.id
       WHERE p.id = :id 
@@ -479,15 +513,15 @@ export const actualizar = async (req: Request, res: Response) => {
       }
       if (telefono !== undefined) {
         camposUsuario.push('telefono = :telefono');
-        valoresUsuario.telefono = telefono;
+        valoresUsuario.telefono = telefono || null;
       }
       if (fecha_nacimiento !== undefined) {
         camposUsuario.push('fecha_nacimiento = :fecha_nacimiento');
-        valoresUsuario.fecha_nacimiento = fecha_nacimiento;
+        valoresUsuario.fecha_nacimiento = fecha_nacimiento || null;
       }
       if (genero !== undefined) {
         camposUsuario.push('genero = :genero');
-        valoresUsuario.genero = genero;
+        valoresUsuario.genero = genero || null;
       }
 
       if (camposUsuario.length > 0) {
@@ -510,27 +544,27 @@ export const actualizar = async (req: Request, res: Response) => {
 
     if (rut !== undefined) {
       camposPaciente.push('rut = :rut');
-      valoresPaciente.rut = rut;
+      valoresPaciente.rut = rut || null;
     }
     if (direccion !== undefined) {
       camposPaciente.push('direccion = :direccion');
-      valoresPaciente.direccion = direccion;
+      valoresPaciente.direccion = direccion || null;
     }
     if (contacto_emergencia_nombre !== undefined) {
       camposPaciente.push('contacto_emergencia_nombre = :contacto_emergencia_nombre');
-      valoresPaciente.contacto_emergencia_nombre = contacto_emergencia_nombre;
+      valoresPaciente.contacto_emergencia_nombre = contacto_emergencia_nombre || null;
     }
     if (contacto_emergencia_telefono !== undefined) {
       camposPaciente.push('contacto_emergencia_telefono = :contacto_emergencia_telefono');
-      valoresPaciente.contacto_emergencia_telefono = contacto_emergencia_telefono;
+      valoresPaciente.contacto_emergencia_telefono = contacto_emergencia_telefono || null;
     }
     if (contacto_emergencia_relacion !== undefined) {
       camposPaciente.push('contacto_emergencia_relacion = :contacto_emergencia_relacion');
-      valoresPaciente.contacto_emergencia_relacion = contacto_emergencia_relacion;
+      valoresPaciente.contacto_emergencia_relacion = contacto_emergencia_relacion || null;
     }
     if (observaciones !== undefined) {
       camposPaciente.push('observaciones = :observaciones');
-      valoresPaciente.observaciones = observaciones;
+      valoresPaciente.observaciones = observaciones || null;
     }
     if (estado !== undefined) {
       camposPaciente.push('estado = :estado');
@@ -572,7 +606,10 @@ export const actualizar = async (req: Request, res: Response) => {
         u.email,
         u.telefono,
         u.fecha_nacimiento,
-        u.genero
+        u.genero,
+        CASE WHEN p.estado = 'activo' THEN true ELSE false END as activo,
+        p.created_at,
+        p.updated_at
       FROM pacientes p
       INNER JOIN usuarios u ON p.usuario_id = u.id
       WHERE p.id = :id 
@@ -846,6 +883,66 @@ export const obtenerHistorial = async (req: Request, res: Response) => {
       res,
       'Error interno al obtener el historial',
       'PAC_026'
+    );
+  }
+};
+
+export const obtenerPsicologoAsignado = async (req: Request, res: Response) => {
+  try {
+    const pacienteId = req.usuario?.id;
+    
+    if (!pacienteId) {
+      return ManejadorRespuestas.noAutorizado(
+        res,
+        'Usuario no autenticado',
+        'PAC_027'
+      );
+    }
+
+    // Obtener el psicólogo asignado al paciente autenticado
+    const [psicologo] = await sequelize.query(`
+      SELECT 
+        u.id,
+        u.nombres,
+        u.apellidos,
+        u.email,
+        u.telefono,
+        u.especialidad,
+        u.descripcion,
+        u.avatar_url,
+        u.created_at,
+        u.updated_at
+      FROM usuarios u
+      INNER JOIN pacientes p ON p.psicologo_id = u.id
+      WHERE p.usuario_id = :pacienteId
+      AND p.deleted_at IS NULL
+      AND u.deleted_at IS NULL
+      LIMIT 1
+    `, {
+      replacements: { pacienteId }
+    }) as [any[], unknown];
+
+    if (!Array.isArray(psicologo) || psicologo.length === 0) {
+      return ManejadorRespuestas.noEncontrado(
+        res,
+        'No se encontró un psicólogo asignado',
+        'PAC_028'
+      );
+    }
+
+    return ManejadorRespuestas.exito(
+      res,
+      'Psicólogo asignado obtenido exitosamente',
+      psicologo[0],
+      'PAC_029'
+    );
+
+  } catch (error) {
+    log.error('Error en obtenerPsicologoAsignado:', error);
+    return ManejadorRespuestas.errorInterno(
+      res,
+      'Error interno al obtener el psicólogo asignado',
+      'PAC_030'
     );
   }
 };

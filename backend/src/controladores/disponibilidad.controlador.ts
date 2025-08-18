@@ -1,188 +1,268 @@
-// Controlador de disponibilidad de psicólogos
 import { Request, Response } from 'express';
 import sequelize from '../configuracion/database';
+import { QueryTypes } from 'sequelize';
 import { ManejadorRespuestas } from '../utilidades/respuestas';
-import { log } from '../utilidades/logger';
 
 // Obtener disponibilidad de un psicólogo
-export const obtenerDisponibilidadPsicologo = async (req: Request, res: Response) => {
+export const obtenerDisponibilidad = async (req: Request, res: Response) => {
   try {
-    const usuarioId = req.usuario?.id;
+    const { psicologoId } = req.params;
 
-    if (!usuarioId) {
-      return ManejadorRespuestas.noAutorizado(
-        res,
-        'Usuario no autenticado',
-        'DISP_001'
-      );
-    }
-
-    // Validar que el usuario es psicólogo
-    const [usuario] = await sequelize.query(`
-      SELECT rol_id FROM usuarios
-      WHERE id = :usuarioId
-    `, {
-      replacements: { usuarioId }
-    }) as [any[], unknown];
-
-    if (!Array.isArray(usuario) || usuario.length === 0 || usuario[0].rol_id !== 2) {
-      return ManejadorRespuestas.prohibido(
-        res,
-        'Solo los psicólogos pueden ver su disponibilidad',
-        'DISP_002'
-      );
-    }
-
-    const [disponibilidad] = await sequelize.query(`
+    const query = `
       SELECT 
         id,
+        psicologo_id,
         dia_semana,
         hora_inicio,
         hora_fin,
-        activo
-      FROM disponibilidad_psicologos
-      WHERE psicologo_id = :usuarioId
-      ORDER BY dia_semana, hora_inicio
-    `, {
-      replacements: { usuarioId }
-    }) as [any[], unknown];
+        activo,
+        created_at,
+        updated_at
+      FROM disponibilidad 
+      WHERE psicologo_id = :psicologoId 
+      AND deleted_at IS NULL
+      ORDER BY dia_semana ASC
+    `;
 
-    return ManejadorRespuestas.exito(
-      res,
-      'Disponibilidad obtenida exitosamente',
-      { disponibilidad },
-      'DISP_003'
-    );
-  } catch (error) {
-    log.error('Error en obtenerDisponibilidadPsicologo:', error);
-    return ManejadorRespuestas.errorInterno(
-      res,
-      'Error interno al obtener disponibilidad',
-      'DISP_004'
-    );
-  }
-};
-
-// Actualizar disponibilidad de un psicólogo
-export const actualizarDisponibilidad = async (req: Request, res: Response) => {
-  try {
-    const psicologoId = req.usuario?.id;
-    const { disponibilidad } = req.body;
-
-    if (!psicologoId) {
-      return ManejadorRespuestas.noAutorizado(
-        res,
-        'Usuario no autenticado',
-        'DISP_005'
-      );
-    }
-
-    if (!disponibilidad || !Array.isArray(disponibilidad)) {
-      return ManejadorRespuestas.errorValidacion(
-        res,
-        'Disponibilidad debe ser un array',
-        req.body,
-        'DISP_006'
-      );
-    }
-
-    // Validar que el usuario es psicólogo
-    const [usuario] = await sequelize.query(`
-      SELECT rol_id FROM usuarios
-      WHERE id = :psicologoId
-    `, {
-      replacements: { psicologoId }
-    }) as [any[], unknown];
-
-    if (!Array.isArray(usuario) || usuario.length === 0 || usuario[0].rol_id !== 2) {
-      return ManejadorRespuestas.prohibido(
-        res,
-        'Solo los psicólogos pueden actualizar su disponibilidad',
-        'DISP_007'
-      );
-    }
-
-    // Eliminar disponibilidad existente
-    await sequelize.query(`
-      DELETE FROM disponibilidad_psicologos
-      WHERE psicologo_id = :psicologoId
-    `, {
-      replacements: { psicologoId }
+    const disponibilidades = await sequelize.query(query, {
+      replacements: { psicologoId },
+      type: QueryTypes.SELECT
     });
 
-    // Insertar nueva disponibilidad
-    for (const disp of disponibilidad) {
-      if (disp.dia_semana !== undefined && disp.hora_inicio && disp.hora_fin) {
-        await sequelize.query(`
-          INSERT INTO disponibilidad_psicologos (
-            id, psicologo_id, dia_semana, hora_inicio, hora_fin, activo,
-            created_at, updated_at
-          ) VALUES (
-            gen_random_uuid(), :psicologoId, :dia_semana, :hora_inicio, :hora_fin, :activo,
-            NOW(), NOW()
-          )
-        `, {
-          replacements: {
-            psicologoId,
-            dia_semana: disp.dia_semana,
-            hora_inicio: disp.hora_inicio,
-            hora_fin: disp.hora_fin,
-            activo: disp.activo !== false
-          }
-        });
-      }
-    }
-
-    return ManejadorRespuestas.exito(
-      res,
-      'Disponibilidad actualizada exitosamente',
-      { psicologo_id: psicologoId },
-      'DISP_008'
-    );
-  } catch (error) {
-    log.error('Error en actualizarDisponibilidad:', error);
-    return ManejadorRespuestas.errorInterno(
-      res,
-      'Error interno al actualizar disponibilidad',
-      'DISP_009'
-    );
+    return ManejadorRespuestas.exito(res, 'Disponibilidad obtenida correctamente', disponibilidades);
+  } catch (error: any) {
+    console.error('Error al obtener disponibilidad:', error);
+    return ManejadorRespuestas.errorInterno(res, 'Error al obtener la disponibilidad');
   }
 };
 
-// Crear disponibilidad por defecto para un psicólogo (24/7)
-export const crearDisponibilidadPorDefecto = async (psicologoId: string): Promise<void> => {
+// Crear nueva disponibilidad
+export const crearDisponibilidad = async (req: Request, res: Response) => {
   try {
-    // Horarios por defecto: Lunes a Sábado, 9:00 - 18:00
-    const disponibilidadPorDefecto = [
-      { dia_semana: 1, hora_inicio: '09:00', hora_fin: '18:00' }, // Lunes
-      { dia_semana: 2, hora_inicio: '09:00', hora_fin: '18:00' }, // Martes
-      { dia_semana: 3, hora_inicio: '09:00', hora_fin: '18:00' }, // Miércoles
-      { dia_semana: 4, hora_inicio: '09:00', hora_fin: '18:00' }, // Jueves
-      { dia_semana: 5, hora_inicio: '09:00', hora_fin: '18:00' }, // Viernes
-      { dia_semana: 6, hora_inicio: '09:00', hora_fin: '18:00' }, // Sábado
-    ];
+    const { psicologo_id, dia_semana, hora_inicio, hora_fin, activo } = req.body;
 
-    for (const disp of disponibilidadPorDefecto) {
-      await sequelize.query(`
-        INSERT INTO disponibilidad_psicologos (
-          id, psicologo_id, dia_semana, hora_inicio, hora_fin, activo,
-          created_at, updated_at
-        ) VALUES (
-          gen_random_uuid(), :psicologoId, :dia_semana, :hora_inicio, :hora_fin, true,
-          NOW(), NOW()
-        )
-      `, {
+    // Validar que no exista ya una disponibilidad para este psicólogo y día
+    const existingQuery = `
+      SELECT id FROM disponibilidad 
+      WHERE psicologo_id = :psicologo_id 
+      AND dia_semana = :dia_semana 
+      AND deleted_at IS NULL
+    `;
+
+    const [existing] = await sequelize.query(existingQuery, {
+      replacements: { psicologo_id, dia_semana },
+      type: QueryTypes.SELECT
+    });
+
+    if (existing) {
+      return ManejadorRespuestas.errorValidacion(res, 'Ya existe una disponibilidad para este día');
+    }
+
+    const insertQuery = `
+      INSERT INTO disponibilidad (psicologo_id, dia_semana, hora_inicio, hora_fin, activo, created_at, updated_at)
+      VALUES (:psicologo_id, :dia_semana, :hora_inicio, :hora_fin, :activo, NOW(), NOW())
+      RETURNING *
+    `;
+
+    const [nuevaDisponibilidad] = await sequelize.query(insertQuery, {
+      replacements: { psicologo_id, dia_semana, hora_inicio, hora_fin, activo },
+      type: QueryTypes.INSERT
+    });
+
+    return ManejadorRespuestas.exito(res, 'Disponibilidad creada correctamente', nuevaDisponibilidad);
+  } catch (error: any) {
+    console.error('Error al crear disponibilidad:', error);
+    return ManejadorRespuestas.errorInterno(res, 'Error al crear la disponibilidad');
+  }
+};
+
+// Actualizar disponibilidad existente
+export const actualizarDisponibilidad = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { hora_inicio, hora_fin, activo } = req.body;
+
+    const updateQuery = `
+      UPDATE disponibilidad 
+      SET hora_inicio = :hora_inicio, 
+          hora_fin = :hora_fin, 
+          activo = :activo, 
+          updated_at = NOW()
+      WHERE id = :id AND deleted_at IS NULL
+      RETURNING *
+    `;
+
+    const [disponibilidadActualizada] = await sequelize.query(updateQuery, {
+      replacements: { id, hora_inicio, hora_fin, activo },
+      type: QueryTypes.UPDATE
+    });
+
+    if (!disponibilidadActualizada) {
+      return ManejadorRespuestas.noEncontrado(res, 'Disponibilidad no encontrada');
+    }
+
+    return ManejadorRespuestas.exito(res, 'Disponibilidad actualizada correctamente', disponibilidadActualizada);
+  } catch (error: any) {
+    console.error('Error al actualizar disponibilidad:', error);
+    return ManejadorRespuestas.errorInterno(res, 'Error al actualizar la disponibilidad');
+  }
+};
+
+// Actualizar múltiples disponibilidades (para el psicólogo)
+export const actualizarDisponibilidadMultiple = async (req: Request, res: Response) => {
+  try {
+    const { psicologoId } = req.params;
+    const { disponibilidades } = req.body;
+
+    // Verificar que el usuario autenticado sea el psicólogo
+    if (!req.usuario?.id || req.usuario.id !== psicologoId) {
+      return ManejadorRespuestas.prohibido(res, 'No tienes permisos para modificar esta disponibilidad');
+    }
+
+    // Eliminar disponibilidades existentes
+    const deleteQuery = `
+      UPDATE disponibilidad 
+      SET deleted_at = NOW() 
+      WHERE psicologo_id = :psicologoId AND deleted_at IS NULL
+    `;
+
+    await sequelize.query(deleteQuery, {
+      replacements: { psicologoId },
+      type: QueryTypes.UPDATE
+    });
+
+    // Insertar nuevas disponibilidades
+    const insertQuery = `
+      INSERT INTO disponibilidad (psicologo_id, dia_semana, hora_inicio, hora_fin, activo, created_at, updated_at)
+      VALUES (:psicologo_id, :dia_semana, :hora_inicio, :hora_fin, :activo, NOW(), NOW())
+    `;
+
+    for (const disp of disponibilidades) {
+      await sequelize.query(insertQuery, {
         replacements: {
-          psicologoId,
+          psicologo_id: psicologoId,
           dia_semana: disp.dia_semana,
           hora_inicio: disp.hora_inicio,
-          hora_fin: disp.hora_fin
-        }
+          hora_fin: disp.hora_fin,
+          activo: disp.activo
+        },
+        type: QueryTypes.INSERT
       });
     }
 
-    log.info(`✅ Disponibilidad por defecto creada para psicólogo ${psicologoId}`);
-  } catch (error) {
-    log.error('Error al crear disponibilidad por defecto:', error);
+    // Obtener disponibilidades actualizadas
+    const selectQuery = `
+      SELECT * FROM disponibilidad 
+      WHERE psicologo_id = :psicologoId AND deleted_at IS NULL
+      ORDER BY dia_semana ASC
+    `;
+
+    const [disponibilidadesActualizadas] = await sequelize.query(selectQuery, {
+      replacements: { psicologoId },
+      type: QueryTypes.SELECT
+    });
+
+    return ManejadorRespuestas.exito(res, 'Disponibilidad actualizada correctamente', disponibilidadesActualizadas);
+  } catch (error: any) {
+    console.error('Error al actualizar disponibilidad múltiple:', error);
+    return ManejadorRespuestas.errorInterno(res, 'Error al actualizar la disponibilidad');
+  }
+};
+
+// Obtener disponibilidad para un paciente (días disponibles)
+export const obtenerDisponibilidadPaciente = async (req: Request, res: Response) => {
+  try {
+    const { psicologoId } = req.params;
+    const { fecha } = req.query;
+
+    // Obtener disponibilidad del psicólogo
+    const disponibilidadQuery = `
+      SELECT dia_semana, hora_inicio, hora_fin, activo
+      FROM disponibilidad 
+      WHERE psicologo_id = :psicologoId 
+      AND activo = true 
+      AND deleted_at IS NULL
+      ORDER BY dia_semana ASC
+    `;
+
+    const disponibilidades = await sequelize.query(disponibilidadQuery, {
+      replacements: { psicologoId },
+      type: QueryTypes.SELECT
+    }) as any[];
+
+    // Generar días disponibles para el próximo mes
+    const fechaInicio = fecha ? new Date(fecha as string) : new Date();
+    const fechaFin = new Date(fechaInicio);
+    fechaFin.setMonth(fechaFin.getMonth() + 1);
+
+    const diasDisponibles: string[] = [];
+    const horariosPorDia: Record<string, { inicio: string; fin: string }> = {};
+
+    for (let fecha = new Date(fechaInicio); fecha < fechaFin; fecha.setDate(fecha.getDate() + 1)) {
+      const diaSemana = fecha.getDay() === 0 ? 7 : fecha.getDay(); // Convertir domingo de 0 a 7
+      const disponibilidadDia = disponibilidades?.find((d: any) => d.dia_semana === diaSemana);
+
+      if (disponibilidadDia && disponibilidadDia.activo) {
+        const fechaString = fecha.toISOString().split('T')[0];
+        if (fechaString) {
+          diasDisponibles.push(fechaString);
+          horariosPorDia[fechaString] = {
+            inicio: disponibilidadDia.hora_inicio,
+            fin: disponibilidadDia.hora_fin
+          };
+        }
+      }
+    }
+
+    return ManejadorRespuestas.exito(res, 'Disponibilidad obtenida correctamente', {
+      diasDisponibles,
+      horariosPorDia
+    });
+  } catch (error: any) {
+    console.error('Error al obtener disponibilidad para paciente:', error);
+    return ManejadorRespuestas.errorInterno(res, 'Error al obtener la disponibilidad');
+  }
+};
+
+// Verificar si un día específico está disponible
+export const verificarDisponibilidadDia = async (req: Request, res: Response) => {
+  try {
+    const { psicologoId } = req.params;
+    const { fecha } = req.query;
+
+    if (!fecha) {
+      return ManejadorRespuestas.errorValidacion(res, 'Fecha es requerida');
+    }
+
+    const fechaObj = new Date(fecha as string);
+    const diaSemana = fechaObj.getDay() === 0 ? 7 : fechaObj.getDay(); // Convertir domingo de 0 a 7
+
+    const query = `
+      SELECT hora_inicio, hora_fin, activo
+      FROM disponibilidad 
+      WHERE psicologo_id = :psicologoId 
+      AND dia_semana = :diaSemana 
+      AND activo = true 
+      AND deleted_at IS NULL
+    `;
+
+    const disponibilidades = await sequelize.query(query, {
+      replacements: { psicologoId, diaSemana },
+      type: QueryTypes.SELECT
+    }) as any[];
+
+    const disponibilidad = disponibilidades?.[0];
+    const disponible = !!disponibilidad;
+
+    return ManejadorRespuestas.exito(res, 'Verificación completada', {
+      disponible,
+      horarios: disponible ? {
+        inicio: (disponibilidad as any).hora_inicio,
+        fin: (disponibilidad as any).hora_fin
+      } : undefined
+    });
+  } catch (error: any) {
+    console.error('Error al verificar disponibilidad:', error);
+    return ManejadorRespuestas.errorInterno(res, 'Error al verificar la disponibilidad');
   }
 }; 

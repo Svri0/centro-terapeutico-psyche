@@ -6,7 +6,7 @@ import path from 'path';
 import sequelize from '../configuracion/database';
 import { ManejadorRespuestas } from '../utilidades/respuestas';
 import { log } from '../utilidades/logger';
-import { crearDisponibilidadPorDefecto } from './disponibilidad.controlador';
+// import { crearDisponibilidadPorDefecto } from './disponibilidad.controlador';
 import AuditoriaService from '../utilidades/auditoria.service';
 import { enviarEmailBienvenidaPsicologo } from '../utilidades/email.service';
 
@@ -40,6 +40,8 @@ interface ActualizarPsicologoData {
 // Obtener todos los psicólogos
 export const obtenerPsicologos = async (_req: Request, res: Response) => {
   try {
+    console.log('🔍 Admin solicitando lista de psicólogos...');
+    
     const query = `
       SELECT 
         u.id,
@@ -63,7 +65,12 @@ export const obtenerPsicologos = async (_req: Request, res: Response) => {
       ORDER BY u.created_at DESC
     `;
 
+    console.log('🔍 Ejecutando query:', query);
+
     const [psicologos] = await sequelize.query(query) as [any[], unknown];
+
+    console.log('✅ Psicólogos encontrados:', psicologos.length);
+    console.log('📋 Datos de psicólogos:', psicologos);
 
     return ManejadorRespuestas.exito(
       res,
@@ -72,6 +79,7 @@ export const obtenerPsicologos = async (_req: Request, res: Response) => {
       'ADMIN_001'
     );
   } catch (error) {
+    console.error('❌ Error en obtenerPsicologos:', error);
     log.error('Error en obtenerPsicologos:', error);
     return ManejadorRespuestas.errorInterno(
       res,
@@ -219,7 +227,7 @@ export const crearPsicologo = async (req: Request, res: Response) => {
 
     // Crear disponibilidad por defecto para el psicólogo
     const psicologoId = nuevoUsuario[0].id;
-    await crearDisponibilidadPorDefecto(psicologoId);
+            // await crearDisponibilidadPorDefecto(psicologoId);
 
     // Enviar email de bienvenida al psicólogo
     const nombreCompleto = `${nombres} ${apellidos}`;

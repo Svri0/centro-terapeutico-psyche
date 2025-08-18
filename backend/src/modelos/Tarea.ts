@@ -13,7 +13,8 @@ export interface TareaAttributes {
   titulo: string;
   descripcion: string;
   instrucciones?: string;
-  tipo_tarea: 'ejercicio' | 'lectura' | 'reflexion' | 'practica' | 'evaluacion';
+  tipo_tarea: 'texto_abierto' | 'opcion_multiple' | 'test_psicologico' | 'test_imagenes' | 'tarea_dibujo' | 'ejercicio' | 'lectura' | 'reflexion' | 'practica' | 'evaluacion';
+  tipo_tarea_avanzado?: string;
   prioridad: 'baja' | 'media' | 'alta' | 'urgente';
   fecha_asignacion: Date;
   fecha_vencimiento?: Date;
@@ -24,13 +25,17 @@ export interface TareaAttributes {
   respuesta_paciente?: string;
   archivos_respuesta: any[];
   evaluacion_psicologo?: any;
+  contenido_tarea?: any;
+  configuracion_tarea?: any;
+  es_borrador: boolean;
+  fecha_publicacion?: Date;
   created_at: Date;
   updated_at: Date;
   deleted_at?: Date;
 }
 
 // Interfaz para las propiedades opcionales (para crear)
-export interface TareaCreationAttributes extends Optional<TareaAttributes, 'id' | 'tipo_tarea' | 'prioridad' | 'fecha_asignacion' | 'estado' | 'puntos_asignados' | 'archivos_adjuntos' | 'archivos_respuesta' | 'created_at' | 'updated_at'> {}
+export interface TareaCreationAttributes extends Optional<TareaAttributes, 'id' | 'tipo_tarea' | 'tipo_tarea_avanzado' | 'prioridad' | 'fecha_asignacion' | 'estado' | 'puntos_asignados' | 'archivos_adjuntos' | 'archivos_respuesta' | 'contenido_tarea' | 'configuracion_tarea' | 'es_borrador' | 'fecha_publicacion' | 'created_at' | 'updated_at'> {}
 
 class Tarea extends Model<TareaAttributes, TareaCreationAttributes> implements TareaAttributes {
   public id!: string;
@@ -40,7 +45,8 @@ class Tarea extends Model<TareaAttributes, TareaCreationAttributes> implements T
   public titulo!: string;
   public descripcion!: string;
   public instrucciones?: string;
-  public tipo_tarea!: 'ejercicio' | 'lectura' | 'reflexion' | 'practica' | 'evaluacion';
+  public tipo_tarea!: 'texto_abierto' | 'opcion_multiple' | 'test_psicologico' | 'test_imagenes' | 'tarea_dibujo' | 'ejercicio' | 'lectura' | 'reflexion' | 'practica' | 'evaluacion';
+  public tipo_tarea_avanzado?: string;
   public prioridad!: 'baja' | 'media' | 'alta' | 'urgente';
   public fecha_asignacion!: Date;
   public fecha_vencimiento?: Date;
@@ -51,6 +57,10 @@ class Tarea extends Model<TareaAttributes, TareaCreationAttributes> implements T
   public respuesta_paciente?: string;
   public archivos_respuesta!: any[];
   public evaluacion_psicologo?: any;
+  public contenido_tarea?: any;
+  public configuracion_tarea?: any;
+  public es_borrador!: boolean;
+  public fecha_publicacion?: Date;
   public created_at!: Date;
   public updated_at!: Date;
   public deleted_at?: Date;
@@ -110,9 +120,14 @@ Tarea.init(
       allowNull: true,
     },
     tipo_tarea: {
-      type: DataTypes.ENUM('ejercicio', 'lectura', 'reflexion', 'practica', 'evaluacion'),
+      type: DataTypes.ENUM('texto_abierto', 'opcion_multiple', 'test_psicologico', 'test_imagenes', 'tarea_dibujo', 'ejercicio', 'lectura', 'reflexion', 'practica', 'evaluacion'),
       allowNull: false,
-      defaultValue: 'ejercicio',
+      defaultValue: 'texto_abierto',
+    },
+    tipo_tarea_avanzado: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: 'Tipo de tarea avanzado para el nuevo sistema',
     },
     prioridad: {
       type: DataTypes.ENUM('baja', 'media', 'alta', 'urgente'),
@@ -158,6 +173,25 @@ Tarea.init(
     },
     evaluacion_psicologo: {
       type: DataTypes.JSONB,
+      allowNull: true,
+    },
+    contenido_tarea: {
+      type: DataTypes.JSONB,
+      allowNull: true,
+      comment: 'Contenido específico según el tipo de tarea (preguntas, opciones, imágenes, etc.)',
+    },
+    configuracion_tarea: {
+      type: DataTypes.JSONB,
+      allowNull: true,
+      comment: 'Configuración específica (múltiple selección, tiempo límite, etc.)',
+    },
+    es_borrador: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    fecha_publicacion: {
+      type: DataTypes.DATE,
       allowNull: true,
     },
     created_at: {

@@ -21,7 +21,7 @@ const DetallesPaciente: React.FC<DetallesPacienteProps> = ({ pacienteId, onClose
     try {
       setLoading(true);
       setError(null);
-      const datos = await pacientesService.obtenerPaciente(pacienteId);
+      const datos = await pacientesService.obtenerPacientePorId(pacienteId);
       setPaciente(datos);
     } catch (err: any) {
       setError(err.response?.data?.mensaje || 'Error al cargar los detalles del paciente');

@@ -1,6 +1,6 @@
 // Controlador de usuarios
 import { Request, Response } from 'express';
-import { Usuario, Rol } from '../modelos';
+import { Usuario, Rol, Paciente } from '../modelos';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -101,6 +101,99 @@ export const actualizarPerfilPsicologo = async (req: Request, res: Response) => 
 
   } catch (error: any) {
     console.error('Error al actualizar perfil del psicólogo:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor'
+    });
+  }
+};
+
+export const actualizarPerfilPaciente = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { 
+      nombres, 
+      apellidos, 
+      email, 
+      telefono, 
+      fecha_nacimiento, 
+      genero, 
+      avatar_url,
+      // Campos específicos del paciente
+      rut,
+      direccion,
+      contacto_emergencia_nombre,
+      contacto_emergencia_telefono,
+      contacto_emergencia_relacion,
+      observaciones
+    } = req.body;
+
+    // Verificar que el usuario existe y es paciente (rol_id = 3)
+    const usuario = await Usuario.findOne({
+      where: { 
+        id,
+        rol_id: 3 // ID del rol de paciente
+      }
+    });
+
+    if (!usuario) {
+      return res.status(404).json({
+        success: false,
+        message: 'Paciente no encontrado'
+      });
+    }
+
+    // Actualizar datos del usuario
+    await usuario.update({
+      nombres,
+      apellidos,
+      email,
+      telefono,
+      fecha_nacimiento,
+      genero,
+      avatar_url
+    });
+
+    // Actualizar datos específicos del paciente
+    const paciente = await Paciente.findOne({
+      where: { usuario_id: id }
+    });
+
+    if (paciente) {
+      await paciente.update({
+        rut,
+        direccion,
+        contacto_emergencia_nombre,
+        contacto_emergencia_telefono,
+        contacto_emergencia_relacion,
+        observaciones
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Perfil actualizado exitosamente',
+      data: {
+        id: usuario.id,
+        nombres: usuario.nombres,
+        apellidos: usuario.apellidos,
+        email: usuario.email,
+        telefono: usuario.telefono,
+        fecha_nacimiento: usuario.fecha_nacimiento,
+        genero: usuario.genero,
+        avatar_url: usuario.avatar_url,
+        // Datos del paciente
+        rut: paciente?.rut,
+        direccion: paciente?.direccion,
+        contacto_emergencia_nombre: paciente?.contacto_emergencia_nombre,
+        contacto_emergencia_telefono: paciente?.contacto_emergencia_telefono,
+        contacto_emergencia_relacion: paciente?.contacto_emergencia_relacion,
+        observaciones: paciente?.observaciones
+      }
+    });
+
+  } catch (error: any) {
+    console.error('Error al actualizar perfil del paciente:', error);
     return res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
