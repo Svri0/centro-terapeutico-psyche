@@ -8,6 +8,7 @@ import disponibilidadRoutes from './disponibilidad.routes';
 import disponibilidadMensualRoutes from './disponibilidadMensual.routes';
 import serviciosRoutes from './servicios.routes';
 import adminRoutes from './admin.routes';
+import chatRoutes from './chat.routes';
 
 const router = Router();
 
@@ -37,5 +38,8 @@ router.use('/servicios', serviciosRoutes);
 
 // Rutas de administración
 router.use('/admin', adminRoutes);
+
+// Rutas de chat
+router.use('/chat', chatRoutes);
 
 export default router; 

@@ -31,11 +31,8 @@ const dbConfig: Options = {
   timezone: '-03:00', // Chile timezone
   define: {
     timestamps: true,
-    underscored: true,
-    createdAt: 'created_at',
-    updatedAt: 'updated_at',
-    deletedAt: 'deleted_at',
-    paranoid: true, // Soft deletes
+    underscored: false, // Cambiar a false para usar camelCase
+    paranoid: false, // Deshabilitar soft deletes por ahora
   }
 };
 

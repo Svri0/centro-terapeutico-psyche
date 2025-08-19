@@ -7,12 +7,13 @@ import ImageUpload from '../componentes/ImageUpload';
 import { authService } from '../servicios/auth.service';
 import { actualizarPerfilPaciente, subirImagenReal } from '../servicios/usuarios.service';
 import { getAvatarById, AVATARS_ANIMALES } from '../assets/avatars/default-avatars';
+import ChatSistema from '../componentes/ChatSistema';
 
 const PanelPaciente: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'tareas' | 'calendario' | 'test-dibujo' | 'perfil'>('tareas');
+  const [activeTab, setActiveTab] = useState<'tareas' | 'calendario' | 'test-dibujo' | 'perfil' | 'chat'>('tareas');
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -340,12 +341,14 @@ const PanelPaciente: React.FC = () => {
                   {activeTab === 'calendario' && 'Agendar Cita'}
                   {activeTab === 'test-dibujo' && 'Test de Dibujo'}
                   {activeTab === 'perfil' && 'Mi Perfil'}
+                  {activeTab === 'chat' && 'Chat'}
                 </h2>
                 <p className="mt-1 text-xs font-semibold text-gray-600 tracking-widest uppercase truncate">
                   {activeTab === 'tareas' && 'Tareas asignadas por tu psicólogo'}
                   {activeTab === 'calendario' && 'Programa tu próxima sesión terapéutica'}
                   {activeTab === 'test-dibujo' && 'Herramienta terapéutica para expresión artística'}
                   {activeTab === 'perfil' && 'Gestiona tu información personal'}
+                  {activeTab === 'chat' && 'Comunícate con tu psicólogo'}
                 </p>
               </div>
             </div>
@@ -395,6 +398,16 @@ const PanelPaciente: React.FC = () => {
                 >
                   Mi Perfil
                 </button>
+                <button
+                  onClick={() => setActiveTab('chat')}
+                  className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
+                    activeTab === 'chat'
+                      ? 'border-amber-500 text-amber-600'
+                      : 'border-transparent text-gray-500 hover:text-amber-600 hover:border-amber-300'
+                  }`}
+                >
+                  Chat
+                </button>
               </nav>
             </div>
           </div>
@@ -416,6 +429,15 @@ const PanelPaciente: React.FC = () => {
             {activeTab === 'test-dibujo' && (
               <div className="bg-white rounded-lg shadow-sm border-2 border-gray-200">
                 <TestHerramientaDibujo />
+              </div>
+            )}
+
+            {activeTab === 'chat' && (
+              <div className="bg-white rounded-lg shadow-sm border-2 border-gray-200">
+                <ChatSistema 
+                  tipoUsuario="paciente" 
+                  usuarioId={userData?.id || ''} 
+                />
               </div>
             )}
 
