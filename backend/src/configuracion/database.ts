@@ -12,7 +12,7 @@ const dbConfig: Options = {
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '5432'),
   username: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'Ferreteriakm6',
+  password: process.env.DB_PASSWORD || 'VMlover01!',
   database: process.env.DB_NAME || 'psyche_db',
   dialect: 'postgres',
   dialectOptions: {
@@ -31,8 +31,11 @@ const dbConfig: Options = {
   timezone: '-03:00', // Chile timezone
   define: {
     timestamps: true,
-    underscored: false, // Cambiar a false para usar camelCase
-    paranoid: false, // Deshabilitar soft deletes por ahora
+    underscored: true,
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+    deletedAt: 'deleted_at',
+    paranoid: true, // Soft deletes
   }
 };
 

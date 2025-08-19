@@ -8,8 +8,6 @@ import LogAuditoria from './LogAuditoria';
 import ServicioPsicologo from './ServicioPsicologo';
 import RespuestaTarea from './RespuestaTarea';
 import DisponibilidadMensual from './DisponibilidadMensual';
-import Chat from './Chat';
-import MensajeChat from './MensajeChat';
 
 // Configurar asociaciones
 
@@ -191,50 +189,6 @@ DisponibilidadMensual.belongsTo(Usuario, {
   as: 'psicologo',
 });
 
-// Chat - Usuario (1:N) - Psicólogo
-Usuario.hasMany(Chat, {
-  foreignKey: 'psicologo_id',
-  as: 'chats_psicologo',
-});
-
-Chat.belongsTo(Usuario, {
-  foreignKey: 'psicologo_id',
-  as: 'psicologo',
-});
-
-// Chat - Usuario (1:N) - Paciente
-Usuario.hasMany(Chat, {
-  foreignKey: 'paciente_id',
-  as: 'chats_paciente',
-});
-
-Chat.belongsTo(Usuario, {
-  foreignKey: 'paciente_id',
-  as: 'paciente',
-});
-
-// Chat - MensajeChat (1:N)
-Chat.hasMany(MensajeChat, {
-  foreignKey: 'chat_id',
-  as: 'mensajes',
-});
-
-MensajeChat.belongsTo(Chat, {
-  foreignKey: 'chat_id',
-  as: 'chat',
-});
-
-// Usuario - MensajeChat (1:N) - Remitente
-Usuario.hasMany(MensajeChat, {
-  foreignKey: 'remitente_id',
-  as: 'mensajes_enviados_chat',
-});
-
-MensajeChat.belongsTo(Usuario, {
-  foreignKey: 'remitente_id',
-  as: 'remitente',
-});
-
 export {
   Rol,
   Usuario,
@@ -246,6 +200,4 @@ export {
   ServicioPsicologo,
   RespuestaTarea,
   DisponibilidadMensual,
-  Chat,
-  MensajeChat,
 }; 

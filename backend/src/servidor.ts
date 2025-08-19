@@ -8,10 +8,8 @@ import express from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import path from 'path';
-import { createServer } from 'http';
 import { MENSAJES_GENERALES } from './utilidades/mensajes';
 import { ManejadorRespuestas } from './utilidades/respuestas';
-import { ChatSocketService } from './servicios/chat-socket.service';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -589,31 +587,19 @@ const iniciarServidor = async () => {
       console.log('   Los modelos JavaScript seguirán funcionando normalmente');
     }
 
-    // Crear servidor HTTP para Socket.IO
-    const servidor = createServer(app);
-    
-    // Inicializar Socket.IO para chat en tiempo real
-    console.log('🔌 Inicializando WebSocket Chat...');
-    const chatSocketService = new ChatSocketService(servidor);
-    console.log('✅ WebSocket Chat inicializado correctamente');
-    
-    // Hacer disponible el servicio de chat para los controladores
-    (global as any).chatSocketService = chatSocketService;
-    console.log('🔌 WebSocket Chat disponible globalmente');
-    
-    servidor.listen(PUERTO, () => {
+    const servidor = app
+      .listen(PUERTO, () => {
         console.log('\n🎉 ═══════════════════════════════════════════════════════');
         console.log('✅ BACKEND FUNCIONANDO CORRECTAMENTE');
         console.log(`🚀 Puerto ${PUERTO} funcionando correctamente`);
         console.log('🏥 Centro Terapéutico Psyche API - v1.0.0');
-        console.log('🔌 WebSocket Chat habilitado para tiempo real');
-        console.log('═══════════════════════════════════════════════════════════');
+        console.log('═══════════════════════════════════════════════════════');
         console.log(`🌐 Dashboard bonito: http://localhost:${PUERTO}/dashboard`);
         console.log(`📊 Salud (JSON): http://localhost:${PUERTO}/salud`);
         console.log(`🔗 API Base: http://localhost:${PUERTO}/api/v1`);
         console.log(`📄 Info (JSON): http://localhost:${PUERTO}/`);
         console.log(`⏰ Iniciado: ${new Date().toLocaleString('es-CL')}`);
-        console.log('═══════════════════════════════════════════════════════════\n');
+        console.log('═══════════════════════════════════════════════════════\n');
       })
       .on('error', async (err: any) => {
         if (err.code === 'EADDRINUSE') {
@@ -624,21 +610,11 @@ const iniciarServidor = async () => {
             const puertoAlternativo = await encontrarPuertoDisponible(Number(PUERTO) + 1);
             console.log(`✅ Puerto alternativo encontrado: ${puertoAlternativo}`);
 
-            // Crear servidor HTTP alternativo para Socket.IO
-            const servidorAlternativo = createServer(app);
-            
-            // Inicializar Socket.IO para chat en tiempo real
-            const chatSocketServiceAlternativo = new ChatSocketService(servidorAlternativo);
-            
-            // Hacer disponible el servicio de chat para los controladores
-            (global as any).chatSocketService = chatSocketServiceAlternativo;
-            
-            servidorAlternativo.listen(puertoAlternativo, () => {
+            const servidorAlternativo = app.listen(puertoAlternativo, () => {
               console.log('\n🎉 ═══════════════════════════════════════════════════════');
               console.log('✅ BACKEND FUNCIONANDO CORRECTAMENTE (PUERTO ALTERNATIVO)');
               console.log(`🚀 Puerto ${puertoAlternativo} funcionando correctamente`);
               console.log('🏥 Centro Terapéutico Psyche API - v1.0.0');
-              console.log('🔌 WebSocket Chat habilitado para tiempo real');
               console.log('═══════════════════════════════════════════════════════');
               console.log(`🌐 Dashboard bonito: http://localhost:${puertoAlternativo}/dashboard`);
               console.log(`📊 Salud (JSON): http://localhost:${puertoAlternativo}/salud`);
