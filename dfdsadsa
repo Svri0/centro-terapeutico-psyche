@@ -1,0 +1,10 @@
+[33me513cc9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfix-n-fronted[m[33m, [m[1;31morigin/fix-n-fronted[m[33m)[m Implementar sistema de chat en tiempo real con WebSockets
+[33m1333a9a[m Disponibilidad mensual: implementación base y depuración
+[33me94431e[m[33m ([m[1;31morigin/Branch_de_Pipe[m[33m)[m fix: Corregir configuración de puertos - Frontend en 3000, Backend en 3002 - Actualizado api.ts para usar puerto 3002 - Corregidos scripts de prueba para usar puerto 3002 - Configuración consistente en todo el proyecto
+[33madbc00d[m feat: Implementación completa del sistema de servicios y disponibilidad semanal - Agregado sistema de servicios para psicólogos con validación de duplicados - Implementado sistema de disponibilidad semanal con validaciones - Agregado sistema de notificaciones con popups animados - Creado README.md completo con documentación del proyecto - Agregado ROADMAP.md con próximos pasos detallados - Mejorado Panel del Psicólogo con nuevas funcionalidades - Agregados scripts de prueba para debugging - Implementadas migraciones para nuevas tablas - Estado del proyecto: 70% completado
+[33m0cbeb7d[m commit fotos perfil vista admin fix
+[33m93777cb[m commit
+[33m20bc2c8[m fotito mala
+[33m96f1268[m CORREOS FUNCIONALES
+[33m715c400[m ingreso foto en perfil psicologo
+[33m472e00f[m fix admin propio (ignorar)

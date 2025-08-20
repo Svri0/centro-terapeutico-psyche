@@ -27,6 +27,7 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
   const [vistaActual, setVistaActual] = useState<'calendario' | 'semana'>('calendario');
   const [semanaSeleccionada, setSemanaSeleccionada] = useState<Date | null>(null);
   const [mostrarPerfil, setMostrarPerfil] = useState(false);
+  const [usandoDatosSimulados, setUsandoDatosSimulados] = useState(false);
 
   const diasSemana = [
     { id: 1, nombre: 'Lunes', abreviacion: 'LU' },
@@ -57,17 +58,37 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
         setDisponibilidad(disponibilidadData);
       } catch (err) {
         console.warn('No se pudo cargar disponibilidad real, usando datos simulados');
-        // Usar datos simulados como fallback
-        setDisponibilidad({
-          diasDisponibles: ['2025-09-01', '2025-09-02', '2025-09-03', '2025-09-04', '2025-09-05'],
-          horariosPorDia: {
-            '2025-09-01': { inicio: '09:00', fin: '17:00' },
-            '2025-09-02': { inicio: '09:00', fin: '17:00' },
-            '2025-09-03': { inicio: '09:00', fin: '17:00' },
-            '2025-09-04': { inicio: '09:00', fin: '17:00' },
-            '2025-09-05': { inicio: '09:00', fin: '17:00' }
+        // Generar disponibilidad simulada más completa para todo el mes
+        const mesActual = new Date(2025, 8, 1); // Septiembre 2025
+        const diasEnMes = new Date(2025, 9, 0).getDate(); // 30 días
+        
+        const diasDisponibles = [];
+        const horariosPorDia: Record<string, { inicio: string; fin: string }> = {};
+        
+        // Generar disponibilidad para todos los días laborables del mes (lunes a viernes)
+        for (let dia = 1; dia <= diasEnMes; dia++) {
+          const fecha = new Date(2025, 8, dia); // Mes 8 = Septiembre (0-indexed)
+          const diaSemana = fecha.getDay(); // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
+          
+          // Solo incluir días laborables (lunes a viernes)
+          // Convertir domingo de 0 a 7 para coincidir con el backend
+          const diaSemanaAjustado = diaSemana === 0 ? 7 : diaSemana;
+          
+          if (diaSemanaAjustado >= 1 && diaSemanaAjustado <= 5) {
+            const fechaString = fecha.toISOString().split('T')[0];
+            diasDisponibles.push(fechaString);
+            horariosPorDia[fechaString] = {
+              inicio: '09:00',
+              fin: '17:00'
+            };
           }
+        }
+        
+        setDisponibilidad({
+          diasDisponibles,
+          horariosPorDia
         });
+        setUsandoDatosSimulados(true);
       }
     } catch (err: any) {
       console.error('Error al cargar datos:', err);
@@ -79,10 +100,22 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
 
   // Función para verificar si un día está disponible usando datos reales
   const esDiaDisponible = (fecha: Date): boolean => {
-    if (!disponibilidad) return false;
+    if (!disponibilidad || !disponibilidad.diasDisponibles) {
+      console.warn('Disponibilidad no cargada o incompleta');
+      return false;
+    }
     
     const fechaString = fecha.toISOString().split('T')[0];
-    return disponibilidad.diasDisponibles.includes(fechaString);
+    const esDisponible = disponibilidad.diasDisponibles.includes(fechaString);
+    
+    // Debug: mostrar qué fechas se están verificando
+    if (process.env.NODE_ENV === 'development') {
+      const diaSemana = fecha.getDay();
+      const diaSemanaAjustado = diaSemana === 0 ? 7 : diaSemana;
+      console.log(`Verificando fecha ${fechaString} (día ${diaSemanaAjustado}): ${esDisponible ? 'Disponible' : 'No disponible'}`);
+    }
+    
+    return esDisponible;
   };
 
   // Generar horarios disponibles basados en la disponibilidad real
@@ -464,6 +497,12 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
                     ›
                   </button>
                 </div>
+                {usandoDatosSimulados && (
+                  <div className="flex items-center space-x-2 text-amber-600 bg-amber-50 px-3 py-1 rounded-full text-sm">
+                    <span>⚠️</span>
+                    <span>Datos simulados</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -506,6 +545,20 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
             </div>
           </div>
         </div>
+        {usandoDatosSimulados && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div className="flex items-start space-x-3">
+              <div className="text-amber-600 text-lg">ℹ️</div>
+              <div className="text-amber-800">
+                <p className="font-medium">Información importante:</p>
+                <p className="text-sm mt-1">
+                  Estamos mostrando horarios simulados porque no se pudo cargar la disponibilidad real del psicólogo. 
+                  Los días laborables (lunes a viernes) están marcados como disponibles de 9:00 AM a 5:00 PM.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         {perfilModal}
       </div>
     );

@@ -175,7 +175,10 @@ export const obtenerDisponibilidadPaciente = async (req: Request, res: Response)
     const { psicologoId } = req.params;
     const { fecha } = req.query;
 
-    // Obtener disponibilidad del psicólogo
+    console.log('🔍 Debug - obtenerDisponibilidadPaciente - psicologoId:', psicologoId);
+    console.log('🔍 Debug - obtenerDisponibilidadPaciente - fecha query:', fecha);
+
+    // Primero intentar obtener disponibilidad semanal del psicólogo
     const disponibilidadQuery = `
       SELECT dia_semana, hora_inicio, hora_fin, activo
       FROM disponibilidad 
@@ -190,29 +193,86 @@ export const obtenerDisponibilidadPaciente = async (req: Request, res: Response)
       type: QueryTypes.SELECT
     }) as any[];
 
+    console.log('🔍 Debug - disponibilidades semanales encontradas:', disponibilidades);
+
+    // Si no hay disponibilidad semanal, intentar con disponibilidad mensual
+    let disponibilidadMensual: any[] = [];
+    if (!disponibilidades || disponibilidades.length === 0) {
+      console.log('🔍 Debug - No hay disponibilidad semanal, consultando disponibilidad mensual...');
+      
+      const disponibilidadMensualQuery = `
+        SELECT fecha, hora_inicio, hora_fin, activo
+        FROM disponibilidad_mensual 
+        WHERE psicologo_id = :psicologoId 
+        AND activo = true 
+        AND deleted_at IS NULL
+        AND fecha >= :fechaInicio
+        AND fecha <= :fechaFin
+        ORDER BY fecha ASC
+      `;
+
+      const fechaInicio = fecha ? new Date(fecha as string) : new Date();
+      const fechaFin = new Date(fechaInicio);
+      fechaFin.setMonth(fechaFin.getMonth() + 1);
+
+      disponibilidadMensual = await sequelize.query(disponibilidadMensualQuery, {
+        replacements: { 
+          psicologoId, 
+          fechaInicio: fechaInicio.toISOString().split('T')[0],
+          fechaFin: fechaFin.toISOString().split('T')[0]
+        },
+        type: QueryTypes.SELECT
+      }) as any[];
+
+      console.log('🔍 Debug - disponibilidades mensuales encontradas:', disponibilidadMensual);
+    }
+
     // Generar días disponibles para el próximo mes
     const fechaInicio = fecha ? new Date(fecha as string) : new Date();
     const fechaFin = new Date(fechaInicio);
     fechaFin.setMonth(fechaFin.getMonth() + 1);
 
+    console.log('🔍 Debug - fechaInicio:', fechaInicio);
+    console.log('🔍 Debug - fechaFin:', fechaFin);
+
     const diasDisponibles: string[] = [];
     const horariosPorDia: Record<string, { inicio: string; fin: string }> = {};
 
-    for (let fecha = new Date(fechaInicio); fecha < fechaFin; fecha.setDate(fecha.getDate() + 1)) {
-      const diaSemana = fecha.getDay() === 0 ? 7 : fecha.getDay(); // Convertir domingo de 0 a 7
-      const disponibilidadDia = disponibilidades?.find((d: any) => d.dia_semana === diaSemana);
+    // Si hay disponibilidad mensual, usarla directamente
+    if (disponibilidadMensual && disponibilidadMensual.length > 0) {
+      for (const disp of disponibilidadMensual) {
+        diasDisponibles.push(disp.fecha);
+        horariosPorDia[disp.fecha] = {
+          inicio: disp.hora_inicio,
+          fin: disp.hora_fin
+        };
+      }
+    } else if (disponibilidades && disponibilidades.length > 0) {
+      // Usar disponibilidad semanal para generar días del mes
+      for (let fecha = new Date(fechaInicio); fecha < fechaFin; fecha.setDate(fecha.getDate() + 1)) {
+        // Convertir el día de la semana al sistema 1=Lunes, 2=Martes, ..., 7=Domingo
+        let diaSemana = fecha.getDay(); // 0=Domingo, 1=Lunes, ..., 6=Sábado
+        if (diaSemana === 0) {
+          diaSemana = 7; // Domingo = 7
+        }
+        
+        const disponibilidadDia = disponibilidades?.find((d: any) => d.dia_semana === diaSemana);
 
-      if (disponibilidadDia && disponibilidadDia.activo) {
-        const fechaString = fecha.toISOString().split('T')[0];
-        if (fechaString) {
-          diasDisponibles.push(fechaString);
-          horariosPorDia[fechaString] = {
-            inicio: disponibilidadDia.hora_inicio,
-            fin: disponibilidadDia.hora_fin
-          };
+        if (disponibilidadDia && disponibilidadDia.activo) {
+          const fechaString = fecha.toISOString().split('T')[0];
+          if (fechaString) {
+            diasDisponibles.push(fechaString);
+            horariosPorDia[fechaString] = {
+              inicio: disponibilidadDia.hora_inicio,
+              fin: disponibilidadDia.hora_fin
+            };
+          }
         }
       }
     }
+
+    console.log('🔍 Debug - días disponibles generados:', diasDisponibles);
+    console.log('🔍 Debug - horarios por día:', horariosPorDia);
 
     return ManejadorRespuestas.exito(res, 'Disponibilidad obtenida correctamente', {
       diasDisponibles,
@@ -235,7 +295,11 @@ export const verificarDisponibilidadDia = async (req: Request, res: Response) =>
     }
 
     const fechaObj = new Date(fecha as string);
-    const diaSemana = fechaObj.getDay() === 0 ? 7 : fechaObj.getDay(); // Convertir domingo de 0 a 7
+    // Convertir el día de la semana al sistema 1=Lunes, 2=Martes, ..., 7=Domingo
+    let diaSemana = fechaObj.getDay(); // 0=Domingo, 1=Lunes, ..., 6=Sábado
+    if (diaSemana === 0) {
+      diaSemana = 7; // Domingo = 7
+    }
 
     const query = `
       SELECT hora_inicio, hora_fin, activo
