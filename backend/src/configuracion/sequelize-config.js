@@ -20,7 +20,7 @@ module.exports = {
   },
   test: {
     username: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'psyche_password',
+    password: process.env.DB_PASSWORD || 'VMlover01!',
     database: process.env.DB_NAME_TEST || 'psyche_db_test',
     host: process.env.DB_HOST || 'localhost',
     port: process.env.DB_PORT || 5432,

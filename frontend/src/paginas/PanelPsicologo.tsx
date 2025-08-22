@@ -11,6 +11,7 @@ import GestionDisponibilidadMensual from '../componentes/GestionDisponibilidadMe
 import { TIPOS_SERVICIOS, TipoServicio, obtenerCategorias } from '../utilidades/tipos-servicios';
 import { obtenerServicios, crearServicio, eliminarServicio, ServicioPsicologo } from '../servicios/servicios.service';
 import Notificacion from '../componentes/Notificacion';
+import Chat from '../componentes/Chat';
 
 import { PacienteCreado } from '../servicios/pacientes.service';
 import { actualizarPerfilPsicologo, subirImagenReal } from '../servicios/usuarios.service';
@@ -38,7 +39,7 @@ const PanelPsicologo: React.FC = () => {
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'pacientes' | 'citas' | 'disponibilidad' | 'servicios' | 'tareas' | 'perfil'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'pacientes' | 'citas' | 'disponibilidad' | 'servicios' | 'tareas' | 'chat' | 'perfil'>('dashboard');
   const [perfilData, setPerfilData] = useState({
     nombres: '',
     apellidos: '',
@@ -444,6 +445,7 @@ const PanelPsicologo: React.FC = () => {
                 {activeTab === 'disponibilidad' && 'Disponibilidad'}
                 {activeTab === 'servicios' && 'Mis Servicios'}
                 {activeTab === 'tareas' && 'Gestión de Tareas'}
+                {activeTab === 'chat' && 'Chat'}
                 {activeTab === 'perfil' && 'Mi Perfil'}
               </h2>
               <p className="mt-1 text-xs font-semibold text-gray-600 tracking-widest uppercase truncate">
@@ -453,6 +455,7 @@ const PanelPsicologo: React.FC = () => {
                 {activeTab === 'disponibilidad' && 'Configura tus horarios disponibles'}
                 {activeTab === 'servicios' && 'Configura los servicios que ofreces a los pacientes'}
                 {activeTab === 'tareas' && 'Asigna y gestiona tareas para tus pacientes'}
+                {activeTab === 'chat' && 'Comunícate con pacientes, psicólogos y administradores'}
                 {activeTab === 'perfil' && 'Actualiza tu información personal y profesional'}
               </p>
             </div>
@@ -525,6 +528,16 @@ const PanelPsicologo: React.FC = () => {
                 }`}
               >
                 Tareas
+              </button>
+              <button
+                onClick={() => setActiveTab('chat')}
+                className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
+                  activeTab === 'chat'
+                    ? 'border-amber-500 text-amber-600'
+                    : 'border-transparent text-gray-500 hover:text-amber-600 hover:border-amber-300'
+                }`}
+              >
+                Chat
               </button>
               <button
                 onClick={() => setActiveTab('perfil')}
@@ -705,6 +718,12 @@ const PanelPsicologo: React.FC = () => {
 
         {activeTab === 'tareas' && (
           <GestionTareas />
+        )}
+
+        {activeTab === 'chat' && (
+          <div className="h-96">
+            <Chat psicologoId={user?.id} />
+          </div>
         )}
 
         {activeTab === 'perfil' && (

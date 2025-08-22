@@ -8,6 +8,7 @@ import LogAuditoria from './LogAuditoria';
 import ServicioPsicologo from './ServicioPsicologo';
 import RespuestaTarea from './RespuestaTarea';
 import DisponibilidadMensual from './DisponibilidadMensual';
+import Chat from './Chat';
 
 // Configurar asociaciones
 
@@ -189,6 +190,28 @@ DisponibilidadMensual.belongsTo(Usuario, {
   as: 'psicologo',
 });
 
+// Usuario - Chat (1:N) - Emisor
+// Usuario.hasMany(Chat, {
+//   foreignKey: 'emisor_id',
+//   as: 'mensajes_enviados_chat',
+// });
+
+// Chat.belongsTo(Usuario, {
+//   foreignKey: 'emisor_id',
+//   as: 'emisor',
+// });
+
+// Usuario - Chat (1:N) - Receptor
+// Usuario.hasMany(Chat, {
+//   foreignKey: 'receptor_id',
+//   as: 'mensajes_recibidos_chat',
+// });
+
+// Chat.belongsTo(Usuario, {
+//   foreignKey: 'receptor_id',
+//   as: 'receptor',
+// });
+
 export {
   Rol,
   Usuario,
@@ -200,4 +223,5 @@ export {
   ServicioPsicologo,
   RespuestaTarea,
   DisponibilidadMensual,
+  Chat,
 }; 

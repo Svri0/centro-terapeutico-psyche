@@ -1,6 +1,5 @@
 import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../configuracion/database';
-import Usuario from './Usuario';
 
 // Interfaz para las propiedades requeridas
 export interface PacienteAttributes {
@@ -67,10 +66,6 @@ class Paciente extends Model<PacienteAttributes, PacienteCreationAttributes> imp
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
   public readonly deletedAt?: Date;
-
-  // Asociaciones
-  public readonly usuario?: Usuario;
-  public readonly psicologo?: Usuario;
 }
 
 Paciente.init(
