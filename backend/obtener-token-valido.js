@@ -3,15 +3,15 @@ const axios = require('axios');
 // Configuración
 const API_URL = 'http://localhost:3002/api/v1';
 
-// Credenciales del admin (del seeder)
+// Credenciales de Charles (paciente)
 const credenciales = {
-  email: 'admin@terapia.cl',
-  password: 'Admin123!'
+  email: 'charles@example.com',
+  password: 'password123'
 };
 
-async function testLoginAdmin() {
+async function obtenerTokenValido() {
   try {
-    console.log('🔍 Probando login con Admin...');
+    console.log('🔍 Obteniendo token válido...');
     console.log('🔍 Credenciales:', credenciales);
     
     // Hacer login para obtener token
@@ -19,7 +19,7 @@ async function testLoginAdmin() {
     
     if (response.data.success) {
       const token = response.data.data.token;
-      console.log('✅ Login exitoso con Admin');
+      console.log('✅ Token obtenido exitosamente');
       console.log('🔑 Token:', token.substring(0, 50) + '...');
       
       // Ahora probar el chat con el token válido
@@ -30,7 +30,7 @@ async function testLoginAdmin() {
     }
     
   } catch (error) {
-    console.error('❌ Error al hacer login:', error.response?.data || error.message);
+    console.error('❌ Error al obtener token:', error.response?.data || error.message);
   }
 }
 
@@ -60,4 +60,4 @@ async function probarChatConToken(token) {
 }
 
 // Ejecutar
-testLoginAdmin();
+obtenerTokenValido();

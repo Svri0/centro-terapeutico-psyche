@@ -34,6 +34,42 @@ const Chat: React.FC<ChatProps> = ({ psicologoId }) => {
   const [conversaciones, setConversaciones] = useState<Conversacion[]>([]);
   const [conversacionActiva, setConversacionActiva] = useState<string | null>(null);
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
+  
+  // Wrapper para setMensajes con logging y validación
+  const setMensajesConLog = (nuevosMensajes: Mensaje[] | ((prev: Mensaje[]) => Mensaje[])) => {
+    console.log('🔍 Debug - Chat - setMensajes llamado con:', nuevosMensajes);
+    
+    // Validar que siempre sea un array
+    let mensajesFinales: Mensaje[];
+    
+    if (typeof nuevosMensajes === 'function') {
+      mensajesFinales = nuevosMensajes(mensajes);
+    } else {
+      mensajesFinales = nuevosMensajes;
+    }
+    
+    // Asegurar que siempre sea un array
+    if (!Array.isArray(mensajesFinales)) {
+      console.error('🔍 Debug - Chat - ERROR: mensajesFinales no es un array, forzando array vacío');
+      mensajesFinales = [];
+    }
+    
+    // Validar que cada mensaje tenga un ID único
+    const idsUnicos = new Set();
+    const mensajesSinDuplicados = mensajesFinales.filter(mensaje => {
+      if (idsUnicos.has(mensaje.id)) {
+        console.warn('🔍 Debug - Chat - Mensaje duplicado detectado por ID, filtrando:', mensaje.id);
+        return false;
+      }
+      idsUnicos.add(mensaje.id);
+      return true;
+    });
+    
+    console.log('🔍 Debug - Chat - Mensajes finales validados:', mensajesSinDuplicados.length);
+    console.log('🔍 Debug - Chat - IDs únicos:', Array.from(idsUnicos));
+    
+    setMensajes(mensajesSinDuplicados);
+  };
   const [nuevoMensaje, setNuevoMensaje] = useState('');
   const [loading, setLoading] = useState(false);
   const [enviando, setEnviando] = useState(false);
@@ -71,7 +107,12 @@ const Chat: React.FC<ChatProps> = ({ psicologoId }) => {
       
       // Conectar WebSocket
       webSocketService.connect();
-      webSocketService.joinUser(user.id);
+      
+      // Esperar un momento para que la conexión se establezca antes de unirse a la sala
+      setTimeout(() => {
+        console.log('🔍 Chat - Uniendo usuario a sala:', user.id);
+        webSocketService.joinUser(user.id);
+      }, 1000);
       
       // Escuchar eventos de WebSocket
       webSocketService.onConnect(() => {
@@ -86,7 +127,64 @@ const Chat: React.FC<ChatProps> = ({ psicologoId }) => {
       
       webSocketService.onNewMessage((data) => {
         console.log('📨 Nuevo mensaje recibido via WebSocket:', data);
-        // TODO: Agregar mensaje a la conversación activa
+        
+        // Para el psicólogo: recibir mensajes del paciente activo
+        if (data.senderId) {
+          console.log('🔍 Debug - Chat - data.senderId:', data.senderId);
+          console.log('🔍 Debug - Chat - conversacionActiva:', conversacionActiva);
+          console.log('🔍 Debug - Chat - data.chatId:', data.chatId);
+          
+          // Verificar si el mensaje es del usuario actual
+          const esDelUsuarioActual = data.senderId === user?.id;
+          
+          console.log('🔍 Debug - Chat - esDelUsuarioActual:', esDelUsuarioActual);
+          
+          if (!esDelUsuarioActual) {
+            console.log('🔍 Debug - Chat - Agregando mensaje entrante del paciente');
+            
+            // Crear mensaje entrante con ID único
+            const nuevoMensaje: Mensaje = {
+              id: `ws_${data.senderId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              contenido: data.message || data.mensajeCompleto?.contenido || 'Mensaje recibido',
+              emisor_id: data.senderId,
+              receptor_id: user?.id || '',
+              emisor_nombre: data.mensajeCompleto?.emisor_nombre || 'Paciente',
+              emisor_rol: data.mensajeCompleto?.emisor_rol || 'paciente',
+              timestamp: data.timestamp || new Date().toISOString(),
+              leido: false
+            };
+            
+            // Agregar mensaje directamente al estado actual
+            setMensajes(prev => {
+              console.log('🔍 Debug - Chat - Agregando mensaje WebSocket, total previo:', prev.length);
+              
+              // Verificar si ya existe un mensaje similar para evitar duplicados
+              const mensajeDuplicado = prev.find(msg => 
+                msg.contenido === nuevoMensaje.contenido && 
+                msg.emisor_id === nuevoMensaje.emisor_id &&
+                Math.abs(new Date(msg.timestamp).getTime() - new Date(nuevoMensaje.timestamp).getTime()) < 3000
+              );
+              
+              if (mensajeDuplicado) {
+                console.log('🔍 Debug - Chat - Mensaje duplicado detectado, ignorando');
+                return prev;
+              }
+              
+              const nuevosMensajes = [...prev, nuevoMensaje];
+              console.log('🔍 Debug - Chat - Mensaje agregado, nuevo total:', nuevosMensajes.length);
+              return nuevosMensajes;
+            });
+            
+            // Marcar como leído si hay conversación activa
+            if (conversacionActiva) {
+              marcarComoLeidos(conversacionActiva);
+            }
+          } else {
+            console.log('🔍 Debug - Chat - Mensaje es del usuario actual, ignorando');
+          }
+        } else {
+          console.log('🔍 Debug - Chat - Mensaje WebSocket ignorado - senderId no disponible');
+        }
       });
     }
     
@@ -100,15 +198,55 @@ const Chat: React.FC<ChatProps> = ({ psicologoId }) => {
 
   useEffect(() => {
     if (conversacionActiva) {
+      console.log('🔍 Debug - Chat - Cambio de conversación activa a:', conversacionActiva);
+      console.log('🔍 Debug - Chat - Mensajes actuales antes de cargar:', mensajes.length);
+      
+      // Cargar mensajes de la nueva conversación
       cargarMensajes(conversacionActiva);
+      
       // Marcar mensajes como leídos
       marcarComoLeidos(conversacionActiva);
+    } else {
+      console.log('🔍 Debug - Chat - No hay conversación activa, limpiando mensajes');
+      // Solo limpiar mensajes si no hay conversación activa
+      setMensajes([]);
     }
   }, [conversacionActiva]);
 
   useEffect(() => {
     // Scroll automático al último mensaje
-    scrollToBottom();
+    if (Array.isArray(mensajes) && mensajes.length > 0) {
+      scrollToBottom();
+    }
+  }, [mensajes]);
+
+  // Validación adicional de seguridad para mensajes
+  useEffect(() => {
+    // Asegurar que mensajes siempre sea un array válido
+    if (!Array.isArray(mensajes)) {
+      console.error('🔍 Debug - Chat - ERROR CRÍTICO: mensajes no es un array, forzando array vacío');
+      setMensajes([]);
+      return;
+    }
+    
+    // Verificar que no haya mensajes duplicados por ID
+    const idsUnicos = new Set();
+    const mensajesSinDuplicados = mensajes.filter(mensaje => {
+      if (idsUnicos.has(mensaje.id)) {
+        console.warn('🔍 Debug - Chat - Mensaje duplicado por ID en useEffect, filtrando:', mensaje.id);
+        return false;
+      }
+      idsUnicos.add(mensaje.id);
+      return true;
+    });
+    
+    // Solo actualizar si hay diferencias para evitar loops infinitos
+    if (mensajesSinDuplicados.length !== mensajes.length) {
+      console.log('🔍 Debug - Chat - Mensajes duplicados filtrados, actualizando estado');
+      setMensajes(mensajesSinDuplicados);
+    }
+    
+    console.log('🔍 Debug - Chat - Estado de mensajes validado:', mensajesSinDuplicados.length);
   }, [mensajes]);
 
   // WebSocket reemplaza el polling - no necesitamos intervalos
@@ -150,11 +288,72 @@ const Chat: React.FC<ChatProps> = ({ psicologoId }) => {
 
   const cargarMensajes = async (conversacionId: string) => {
     try {
+      console.log('🔍 Debug - Chat - cargarMensajes iniciado para conversación:', conversacionId);
       const response = await chatService.obtenerMensajes(conversacionId);
-      setMensajes(response.data);
+      console.log('🔍 Debug - Chat - Respuesta de mensajes:', response);
+      console.log('🔍 Debug - Chat - response.data:', response.data);
+      console.log('🔍 Debug - Chat - response.data es array?', Array.isArray(response.data));
+      
+      // Validar y extraer mensajes de la respuesta
+      let mensajesExtraidos: Mensaje[] = [];
+      
+      if (response.data && response.data.success && Array.isArray(response.data.data)) {
+        // Formato estándar: { success: true, data: [...] }
+        mensajesExtraidos = response.data.data;
+        console.log('🔍 Debug - Chat - Mensajes extraídos del formato estándar:', mensajesExtraidos.length);
+      } else if (Array.isArray(response.data)) {
+        // Formato directo: [...]
+        mensajesExtraidos = response.data;
+        console.log('🔍 Debug - Chat - Mensajes extraídos del formato directo:', mensajesExtraidos.length);
+      } else {
+        // No hay mensajes o formato desconocido
+        console.log('🔍 Debug - Chat - No se encontraron mensajes, estableciendo array vacío');
+        mensajesExtraidos = [];
+      }
+      
+      // Asegurar que siempre sea un array válido
+      if (!Array.isArray(mensajesExtraidos)) {
+        console.error('🔍 Debug - Chat - ERROR: mensajesExtraidos no es un array, forzando array vacío');
+        mensajesExtraidos = [];
+      }
+      
+      // FUSIONAR mensajes existentes con nuevos en lugar de reemplazar
+      setMensajesConLog(prev => {
+        console.log('🔍 Debug - Chat - Mensajes previos antes de fusionar:', prev.length);
+        console.log('🔍 Debug - Chat - Mensajes nuevos de la API:', mensajesExtraidos.length);
+        
+        // Crear un Map para evitar duplicados por ID
+        const mensajesMap = new Map();
+        
+        // Agregar mensajes existentes (WebSocket)
+        prev.forEach(msg => {
+          if (msg.id && !mensajesMap.has(msg.id)) {
+            mensajesMap.set(msg.id, msg);
+          }
+        });
+        
+        // Agregar mensajes nuevos de la API
+        mensajesExtraidos.forEach(msg => {
+          if (msg.id && !mensajesMap.has(msg.id)) {
+            mensajesMap.set(msg.id, msg);
+          }
+        });
+        
+        // Convertir Map a array y ordenar por timestamp
+        const mensajesFusionados = Array.from(mensajesMap.values()).sort((a, b) => 
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
+        
+        console.log('🔍 Debug - Chat - Mensajes fusionados totales:', mensajesFusionados.length);
+        return mensajesFusionados;
+      });
+      
+      console.log('🔍 Debug - Chat - Mensajes establecidos correctamente después de fusión');
     } catch (error: any) {
       console.error('Error al cargar mensajes:', error);
       mostrarNotificacion('Error al cargar mensajes', 'error');
+      // NO limpiar mensajes existentes si hay error
+      console.log('🔍 Debug - Chat - Error en API, manteniendo mensajes existentes');
     }
   };
 
@@ -170,44 +369,80 @@ const Chat: React.FC<ChatProps> = ({ psicologoId }) => {
     e.preventDefault();
     if (!nuevoMensaje.trim() || !conversacionActiva) return;
 
+    // Declarar mensajeTexto al inicio para que esté disponible en todo el scope
+    const mensajeTexto = nuevoMensaje.trim();
+
     try {
       setEnviando(true);
       
-      // Enviar mensaje via WebSocket (tiempo real)
-      if (wsConnected) {
-        webSocketService.sendMessage(conversacionActiva, nuevoMensaje.trim(), user?.id || '');
-        
-        // Agregar mensaje localmente inmediatamente
-        const nuevoMensajeObj = {
-          id: `temp_${Date.now()}`,
-          contenido: nuevoMensaje.trim(),
-          emisor_id: user?.id || '',
-          receptor_id: conversacionActiva,
-          emisor_nombre: `${user?.nombres} ${user?.apellidos}`,
-          emisor_rol: user?.rol || 'psicologo',
-          timestamp: new Date().toISOString(),
-          leido: false
-        };
-        
-        setMensajes(prev => [...prev, nuevoMensajeObj]);
-        setNuevoMensaje('');
-        
-        mostrarNotificacion('Mensaje enviado', 'exito');
-      } else {
-        // Fallback a API si WebSocket no está conectado
+      // Crear mensaje local inmediatamente para feedback visual
+      const mensajeLocal = {
+        id: `temp_${Date.now()}`,
+        contenido: mensajeTexto,
+        emisor_id: user?.id || '',
+        receptor_id: conversacionActiva,
+        emisor_nombre: `${user?.nombres} ${user?.apellidos}`,
+        emisor_rol: user?.rol || 'psicologo',
+        timestamp: new Date().toISOString(),
+        leido: false
+      };
+      
+      // Agregar mensaje localmente inmediatamente
+      setMensajesConLog(prev => [...prev, mensajeLocal]);
+      
+      // Limpiar input inmediatamente
+      setNuevoMensaje('');
+      
+      // SIEMPRE usar API (que incluye WebSocket automáticamente)
+      try {
         const mensajeData = {
-          contenido: nuevoMensaje.trim(),
+          contenido: mensajeTexto,
           receptor_id: conversacionActiva
         };
 
+        console.log('🔍 Chat - Enviando mensaje via API:', mensajeData);
         const response = await chatService.enviarMensaje(mensajeData);
-        setMensajes(prev => [...prev, response.data]);
-        setNuevoMensaje('');
-        mostrarNotificacion('Mensaje enviado (modo fallback)', 'exito');
+        console.log('🔍 Chat - Respuesta del backend:', response);
+        
+        // Reemplazar mensaje temporal con el real del servidor
+        if (response.data && response.data.success && response.data.data) {
+          console.log('🔍 Debug - Chat - mensajeLocal.id:', mensajeLocal.id);
+          console.log('🔍 Debug - Chat - response.data.data.id:', response.data.data.id);
+          
+          setMensajesConLog(prev => {
+            console.log('🔍 Debug - Chat - prev antes del map:', prev.length);
+            
+            // Buscar si el mensaje temporal existe
+            const mensajeTemporal = prev.find(msg => msg.id === mensajeLocal.id);
+            
+            if (mensajeTemporal) {
+              console.log('🔍 Debug - Chat - Reemplazando mensaje temporal con real');
+              const nuevosMensajes = prev.map(msg => 
+                msg.id === mensajeLocal.id ? response.data.data : msg
+              );
+              console.log('🔍 Debug - Chat - nuevosMensajes después del map:', nuevosMensajes.length);
+              return nuevosMensajes;
+            } else {
+              console.log('🔍 Debug - Chat - Mensaje temporal no encontrado, agregando mensaje real');
+              const nuevosMensajes = [...prev, response.data.data];
+              console.log('🔍 Debug - Chat - nuevosMensajes después de agregar:', nuevosMensajes.length);
+              return nuevosMensajes;
+            }
+          });
+          mostrarNotificacion('Mensaje enviado', 'exito');
+        }
+      } catch (apiError: any) {
+        console.error('Error al enviar mensaje via API:', apiError);
+        // Mantener mensaje local si falla la API
+        mostrarNotificacion('Error al enviar mensaje', 'error');
       }
     } catch (error: any) {
       console.error('Error al enviar mensaje:', error);
       mostrarNotificacion('Error al enviar mensaje', 'error');
+      
+      // Revertir mensaje local si hay error
+      setMensajesConLog(prev => prev.filter(msg => msg.id !== `temp_${Date.now()}`));
+      setNuevoMensaje(mensajeTexto); // Restaurar texto del mensaje
     } finally {
       setEnviando(false);
     }
@@ -226,7 +461,7 @@ const Chat: React.FC<ChatProps> = ({ psicologoId }) => {
       });
       
       setConversacionActiva(participanteId);
-      setMensajes([]);
+      setMensajesConLog([]);
       
       // Agregar la nueva conversación a la lista si no existe
       const conversacionExistente = conversaciones.find(c => c.participante_id === participanteId);
@@ -285,35 +520,35 @@ const Chat: React.FC<ChatProps> = ({ psicologoId }) => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-white rounded-lg shadow-sm border border-amber-100">
-             {/* Header del Chat */}
-       <div className="px-4 py-3 border-b border-amber-200 bg-amber-50">
-         <div className="flex items-center justify-between">
-           <h3 className="text-lg font-semibold text-gray-900">Chat</h3>
-           <div className="flex items-center space-x-2">
-             {/* Indicador de estado WebSocket */}
-             <div className="flex items-center space-x-2">
-               <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-               <span className="text-xs text-gray-600">
-                 {wsConnected ? 'Conectado' : 'Desconectado'}
-               </span>
-             </div>
-             
-             <select
-               value={filtroRol}
-               onChange={(e) => setFiltroRol(e.target.value as any)}
-               className="text-xs px-2 py-1 border border-amber-200 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
-             >
-               <option value="todos">Todos</option>
-               <option value="pacientes">Pacientes</option>
-               <option value="psicologos">Psicólogos</option>
-               <option value="admin">Administrador</option>
-             </select>
-           </div>
-         </div>
-       </div>
+    <div className="h-full flex flex-col bg-white rounded-lg shadow-sm border border-amber-100" style={{ height: '500px', maxHeight: '500px' }}>
+      {/* Header del Chat */}
+      <div className="px-4 py-3 border-b border-amber-200 bg-amber-50 flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-900">Chat</h3>
+          <div className="flex items-center space-x-2">
+            {/* Indicador de estado WebSocket */}
+            <div className="flex items-center space-x-2">
+              <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              <span className="text-xs text-gray-600">
+                {wsConnected ? 'Conectado' : 'Desconectado'}
+              </span>
+            </div>
+            
+            <select
+              value={filtroRol}
+              onChange={(e) => setFiltroRol(e.target.value as any)}
+              className="text-xs px-2 py-1 border border-amber-200 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+            >
+              <option value="todos">Todos</option>
+              <option value="pacientes">Pacientes</option>
+              <option value="psicologos">Psicólogos</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </div>
+        </div>
+      </div>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden" style={{ height: 'calc(500px - 80px)', maxHeight: 'calc(500px - 80px)' }}>
         {/* Lista de Conversaciones */}
         <div className="w-1/3 border-r border-amber-200 flex flex-col">
           <div className="flex-1 overflow-y-auto">
@@ -387,7 +622,7 @@ const Chat: React.FC<ChatProps> = ({ psicologoId }) => {
           {conversacionActiva ? (
             <>
               {/* Header de la conversación */}
-              <div className="px-4 py-3 border-b border-amber-200 bg-amber-50">
+              <div className="px-4 py-3 border-b border-amber-200 bg-amber-50 flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="font-medium text-gray-900">
@@ -408,40 +643,50 @@ const Chat: React.FC<ChatProps> = ({ psicologoId }) => {
                 </div>
               </div>
 
-              {/* Mensajes */}
+              {/* Mensajes - Área scrollable con altura fija */}
               <div 
                 ref={chatContainerRef}
                 className="flex-1 overflow-y-auto p-4 space-y-3"
+                style={{ height: 'calc(500px - 200px)', maxHeight: 'calc(500px - 200px)' }}
               >
-                {mensajes.map((mensaje) => (
-                  <div
-                    key={mensaje.id}
-                    className={`flex ${mensaje.emisor_id === user?.id ? 'justify-end' : 'justify-start'}`}
-                  >
+                {/* Validación adicional de seguridad */}
+                {Array.isArray(mensajes) && mensajes.length > 0 ? (
+                  mensajes.map((mensaje) => (
                     <div
-                      className={`max-w-xs lg:max-w-md px-3 py-2 rounded-lg ${
-                        mensaje.emisor_id === user?.id
-                          ? 'bg-amber-500 text-white'
-                          : 'bg-gray-100 text-gray-900'
-                      }`}
+                      key={mensaje.id}
+                      className={`flex ${mensaje.emisor_id === user?.id ? 'justify-end' : 'justify-start'}`}
                     >
-                      <p className="text-sm">{mensaje.contenido}</p>
-                      <p className={`text-xs mt-1 ${
-                        mensaje.emisor_id === user?.id ? 'text-amber-100' : 'text-gray-500'
-                      }`}>
-                        {formatearTimestamp(mensaje.timestamp)}
-                        {mensaje.emisor_id !== user?.id && !mensaje.leido && (
-                          <span className="ml-2">●</span>
-                        )}
-                      </p>
+                      <div
+                        className={`max-w-xs lg:max-w-md px-3 py-2 rounded-lg ${
+                          mensaje.emisor_id === user?.id
+                            ? 'bg-amber-500 text-white'
+                            : 'bg-gray-100 text-gray-900'
+                        }`}
+                      >
+                        <p className="text-sm">{mensaje.contenido}</p>
+                        <p className={`text-xs mt-1 ${
+                          mensaje.emisor_id === user?.id ? 'text-amber-100' : 'text-gray-500'
+                        }`}>
+                          {formatearTimestamp(mensaje.timestamp)}
+                          {mensaje.emisor_id !== user?.id && !mensaje.leido && (
+                            <span className="ml-2">●</span>
+                          )}
+                        </p>
+                      </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="text-center text-gray-500 py-8">
+                    <div className="text-4xl mb-2">💬</div>
+                    <p>No hay mensajes en esta conversación</p>
+                    <p className="text-sm">Inicia el chat enviando un mensaje</p>
                   </div>
-                ))}
+                )}
                 <div ref={messagesEndRef} />
               </div>
 
               {/* Formulario de envío */}
-              <form onSubmit={enviarMensaje} className="p-4 border-t border-amber-200">
+              <form onSubmit={enviarMensaje} className="p-4 border-t border-amber-200 flex-shrink-0">
                 <div className="flex space-x-2">
                   <input
                     type="text"

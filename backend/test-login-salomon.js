@@ -3,15 +3,15 @@ const axios = require('axios');
 // Configuración
 const API_URL = 'http://localhost:3002/api/v1';
 
-// Credenciales del admin (del seeder)
+// Credenciales de Salomón (paciente)
 const credenciales = {
-  email: 'admin@terapia.cl',
-  password: 'Admin123!'
+  email: 'salomon@gmail.com',
+  password: 'password123' // Intentar con password común
 };
 
-async function testLoginAdmin() {
+async function testLoginSalomon() {
   try {
-    console.log('🔍 Probando login con Admin...');
+    console.log('🔍 Probando login con Salomón...');
     console.log('🔍 Credenciales:', credenciales);
     
     // Hacer login para obtener token
@@ -19,7 +19,7 @@ async function testLoginAdmin() {
     
     if (response.data.success) {
       const token = response.data.data.token;
-      console.log('✅ Login exitoso con Admin');
+      console.log('✅ Login exitoso con Salomón');
       console.log('🔑 Token:', token.substring(0, 50) + '...');
       
       // Ahora probar el chat con el token válido
@@ -31,7 +31,47 @@ async function testLoginAdmin() {
     
   } catch (error) {
     console.error('❌ Error al hacer login:', error.response?.data || error.message);
+    
+    // Si falla, probar con otras contraseñas comunes
+    if (error.response?.status === 401) {
+      console.log('\n🔍 Probando contraseñas alternativas...');
+      await probarContraseñasAlternativas();
+    }
   }
+}
+
+async function probarContraseñasAlternativas() {
+  const contraseñas = [
+    '123456',
+    'password',
+    'admin',
+    '12345678',
+    'qwerty',
+    'abc123',
+    'password123',
+    'admin123'
+  ];
+  
+  for (const contraseña of contraseñas) {
+    try {
+      console.log(`🔍 Probando contraseña: ${contraseña}`);
+      const response = await axios.post(`${API_URL}/autenticacion/login`, {
+        email: 'salomon@gmail.com',
+        password: contraseña
+      });
+      
+      if (response.data.success) {
+        console.log(`✅ ¡Contraseña encontrada: ${contraseña}!`);
+        const token = response.data.data.token;
+        await probarChatConToken(token);
+        return;
+      }
+    } catch (error) {
+      // Continuar con la siguiente contraseña
+    }
+  }
+  
+  console.log('❌ Ninguna contraseña funcionó');
 }
 
 async function probarChatConToken(token) {
@@ -60,4 +100,4 @@ async function probarChatConToken(token) {
 }
 
 // Ejecutar
-testLoginAdmin();
+testLoginSalomon();

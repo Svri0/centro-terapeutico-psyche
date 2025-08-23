@@ -12,6 +12,8 @@ import { getAvatarById, AVATARS_ANIMALES } from '../assets/avatars/default-avata
 const PanelPaciente: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState<any>(null);
+  const [psicologoAsignado, setPsicologoAsignado] = useState<any>(null);
+  const [psicologoLoading, setPsicologoLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'tareas' | 'calendario' | 'test-dibujo' | 'chat' | 'perfil'>('tareas');
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -58,6 +60,7 @@ const PanelPaciente: React.FC = () => {
     setUserData(user);
     cargarDatosPaciente();
     cargarPerfil();
+    cargarPsicologoAsignado();
   }, []);
 
   const cargarDatosPaciente = async () => {
@@ -69,6 +72,38 @@ const PanelPaciente: React.FC = () => {
       setError('Error al cargar los datos del paciente');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const cargarPsicologoAsignado = async () => {
+    try {
+      setPsicologoLoading(true);
+      console.log('🔍 PanelPaciente - Cargando psicólogo asignado...');
+      
+      // Importar el servicio de chat dinámicamente para evitar dependencias circulares
+      const { chatService } = await import('../servicios/chat.service');
+      
+      const response = await chatService.obtenerPsicologoAsignado();
+      
+      if (response.data && response.data.success && response.data.data) {
+        const psicologoData = response.data.data;
+        setPsicologoAsignado(psicologoData);
+        console.log('🔍 PanelPaciente - Psicólogo asignado cargado:', psicologoData);
+      } else {
+        console.error('🔍 PanelPaciente - Error: No se pudo obtener información del psicólogo');
+        setPsicologoAsignado(null);
+      }
+    } catch (error: any) {
+      console.error('🔍 PanelPaciente - Error al cargar psicólogo asignado:', error);
+      
+      if (error.response?.status === 404) {
+        console.log('🔍 PanelPaciente - Usuario no es un paciente o no tiene psicólogo asignado');
+        setPsicologoAsignado(null);
+      } else {
+        setPsicologoAsignado(null);
+      }
+    } finally {
+      setPsicologoLoading(false);
     }
   };
 
@@ -434,7 +469,14 @@ const PanelPaciente: React.FC = () => {
 
             {activeTab === 'chat' && (
               <div className="bg-white rounded-lg shadow-sm border-2 border-gray-200">
-                <ChatPaciente psicologoId={userData?.psicologo_id} />
+                {psicologoLoading ? (
+                  <div className="p-6 text-center text-gray-500">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500 mx-auto mb-4"></div>
+                    <p>Cargando información del psicólogo...</p>
+                  </div>
+                ) : (
+                  <ChatPaciente psicologoId={psicologoAsignado?.psicologo_id} />
+                )}
               </div>
             )}
 

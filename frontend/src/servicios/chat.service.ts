@@ -64,6 +64,11 @@ class ChatService {
     return api.get('/chat/estadisticas');
   }
 
+  // Obtener información del psicólogo asignado para pacientes
+  async obtenerPsicologoAsignado() {
+    return api.get('/chat/psicologo-asignado');
+  }
+
   // Buscar usuarios para iniciar conversación
   async buscarUsuarios(query: string, rol?: string) {
     const params = new URLSearchParams({ q: query });

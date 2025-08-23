@@ -268,13 +268,15 @@ export const crear = async (req: Request, res: Response) => {
     // Crear paciente
     const [pacienteCreado] = await sequelize.query(`
       INSERT INTO pacientes (
-        id, usuario_id, psicologo_id, numero_ficha, rut, direccion,
+        id, usuario_id, psicologo_id, nombres, apellidos, email, telefono, fecha_nacimiento, genero,
+        numero_ficha, rut, direccion,
         contacto_emergencia_nombre, contacto_emergencia_telefono, 
         contacto_emergencia_relacion, diagnosticos, etiquetas,
         estrategias_autorregulacion, puntos_acumulados, estado,
         fecha_ingreso, observaciones, created_at, updated_at
       ) VALUES (
-        gen_random_uuid(), :usuarioId, :psicologoId, :numeroFicha, :rut, :direccion,
+        gen_random_uuid(), :usuarioId, :psicologoId, :nombres, :apellidos, :email, :telefono, :fechaNacimiento, :genero,
+        :numeroFicha, :rut, :direccion,
         :contactoEmergenciaNombre, :contactoEmergenciaTelefono,
         :contactoEmergenciaRelacion, '[]', '[]', '[]', 0, 'activo',
         NOW(), :observaciones, NOW(), NOW()
@@ -283,6 +285,12 @@ export const crear = async (req: Request, res: Response) => {
       replacements: {
         usuarioId,
         psicologoId,
+        nombres,
+        apellidos,
+        email,
+        telefono: telefono || null,
+        fechaNacimiento: fecha_nacimiento || null,
+        genero: genero || null,
         numeroFicha,
         rut: rut || null,
         direccion: direccion || null,

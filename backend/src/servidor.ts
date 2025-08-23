@@ -12,6 +12,7 @@ import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import { MENSAJES_GENERALES } from './utilidades/mensajes';
 import { ManejadorRespuestas } from './utilidades/respuestas';
+import chatController from './controladores/chat.controlador';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -42,6 +43,16 @@ const io = new SocketIOServer(httpServer, {
     credentials: true
   }
 });
+
+// CONFIGURAR IO DESPUÉS DE CREAR EL SERVIDOR - SOLUCIÓN DEFINITIVA
+console.log('🔌 Configurando ChatController con WebSocket...');
+console.log('🔌 Servidor - chatController disponible:', !!chatController);
+console.log('🔌 Servidor - chatController.io ANTES:', chatController.isIoConfigured());
+
+chatController.setIo(io);
+
+console.log('🔌 Servidor - chatController.io DESPUÉS:', chatController.isIoConfigured());
+console.log('🔌 ChatController configurado con WebSocket - CONFIRMADO');
 
 // Middleware
 app.use(helmet());
@@ -727,7 +738,7 @@ const configurarEventosServidor = (servidor: any) => {
       console.log('🔌 Usuario desconectado:', socket.id);
     });
   });
-  
+
   // Cierre graceful con mensajes personalizados
   process.on('SIGTERM', () => {
     console.log('\n🛑 ═══════════════════════════════════════════════════════');

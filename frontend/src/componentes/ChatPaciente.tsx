@@ -22,6 +22,7 @@ interface ChatPacienteProps {
 const ChatPaciente: React.FC<ChatPacienteProps> = ({ psicologoId }) => {
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
   const [nuevoMensaje, setNuevoMensaje] = useState('');
+  const [mensajeError, setMensajeError] = useState('');
   const [loading, setLoading] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [psicologoInfo, setPsicologoInfo] = useState<any>(null);
@@ -51,26 +52,42 @@ const ChatPaciente: React.FC<ChatPacienteProps> = ({ psicologoId }) => {
 
   // Cargar información del psicólogo
   const cargarInfoPsicologo = async () => {
-    if (!psicologoId) return;
-    
     try {
       setLoading(true);
-      // Aquí podrías hacer una llamada a la API para obtener info del psicólogo
-      // Por ahora usamos datos básicos
-      setPsicologoInfo({
-        id: psicologoId,
-        nombre: 'Tu Psicólogo',
-        avatar_url: null
-      });
-    } catch (error) {
+      
+      // Obtener información del psicólogo asignado desde la API
+      const response = await chatService.obtenerPsicologoAsignado();
+      
+      if (response.data && response.data.success && response.data.data) {
+        const psicologoData = response.data.data;
+        setPsicologoInfo({
+          id: psicologoData.psicologo_id,
+          nombre: psicologoData.psicologo_nombre,
+          avatar_url: psicologoData.psicologo_avatar,
+          email: psicologoData.psicologo_email
+        });
+        
+        // Cargar mensajes después de obtener la info del psicólogo
+        await cargarMensajes(psicologoData.psicologo_id);
+      } else {
+        console.error('Error: No se pudo obtener información del psicólogo');
+        mostrarNotificacion('No se pudo obtener información del psicólogo', 'error');
+      }
+    } catch (error: any) {
       console.error('Error al cargar información del psicólogo:', error);
+      
+      if (error.response?.status === 404) {
+        mostrarNotificacion('No tienes un psicólogo asignado para chatear', 'advertencia');
+      } else {
+        mostrarNotificacion('Error al cargar información del psicólogo', 'error');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   // Cargar mensajes
-  const cargarMensajes = async () => {
+  const cargarMensajes = async (psicologoId: string) => {
     if (!psicologoId) return;
     
     try {
@@ -92,39 +109,24 @@ const ChatPaciente: React.FC<ChatPacienteProps> = ({ psicologoId }) => {
     try {
       setEnviando(true);
       
-      // Enviar mensaje via WebSocket (tiempo real)
-      if (wsConnected) {
-        webSocketService.sendMessage(`chat_${psicologoId}`, nuevoMensaje.trim(), user?.id || '');
-        
-        // Agregar mensaje localmente inmediatamente
-        const nuevoMensajeObj = {
-          id: `temp_${Date.now()}`,
-          contenido: nuevoMensaje.trim(),
-          emisor_id: user?.id || '',
-          receptor_id: psicologoId,
-          emisor_nombre: `${user?.nombres} ${user?.apellidos}`,
-          emisor_rol: 'paciente',
-          timestamp: new Date().toISOString(),
-          leido: false
-        };
-        
-        setMensajes(prev => [...prev, nuevoMensajeObj]);
-        setNuevoMensaje('');
-        mostrarNotificacion('Mensaje enviado', 'exito');
-      } else {
-        // Fallback a API si WebSocket no está conectado
-        const mensajeData = {
-          contenido: nuevoMensaje.trim(),
-          receptor_id: psicologoId
-        };
-  
-        const response = await chatService.enviarMensaje(mensajeData);
-        setMensajes(prev => [...prev, response.data]);
-        setNuevoMensaje('');
-        mostrarNotificacion('Mensaje enviado (modo fallback)', 'exito');
-      }
+      // SIEMPRE usar API (que incluye WebSocket automáticamente)
+      const mensajeData = {
+        contenido: nuevoMensaje.trim(),
+        receptor_id: psicologoId
+      };
+
+      console.log('🔍 ChatPaciente - Enviando mensaje via API:', mensajeData);
+      const response = await chatService.enviarMensaje(mensajeData);
+      console.log('🔍 ChatPaciente - Respuesta del backend:', response);
+      console.log('🔍 ChatPaciente - Mensaje recibido:', response.data.data);
+      
+      setMensajes(prev => [...prev, response.data.data]);
+      setNuevoMensaje('');
+      mostrarNotificacion('Mensaje enviado', 'exito');
     } catch (error: any) {
       console.error('Error al enviar mensaje:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Error al enviar mensaje';
+      setMensajeError(errorMessage);
       mostrarNotificacion('Error al enviar mensaje', 'error');
     } finally {
       setEnviando(false);
@@ -132,17 +134,21 @@ const ChatPaciente: React.FC<ChatPacienteProps> = ({ psicologoId }) => {
   };
 
   useEffect(() => {
-    if (psicologoId) {
-      cargarInfoPsicologo();
-      cargarMensajes();
-    }
-  }, [psicologoId]);
+    // Cargar información del psicólogo cuando el componente se monte
+    cargarInfoPsicologo();
+  }, []); // Solo ejecutar una vez al montar
 
   useEffect(() => {
     if (user) {
       // Conectar WebSocket
+      console.log('🔍 ChatPaciente - Conectando WebSocket...');
       webSocketService.connect();
-      webSocketService.joinUser(user.id);
+      
+      // Esperar un poco para que se conecte antes de unirse a la sala
+      setTimeout(() => {
+        console.log('🔍 ChatPaciente - Uniendo usuario a sala:', user.id);
+        webSocketService.joinUser(user.id);
+      }, 1000);
       
       // Escuchar eventos de WebSocket
       webSocketService.onConnect(() => {
@@ -157,7 +163,24 @@ const ChatPaciente: React.FC<ChatPacienteProps> = ({ psicologoId }) => {
       
       webSocketService.onNewMessage((data) => {
         console.log('📨 Nuevo mensaje recibido via WebSocket:', data);
-        // TODO: Agregar mensaje a la conversación
+        
+        // Agregar mensaje a la conversación
+        if (data.mensajeCompleto) {
+          setMensajes(prev => [...prev, data.mensajeCompleto]);
+        } else {
+          // Fallback si no viene mensajeCompleto
+          const nuevoMensaje = {
+            id: `ws_${Date.now()}`,
+            contenido: data.message,
+            emisor_id: data.senderId,
+            receptor_id: user?.id || '',
+            emisor_nombre: 'Psicólogo',
+            emisor_rol: 'psicologo',
+            timestamp: data.timestamp,
+            leido: false
+          };
+          setMensajes(prev => [...prev, nuevoMensaje]);
+        }
       });
     }
     
@@ -196,25 +219,25 @@ const ChatPaciente: React.FC<ChatPacienteProps> = ({ psicologoId }) => {
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col bg-white rounded-lg shadow-sm border border-amber-100" style={{ height: '500px', maxHeight: '500px' }}>
       {/* Header del Chat */}
-      <div className="px-4 py-3 border-b border-amber-200 bg-amber-50">
+      <div className="px-4 py-3 border-b border-amber-200 bg-amber-50 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            {/* Foto de perfil del psicólogo */}
-            <div className="flex-shrink-0">
-              {psicologoInfo?.avatar_url ? (
-                <img
-                  src={psicologoInfo.avatar_url}
-                  alt={`Avatar de ${psicologoInfo.nombre}`}
-                  className="w-10 h-10 rounded-full object-cover border-2 border-amber-200"
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-amber-200 flex items-center justify-center border-2 border-amber-300">
-                  <span className="text-amber-700 font-semibold text-sm">P</span>
-                </div>
-              )}
-            </div>
+            {/* Avatar del psicólogo */}
+            {psicologoInfo?.avatar_url ? (
+              <img
+                src={psicologoInfo.avatar_url}
+                alt={`Avatar de ${psicologoInfo.nombre}`}
+                className="w-10 h-10 rounded-full object-cover border-2 border-amber-200"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-amber-200 flex items-center justify-center border-2 border-amber-300">
+                <span className="text-amber-700 font-semibold text-sm">
+                  {(psicologoInfo?.nombre || 'P').charAt(0).toUpperCase()}
+                </span>
+              </div>
+            )}
             
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
@@ -231,8 +254,8 @@ const ChatPaciente: React.FC<ChatPacienteProps> = ({ psicologoId }) => {
         </div>
       </div>
 
-      {/* Área de Mensajes */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      {/* Área de Mensajes - Scrollable con altura fija */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3" style={{ height: 'calc(500px - 140px)', maxHeight: 'calc(500px - 140px)' }}>
         {loading ? (
           <div className="text-center text-gray-500">Cargando mensajes...</div>
         ) : mensajes.length === 0 ? (
@@ -269,13 +292,16 @@ const ChatPaciente: React.FC<ChatPacienteProps> = ({ psicologoId }) => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input para enviar mensaje */}
-      <div className="px-4 py-3 border-t border-amber-200 bg-white">
+      {/* Input para enviar mensaje - Fijo */}
+      <div className="px-4 py-3 border-t border-amber-200 bg-white flex-shrink-0">
         <div className="flex space-x-2">
           <input
             type="text"
             value={nuevoMensaje}
-            onChange={(e) => setNuevoMensaje(e.target.value)}
+            onChange={(e) => {
+              setNuevoMensaje(e.target.value);
+              if (mensajeError) setMensajeError('');
+            }}
             onKeyPress={(e) => e.key === 'Enter' && enviarMensaje()}
             placeholder="Escribe tu mensaje..."
             className="flex-1 px-3 py-2 border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
@@ -289,6 +315,13 @@ const ChatPaciente: React.FC<ChatPacienteProps> = ({ psicologoId }) => {
             {enviando ? 'Enviando...' : 'Enviar'}
           </button>
         </div>
+        
+        {/* Mostrar error si existe */}
+        {mensajeError && (
+          <div className="mt-2 text-red-500 text-sm">
+            {mensajeError}
+          </div>
+        )}
       </div>
 
       {/* Notificación */}

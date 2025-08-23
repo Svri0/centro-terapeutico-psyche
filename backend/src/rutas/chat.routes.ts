@@ -2,6 +2,11 @@ import express from 'express';
 import chatController from '../controladores/chat.controlador';
 import { verificarToken } from '../middleware/auth.middleware';
 
+// Verificar que la instancia del controlador sea la misma
+console.log('🔍 Chat Routes - chatController importado:', !!chatController);
+console.log('🔍 Chat Routes - chatController.io disponible:', chatController.isIoConfigured());
+console.log('🔍 Chat Routes - Tipo de chatController:', typeof chatController);
+
 const router = express.Router();
 
 // Aplicar middleware de autenticación a todas las rutas
@@ -27,5 +32,14 @@ router.get('/estadisticas', chatController.obtenerEstadisticas);
 
 // Buscar usuarios para iniciar conversación
 router.get('/usuarios/buscar', chatController.buscarUsuarios);
+
+// Obtener conversaciones no leídas
+router.get('/conversaciones/no-leidas', chatController.obtenerNoLeidas);
+
+// Obtener información del psicólogo asignado para pacientes
+router.get('/psicologo-asignado', chatController.obtenerPsicologoAsignado);
+
+// Eliminar conversación
+router.delete('/conversaciones/:conversacionId', chatController.eliminarConversacion);
 
 export default router;
