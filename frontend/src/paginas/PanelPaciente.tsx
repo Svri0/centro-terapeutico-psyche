@@ -7,7 +7,7 @@ import AvatarSelector from '../componentes/AvatarSelector';
 import ImageUpload from '../componentes/ImageUpload';
 import { authService } from '../servicios/auth.service';
 import { actualizarPerfilPaciente, subirImagenReal } from '../servicios/usuarios.service';
-import { getAvatarById, AVATARS_ANIMALES } from '../assets/avatars/default-avatars';
+import { AVATARS_ANIMALES } from '../assets/avatars/default-avatars';
 
 const PanelPaciente: React.FC = () => {
   const [loading, setLoading] = useState(true);

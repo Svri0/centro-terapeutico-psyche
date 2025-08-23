@@ -199,12 +199,30 @@ class ChatController {
         });
       }
       
+      // CONVERTIR conversacionId a usuario_id si es necesario
+      let usuarioDestinatario = conversacionId;
+      
+      // Si conversacionId parece ser un ID de paciente, obtener su usuario_id
+      try {
+        const paciente = await Paciente.findByPk(conversacionId);
+        if (paciente) {
+          usuarioDestinatario = paciente.usuario_id;
+          console.log('🔍 Debug - Chat - Paciente encontrado, usando usuario_id:', usuarioDestinatario);
+        } else {
+          console.log('🔍 Debug - Chat - conversacionId no es un paciente, usando como usuario directo');
+        }
+      } catch (error) {
+        console.log('🔍 Debug - Chat - Error al buscar paciente, usando conversacionId como usuario directo');
+      }
+      
+      console.log('🔍 Debug - Chat - usuarioDestinatario final:', usuarioDestinatario);
+      
       // Obtener mensajes reales de la base de datos
       const mensajes = await Mensaje.findAll({
         where: {
           [Op.or]: [
-            { remitente_id: userId, destinatario_id: conversacionId },
-            { remitente_id: conversacionId, destinatario_id: userId }
+            { remitente_id: userId, destinatario_id: usuarioDestinatario },
+            { remitente_id: usuarioDestinatario, destinatario_id: userId }
           ]
         },
         order: [['created_at', 'ASC']],
@@ -218,6 +236,7 @@ class ChatController {
       });
       
       console.log('🔍 Debug - Chat - obtenerMensajes - mensajes encontrados en BD:', mensajes.length);
+      console.log('🔍 Debug - Chat - Query ejecutada para userId:', userId, 'y usuarioDestinatario:', usuarioDestinatario);
       
       // Formatear mensajes para el frontend
       const mensajesFormateados = mensajes.map(mensaje => ({

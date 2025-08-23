@@ -27,49 +27,13 @@ interface Conversacion {
 }
 
 interface ChatProps {
-  psicologoId?: string;
+  // psicologoId ya no se usa, lo eliminamos
 }
 
-const Chat: React.FC<ChatProps> = ({ psicologoId }) => {
+const Chat: React.FC<ChatProps> = () => {
   const [conversaciones, setConversaciones] = useState<Conversacion[]>([]);
   const [conversacionActiva, setConversacionActiva] = useState<string | null>(null);
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
-  
-  // Wrapper para setMensajes con logging y validación
-  const setMensajesConLog = (nuevosMensajes: Mensaje[] | ((prev: Mensaje[]) => Mensaje[])) => {
-    console.log('🔍 Debug - Chat - setMensajes llamado con:', nuevosMensajes);
-    
-    // Validar que siempre sea un array
-    let mensajesFinales: Mensaje[];
-    
-    if (typeof nuevosMensajes === 'function') {
-      mensajesFinales = nuevosMensajes(mensajes);
-    } else {
-      mensajesFinales = nuevosMensajes;
-    }
-    
-    // Asegurar que siempre sea un array
-    if (!Array.isArray(mensajesFinales)) {
-      console.error('🔍 Debug - Chat - ERROR: mensajesFinales no es un array, forzando array vacío');
-      mensajesFinales = [];
-    }
-    
-    // Validar que cada mensaje tenga un ID único
-    const idsUnicos = new Set();
-    const mensajesSinDuplicados = mensajesFinales.filter(mensaje => {
-      if (idsUnicos.has(mensaje.id)) {
-        console.warn('🔍 Debug - Chat - Mensaje duplicado detectado por ID, filtrando:', mensaje.id);
-        return false;
-      }
-      idsUnicos.add(mensaje.id);
-      return true;
-    });
-    
-    console.log('🔍 Debug - Chat - Mensajes finales validados:', mensajesSinDuplicados.length);
-    console.log('🔍 Debug - Chat - IDs únicos:', Array.from(idsUnicos));
-    
-    setMensajes(mensajesSinDuplicados);
-  };
   const [nuevoMensaje, setNuevoMensaje] = useState('');
   const [loading, setLoading] = useState(false);
   const [enviando, setEnviando] = useState(false);
@@ -213,6 +177,14 @@ const Chat: React.FC<ChatProps> = ({ psicologoId }) => {
     }
   }, [conversacionActiva]);
 
+  // Cargar mensajes cuando se selecciona una conversación
+  useEffect(() => {
+    if (conversacionActiva && user && mensajes.length === 0) {
+      console.log('🔍 Debug - Chat - Conversación seleccionada sin mensajes, cargando desde BD...');
+      cargarMensajes(conversacionActiva);
+    }
+  }, [conversacionActiva, user, mensajes.length]);
+
   useEffect(() => {
     // Scroll automático al último mensaje
     if (Array.isArray(mensajes) && mensajes.length > 0) {
@@ -248,6 +220,26 @@ const Chat: React.FC<ChatProps> = ({ psicologoId }) => {
     
     console.log('🔍 Debug - Chat - Estado de mensajes validado:', mensajesSinDuplicados.length);
   }, [mensajes]);
+
+  // Cargar mensajes iniciales cuando se monta el componente
+  useEffect(() => {
+    if (conversacionActiva && user) {
+      console.log('🔍 Debug - Chat - Cargando mensajes iniciales para conversación:', conversacionActiva);
+      cargarMensajes(conversacionActiva);
+    }
+  }, [conversacionActiva, user]); // Agregar conversacionActiva como dependencia
+
+  // Sincronización automática de mensajes cada 30 segundos
+  useEffect(() => {
+    if (conversacionActiva && wsConnected) {
+      const intervalId = setInterval(() => {
+        console.log('🔍 Debug - Chat - Sincronización automática de mensajes...');
+        cargarMensajes(conversacionActiva);
+      }, 30000); // 30 segundos
+      
+      return () => clearInterval(intervalId);
+    }
+  }, [conversacionActiva, wsConnected]);
 
   // WebSocket reemplaza el polling - no necesitamos intervalos
   // Los mensajes llegan en tiempo real via WebSocket
@@ -289,10 +281,21 @@ const Chat: React.FC<ChatProps> = ({ psicologoId }) => {
   const cargarMensajes = async (conversacionId: string) => {
     try {
       console.log('🔍 Debug - Chat - cargarMensajes iniciado para conversación:', conversacionId);
+      console.log('🔍 Debug - Chat - Usuario actual:', user?.id);
+      console.log('🔍 Debug - Chat - Conversación activa:', conversacionActiva);
+      console.log('🔍 Debug - Chat - Tipo de conversacionId:', typeof conversacionId);
+      console.log('🔍 Debug - Chat - conversacionId completo:', conversacionId);
+      
+      // Verificar qué conversación se está seleccionando
+      const conversacionSeleccionada = conversaciones.find(c => c.participante_id === conversacionId);
+      console.log('🔍 Debug - Chat - Conversación seleccionada:', conversacionSeleccionada);
+      
       const response = await chatService.obtenerMensajes(conversacionId);
       console.log('🔍 Debug - Chat - Respuesta de mensajes:', response);
       console.log('🔍 Debug - Chat - response.data:', response.data);
       console.log('🔍 Debug - Chat - response.data es array?', Array.isArray(response.data));
+      console.log('🔍 Debug - Chat - response.status:', response.status);
+      console.log('🔍 Debug - Chat - response.headers:', response.headers);
       
       // Validar y extraer mensajes de la respuesta
       let mensajesExtraidos: Mensaje[] = [];
@@ -308,6 +311,8 @@ const Chat: React.FC<ChatProps> = ({ psicologoId }) => {
       } else {
         // No hay mensajes o formato desconocido
         console.log('🔍 Debug - Chat - No se encontraron mensajes, estableciendo array vacío');
+        console.log('🔍 Debug - Chat - response.data tipo:', typeof response.data);
+        console.log('🔍 Debug - Chat - response.data valor:', response.data);
         mensajesExtraidos = [];
       }
       
@@ -317,22 +322,24 @@ const Chat: React.FC<ChatProps> = ({ psicologoId }) => {
         mensajesExtraidos = [];
       }
       
-      // FUSIONAR mensajes existentes con nuevos en lugar de reemplazar
-      setMensajesConLog(prev => {
+      console.log('🔍 Debug - Chat - Mensajes extraídos finales:', mensajesExtraidos);
+      
+      // FUSIONAR mensajes existentes con nuevos de la base de datos
+      setMensajes(prev => {
         console.log('🔍 Debug - Chat - Mensajes previos antes de fusionar:', prev.length);
         console.log('🔍 Debug - Chat - Mensajes nuevos de la API:', mensajesExtraidos.length);
         
         // Crear un Map para evitar duplicados por ID
         const mensajesMap = new Map();
         
-        // Agregar mensajes existentes (WebSocket)
+        // Agregar mensajes existentes (WebSocket) primero
         prev.forEach(msg => {
           if (msg.id && !mensajesMap.has(msg.id)) {
             mensajesMap.set(msg.id, msg);
           }
         });
         
-        // Agregar mensajes nuevos de la API
+        // Agregar mensajes nuevos de la base de datos
         mensajesExtraidos.forEach(msg => {
           if (msg.id && !mensajesMap.has(msg.id)) {
             mensajesMap.set(msg.id, msg);
@@ -345,12 +352,18 @@ const Chat: React.FC<ChatProps> = ({ psicologoId }) => {
         );
         
         console.log('🔍 Debug - Chat - Mensajes fusionados totales:', mensajesFusionados.length);
+        console.log('🔍 Debug - Chat - Mensajes de WebSocket preservados:', prev.length);
+        console.log('🔍 Debug - Chat - Mensajes de BD agregados:', mensajesExtraidos.length);
+        
         return mensajesFusionados;
       });
       
       console.log('🔍 Debug - Chat - Mensajes establecidos correctamente después de fusión');
     } catch (error: any) {
       console.error('Error al cargar mensajes:', error);
+      console.error('🔍 Debug - Chat - Error completo:', error);
+      console.error('🔍 Debug - Chat - Error message:', error.message);
+      console.error('🔍 Debug - Chat - Error stack:', error.stack);
       mostrarNotificacion('Error al cargar mensajes', 'error');
       // NO limpiar mensajes existentes si hay error
       console.log('🔍 Debug - Chat - Error en API, manteniendo mensajes existentes');
@@ -369,7 +382,6 @@ const Chat: React.FC<ChatProps> = ({ psicologoId }) => {
     e.preventDefault();
     if (!nuevoMensaje.trim() || !conversacionActiva) return;
 
-    // Declarar mensajeTexto al inicio para que esté disponible en todo el scope
     const mensajeTexto = nuevoMensaje.trim();
 
     try {
@@ -388,7 +400,7 @@ const Chat: React.FC<ChatProps> = ({ psicologoId }) => {
       };
       
       // Agregar mensaje localmente inmediatamente
-      setMensajesConLog(prev => [...prev, mensajeLocal]);
+      setMensajes(prev => [...prev, mensajeLocal]);
       
       // Limpiar input inmediatamente
       setNuevoMensaje('');
@@ -409,7 +421,7 @@ const Chat: React.FC<ChatProps> = ({ psicologoId }) => {
           console.log('🔍 Debug - Chat - mensajeLocal.id:', mensajeLocal.id);
           console.log('🔍 Debug - Chat - response.data.data.id:', response.data.data.id);
           
-          setMensajesConLog(prev => {
+          setMensajes(prev => {
             console.log('🔍 Debug - Chat - prev antes del map:', prev.length);
             
             // Buscar si el mensaje temporal existe
@@ -441,7 +453,7 @@ const Chat: React.FC<ChatProps> = ({ psicologoId }) => {
       mostrarNotificacion('Error al enviar mensaje', 'error');
       
       // Revertir mensaje local si hay error
-      setMensajesConLog(prev => prev.filter(msg => msg.id !== `temp_${Date.now()}`));
+      setMensajes(prev => prev.filter(msg => msg.id !== `temp_${Date.now()}`));
       setNuevoMensaje(mensajeTexto); // Restaurar texto del mensaje
     } finally {
       setEnviando(false);
@@ -450,34 +462,6 @@ const Chat: React.FC<ChatProps> = ({ psicologoId }) => {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const iniciarConversacion = async (participanteId: string, participanteNombre: string, participanteRol: string) => {
-    try {
-      const response = await chatService.iniciarConversacion({
-        participante_id: participanteId,
-        participante_nombre: participanteNombre,
-        participante_rol: participanteRol
-      });
-      
-      setConversacionActiva(participanteId);
-      setMensajesConLog([]);
-      
-      // Agregar la nueva conversación a la lista si no existe
-      const conversacionExistente = conversaciones.find(c => c.participante_id === participanteId);
-      if (!conversacionExistente) {
-        setConversaciones(prev => [...prev, {
-          id: participanteId,
-          participante_id: participanteId,
-          participante_nombre: participanteNombre,
-          participante_rol: participanteRol,
-          no_leidos: 0
-        }]);
-      }
-    } catch (error: any) {
-      console.error('Error al iniciar conversación:', error);
-      mostrarNotificacion('Error al iniciar conversación', 'error');
-    }
   };
 
   const obtenerConversacionActiva = () => {
@@ -560,7 +544,12 @@ const Chat: React.FC<ChatProps> = ({ psicologoId }) => {
               filtrarConversaciones().map((conversacion) => (
                 <div
                   key={conversacion.id}
-                  onClick={() => setConversacionActiva(conversacion.participante_id)}
+                  onClick={() => {
+                    console.log('🔍 Debug - Chat - Click en conversación:', conversacion);
+                    console.log('🔍 Debug - Chat - ID de conversación:', conversacion.participante_id);
+                    console.log('🔍 Debug - Chat - Nombre de conversación:', conversacion.participante_nombre);
+                    setConversacionActiva(conversacion.participante_id);
+                  }}
                   className={`p-3 border-b border-amber-100 cursor-pointer hover:bg-amber-50 transition-colors ${
                     conversacionActiva === conversacion.participante_id ? 'bg-amber-100' : ''
                   }`}

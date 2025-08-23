@@ -50,6 +50,18 @@ const ChatPaciente: React.FC<ChatPacienteProps> = ({ psicologoId }) => {
     setNotificacion(prev => ({ ...prev, visible: false }));
   };
 
+  // Sincronización automática de mensajes cada 30 segundos
+  useEffect(() => {
+    if (psicologoInfo?.id && wsConnected) {
+      const intervalId = setInterval(() => {
+        console.log('🔍 Debug - ChatPaciente - Sincronización automática de mensajes...');
+        cargarMensajes(psicologoInfo.id);
+      }, 30000); // 30 segundos
+      
+      return () => clearInterval(intervalId);
+    }
+  }, [psicologoInfo?.id, wsConnected]);
+
   // Cargar información del psicólogo
   const cargarInfoPsicologo = async () => {
     try {
@@ -92,10 +104,63 @@ const ChatPaciente: React.FC<ChatPacienteProps> = ({ psicologoId }) => {
     
     try {
       setLoading(true);
-      // Por ahora cargamos mensajes vacíos
-      setMensajes([]);
-    } catch (error) {
+      console.log('🔍 Debug - ChatPaciente - Cargando mensajes para psicólogo:', psicologoId);
+      
+      // Obtener mensajes de la base de datos
+      const response = await chatService.obtenerMensajes(psicologoId);
+      console.log('🔍 Debug - ChatPaciente - Respuesta de mensajes:', response);
+      
+      let mensajesExtraidos: any[] = [];
+      
+      if (response.data && response.data.success && Array.isArray(response.data.data)) {
+        // Formato estándar: { success: true, data: [...] }
+        mensajesExtraidos = response.data.data;
+        console.log('🔍 Debug - ChatPaciente - Mensajes extraídos del formato estándar:', mensajesExtraidos.length);
+      } else if (Array.isArray(response.data)) {
+        // Formato directo: [...]
+        mensajesExtraidos = response.data;
+        console.log('🔍 Debug - ChatPaciente - Mensajes extraídos del formato directo:', mensajesExtraidos.length);
+      } else {
+        console.log('🔍 Debug - ChatPaciente - No se encontraron mensajes en la BD');
+        mensajesExtraidos = [];
+      }
+      
+      // FUSIONAR mensajes existentes con nuevos de la base de datos
+      setMensajes(prev => {
+        console.log('🔍 Debug - ChatPaciente - Mensajes previos antes de fusionar:', prev.length);
+        console.log('🔍 Debug - ChatPaciente - Mensajes nuevos de la BD:', mensajesExtraidos.length);
+        
+        // Crear un Map para evitar duplicados por ID
+        const mensajesMap = new Map();
+        
+        // Agregar mensajes existentes (WebSocket) primero
+        prev.forEach(msg => {
+          if (msg.id && !mensajesMap.has(msg.id)) {
+            mensajesMap.set(msg.id, msg);
+          }
+        });
+        
+        // Agregar mensajes nuevos de la base de datos
+        mensajesExtraidos.forEach(msg => {
+          if (msg.id && !mensajesMap.has(msg.id)) {
+            mensajesMap.set(msg.id, msg);
+          }
+        });
+        
+        // Convertir Map a array y ordenar por timestamp
+        const mensajesFusionados = Array.from(mensajesMap.values()).sort((a, b) => 
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
+        
+        console.log('🔍 Debug - ChatPaciente - Mensajes fusionados totales:', mensajesFusionados.length);
+        return mensajesFusionados;
+      });
+      
+      console.log('🔍 Debug - ChatPaciente - Mensajes cargados y fusionados correctamente');
+    } catch (error: any) {
       console.error('Error al cargar mensajes:', error);
+      // NO limpiar mensajes existentes si hay error
+      console.log('🔍 Debug - ChatPaciente - Error al cargar mensajes, manteniendo mensajes existentes');
     } finally {
       setLoading(false);
     }
@@ -327,6 +392,7 @@ const ChatPaciente: React.FC<ChatPacienteProps> = ({ psicologoId }) => {
       {/* Notificación */}
       {notificacion.visible && (
         <Notificacion
+          visible={notificacion.visible}
           mensaje={notificacion.mensaje}
           tipo={notificacion.tipo}
           onCerrar={cerrarNotificacion}
