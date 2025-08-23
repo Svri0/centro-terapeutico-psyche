@@ -11,20 +11,20 @@ export interface ActualizarPerfilData {
 }
 
 export interface ActualizarPerfilPacienteData {
-  nombres: string;
-  apellidos: string;
-  email: string;
-  telefono: string;
-  fecha_nacimiento: string;
-  genero: string;
-  avatar_url: string;
+  nombres?: string;
+  apellidos?: string;
+  email?: string;
+  telefono?: string;
+  fecha_nacimiento?: string;
+  genero?: string;
+  avatar_url?: string;
   // Campos específicos del paciente
-  rut: string;
-  direccion: string;
-  contacto_emergencia_nombre: string;
-  contacto_emergencia_telefono: string;
-  contacto_emergencia_relacion: string;
-  observaciones: string;
+  rut?: string;
+  direccion?: string;
+  contacto_emergencia_nombre?: string;
+  contacto_emergencia_telefono?: string;
+  contacto_emergencia_relacion?: string;
+  observaciones?: string;
 }
 
 export const actualizarPerfilPsicologo = async (id: string, data: ActualizarPerfilData) => {

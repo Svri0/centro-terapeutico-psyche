@@ -58,6 +58,7 @@ const PanelPaciente: React.FC = () => {
     }
 
     setUserData(user);
+    console.log('🔍 userData establecido:', user);
     cargarDatosPaciente();
     cargarPerfil();
     cargarPsicologoAsignado();
@@ -67,6 +68,11 @@ const PanelPaciente: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
+      
+      // Por ahora, usar solo los datos del localStorage
+      // Los campos se rellenarán en cargarPerfil()
+      console.log('🔍 Usando datos del localStorage para el perfil');
+      
     } catch (error) {
       console.error('Error al cargar datos:', error);
       setError('Error al cargar los datos del paciente');
@@ -109,7 +115,9 @@ const PanelPaciente: React.FC = () => {
 
   const cargarPerfil = () => {
     if (userData) {
-      setPerfilData({
+      console.log('🔍 Cargando perfil con datos:', userData);
+      
+      const perfilCompleto = {
         nombres: userData.nombres || '',
         apellidos: userData.apellidos || '',
         email: userData.email || '',
@@ -123,7 +131,10 @@ const PanelPaciente: React.FC = () => {
         contacto_emergencia_telefono: userData.contacto_emergencia_telefono || '',
         contacto_emergencia_relacion: userData.contacto_emergencia_relacion || '',
         observaciones: userData.observaciones || ''
-      });
+      };
+      
+      console.log('🔍 Perfil completo preparado:', perfilCompleto);
+      setPerfilData(perfilCompleto);
       setSelectedAvatarUrl(userData.avatar_url || '');
       
       // Si el usuario tiene un avatar_url, verificar si es uno de los avatares predefinidos
@@ -131,8 +142,15 @@ const PanelPaciente: React.FC = () => {
         const avatar = AVATARS_ANIMALES.find(av => av.url === userData.avatar_url);
         if (avatar) {
           setSelectedAvatarId(avatar.id);
+          console.log('✅ Avatar predefinido encontrado:', avatar.id);
+        } else {
+          console.log('ℹ️ Avatar no es predefinido, usando imagen personalizada');
         }
       }
+      
+      console.log('✅ Perfil cargado exitosamente');
+    } else {
+      console.warn('⚠️ No hay userData para cargar perfil');
     }
   };
 
@@ -206,7 +224,7 @@ const PanelPaciente: React.FC = () => {
     setProfileMessage('');
 
     try {
-      console.log('🔍 Iniciando actualización de perfil del paciente...');
+      console.log('🔍 Iniciando actualización inteligente de perfil...');
       
       let finalAvatarUrl = selectedAvatarUrl;
 
@@ -218,19 +236,78 @@ const PanelPaciente: React.FC = () => {
         console.log('✅ Imagen subida, URL:', finalAvatarUrl.substring(0, 50) + '...');
       }
 
-      const updatedData = {
-        ...perfilData,
-        avatar_url: finalAvatarUrl
-      };
+      // Crear objeto solo con campos modificados
+      const updatedData: any = {};
       
+      // Solo incluir campos que realmente cambiaron Y no estén vacíos
+      if (perfilData.nombres !== userData?.nombres && perfilData.nombres && perfilData.nombres.trim() !== '') {
+        updatedData.nombres = perfilData.nombres;
+      }
+      if (perfilData.apellidos !== userData?.apellidos && perfilData.apellidos && perfilData.apellidos.trim() !== '') {
+        updatedData.apellidos = perfilData.apellidos;
+      }
+      if (perfilData.email !== userData?.email && perfilData.email && perfilData.email.trim() !== '') {
+        updatedData.email = perfilData.email;
+      }
+      if (perfilData.telefono !== userData?.telefono && perfilData.telefono && perfilData.telefono.trim() !== '') {
+        updatedData.telefono = perfilData.telefono;
+      }
+      if (perfilData.fecha_nacimiento !== userData?.fecha_nacimiento && perfilData.fecha_nacimiento && perfilData.fecha_nacimiento.trim() !== '') {
+        updatedData.fecha_nacimiento = perfilData.fecha_nacimiento;
+      }
+      if (perfilData.genero !== userData?.genero && perfilData.genero && perfilData.genero.trim() !== '') {
+        updatedData.genero = perfilData.genero;
+      }
+      if (perfilData.rut !== userData?.rut && perfilData.rut && perfilData.rut.trim() !== '') {
+        updatedData.rut = perfilData.rut;
+      }
+      if (perfilData.direccion !== userData?.direccion && perfilData.direccion && perfilData.direccion.trim() !== '') {
+        updatedData.direccion = perfilData.direccion;
+      }
+      if (perfilData.contacto_emergencia_nombre !== userData?.contacto_emergencia_nombre && perfilData.contacto_emergencia_nombre && perfilData.contacto_emergencia_nombre.trim() !== '') {
+        updatedData.contacto_emergencia_nombre = perfilData.contacto_emergencia_nombre;
+      }
+      if (perfilData.contacto_emergencia_telefono !== userData?.contacto_emergencia_telefono && perfilData.contacto_emergencia_telefono && perfilData.contacto_emergencia_telefono.trim() !== '') {
+        updatedData.contacto_emergencia_telefono = perfilData.contacto_emergencia_telefono;
+      }
+      if (perfilData.contacto_emergencia_relacion !== userData?.contacto_emergencia_relacion && perfilData.contacto_emergencia_relacion && perfilData.contacto_emergencia_relacion.trim() !== '') {
+        updatedData.contacto_emergencia_relacion = perfilData.contacto_emergencia_relacion;
+      }
+      if (perfilData.observaciones !== userData?.observaciones && perfilData.observaciones && perfilData.observaciones.trim() !== '') {
+        updatedData.observaciones = perfilData.observaciones;
+      }
+      
+      // Si hay nueva foto, incluirla
+      if (finalAvatarUrl && finalAvatarUrl !== userData?.avatar_url) {
+        updatedData.avatar_url = finalAvatarUrl;
+      }
+
+      console.log('🔍 Campos a actualizar:', Object.keys(updatedData));
+      console.log('🔍 Datos a enviar:', updatedData);
+      
+      // Validación adicional: no enviar campos vacíos
+      Object.keys(updatedData).forEach(key => {
+        if (updatedData[key] === '' || updatedData[key] === null || updatedData[key] === undefined) {
+          console.log(`⚠️ Eliminando campo vacío: ${key}`);
+          delete updatedData[key];
+        }
+      });
+      
+      console.log('🔍 Datos finales después de limpieza:', updatedData);
+
+      // Solo hacer la llamada si hay algo que actualizar
+      if (Object.keys(updatedData).length === 0) {
+        setProfileMessage('No hay cambios para guardar');
+        return;
+      }
+
       const response = await actualizarPerfilPaciente(userData?.id || '', updatedData);
       console.log('✅ Respuesta del servidor:', response);
       
-      // Actualizar el usuario en localStorage con todos los datos actualizados
+      // Actualizar el usuario en localStorage solo con los campos modificados
       const updatedUser = { 
         ...userData, 
-        ...response.data,
-        avatar_url: finalAvatarUrl
+        ...updatedData
       };
       localStorage.setItem('user', JSON.stringify(updatedUser));
       
@@ -238,11 +315,13 @@ const PanelPaciente: React.FC = () => {
       setUserData(updatedUser);
       setPerfilData(prev => ({
         ...prev,
-        avatar_url: finalAvatarUrl
+        ...updatedData
       }));
-      setSelectedAvatarUrl(finalAvatarUrl);
+      if (finalAvatarUrl) {
+        setSelectedAvatarUrl(finalAvatarUrl);
+      }
       
-      setProfileMessage('Perfil actualizado exitosamente');
+      setProfileMessage(`Perfil actualizado exitosamente. Campos modificados: ${Object.keys(updatedData).join(', ')}`);
       
       // Mostrar notificación de éxito
       setShowSuccessNotification(true);
@@ -539,6 +618,22 @@ const PanelPaciente: React.FC = () => {
                     <div className="bg-gray-50 rounded-lg p-6 border-2 border-gray-200">
                       <h4 className="text-md font-bold text-gray-700 mb-6">Información Personal</h4>
                       
+                      {/* Mensaje sobre carga automática */}
+                      <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="text-xs text-green-700">
+                          <strong>💡 Carga Automática:</strong> Todos los campos se rellenan automáticamente con tus datos guardados. 
+                          Solo modifica los campos que quieras cambiar.
+                        </p>
+                      </div>
+                      
+                      {/* Mensaje sobre campos */}
+                      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-xs text-blue-700">
+                          <strong>Nota:</strong> Los campos marcados con * son importantes pero opcionales para actualizaciones parciales. 
+                          Solo se guardarán los campos que modifiques.
+                        </p>
+                      </div>
+                      
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -549,7 +644,6 @@ const PanelPaciente: React.FC = () => {
                             value={perfilData.nombres}
                             onChange={(e) => setPerfilData({...perfilData, nombres: e.target.value})}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500"
-                            required
                           />
                         </div>
 
@@ -562,7 +656,6 @@ const PanelPaciente: React.FC = () => {
                             value={perfilData.apellidos}
                             onChange={(e) => setPerfilData({...perfilData, apellidos: e.target.value})}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500"
-                            required
                           />
                         </div>
 
@@ -575,7 +668,6 @@ const PanelPaciente: React.FC = () => {
                             value={perfilData.email}
                             onChange={(e) => setPerfilData({...perfilData, email: e.target.value})}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500"
-                            required
                           />
                         </div>
 
@@ -725,6 +817,20 @@ const PanelPaciente: React.FC = () => {
                       </div>
                     )}
 
+                    {/* Mensaje informativo sobre la actualización inteligente */}
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div className="flex items-start space-x-3">
+                        <div className="text-green-500 text-lg">✨</div>
+                        <div className="text-sm text-green-700">
+                          <p className="font-medium mb-1">Actualización Inteligente</p>
+                          <p className="text-xs">
+                            Solo se actualizarán los campos que realmente hayas modificado. 
+                            Los campos sin cambios mantendrán sus valores anteriores.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Botones */}
                     <div className="flex justify-end space-x-4">
                       <button
@@ -734,10 +840,13 @@ const PanelPaciente: React.FC = () => {
                       >
                         Restaurar
                       </button>
+                      
+                      {/* Botón inteligente que solo actualiza campos modificados */}
                       <button
                         type="submit"
                         disabled={profileLoading}
                         className="bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 text-amber-800 px-6 py-2 rounded-md font-medium transition-colors disabled:opacity-50"
+                        title="Actualiza solo los campos que hayas modificado"
                       >
                         {profileLoading ? 'Guardando...' : 'Guardar Cambios'}
                       </button>

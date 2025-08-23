@@ -194,10 +194,15 @@ const Chat: React.FC<ChatProps> = () => {
     };
   }, [user]); // Solo cargar cuando cambie el usuario, no cuando cambie el filtro
 
+  // Cargar mensajes cuando cambia la conversación activa
   useEffect(() => {
     if (conversacionActiva) {
-      console.log('🔍 Debug - Chat - Cambio de conversación activa a:', conversacionActiva);
+      console.log('🔍 Debug - Chat - Conversación activa cambiada a:', conversacionActiva);
       console.log('🔍 Debug - Chat - Mensajes actuales antes de cargar:', mensajes.length);
+      
+      // IMPORTANTE: Limpiar mensajes ANTES de cargar los nuevos
+      setMensajes([]);
+      console.log('🔍 Debug - Chat - Mensajes limpiados, cargando nuevos para conversación:', conversacionActiva);
       
       // Cargar mensajes de la nueva conversación
       cargarMensajes(conversacionActiva);

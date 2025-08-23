@@ -1,11 +1,23 @@
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
 import { Request, Response, NextFunction } from 'express';
+
+// Asegurar que el directorio de uploads existe
+const uploadsDir = 'uploads/avatars/';
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+  console.log('📁 Directorio de uploads creado:', uploadsDir);
+}
 
 // Configurar el almacenamiento
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/avatars/');
+    // Asegurar que el directorio existe antes de guardar
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+    cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
     // Generar nombre único para el archivo

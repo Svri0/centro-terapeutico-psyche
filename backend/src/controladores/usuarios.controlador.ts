@@ -108,7 +108,29 @@ export const actualizarPerfilPsicologo = async (req: Request, res: Response) => 
   }
 };
 
+// Endpoint de prueba para verificar conexión
+export const testConnection = async (req: Request, res: Response) => {
+  console.log('🚀 testConnection - INICIANDO');
+  try {
+    return res.json({
+      success: true,
+      message: 'Conexión exitosa',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error: any) {
+    console.error('💥 Error en testConnection:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor'
+    });
+  }
+};
+
 export const actualizarPerfilPaciente = async (req: Request, res: Response) => {
+  console.log('🚀 actualizarPerfilPaciente - INICIANDO');
+  console.log('   - ID:', req.params.id);
+  console.log('   - Body:', req.body);
+  
   try {
     const { id } = req.params;
     const { 
@@ -128,6 +150,22 @@ export const actualizarPerfilPaciente = async (req: Request, res: Response) => {
       observaciones
     } = req.body;
 
+    console.log('🔍 Campos recibidos:', {
+      nombres: !!nombres,
+      apellidos: !!apellidos,
+      email: !!email,
+      telefono: !!telefono,
+      fecha_nacimiento: !!fecha_nacimiento,
+      genero: !!genero,
+      avatar_url: !!avatar_url,
+      rut: !!rut,
+      direccion: !!direccion,
+      contacto_emergencia_nombre: !!contacto_emergencia_nombre,
+      contacto_emergencia_telefono: !!contacto_emergencia_telefono,
+      contacto_emergencia_relacion: !!contacto_emergencia_relacion,
+      observaciones: !!observaciones
+    });
+
     // Verificar que el usuario existe y es paciente (rol_id = 3)
     const usuario = await Usuario.findOne({
       where: { 
@@ -137,22 +175,40 @@ export const actualizarPerfilPaciente = async (req: Request, res: Response) => {
     });
 
     if (!usuario) {
+      console.log('❌ Paciente no encontrado con ID:', id);
       return res.status(404).json({
         success: false,
         message: 'Paciente no encontrado'
       });
     }
 
-    // Actualizar datos del usuario
-    await usuario.update({
-      nombres,
-      apellidos,
-      email,
-      telefono,
-      fecha_nacimiento,
-      genero,
-      avatar_url
-    });
+    console.log('✅ Usuario encontrado:', usuario.id);
+
+    // Crear objeto de actualización solo con campos definidos
+    const updateDataUsuario: any = {};
+    if (nombres !== undefined) updateDataUsuario.nombres = nombres;
+    if (apellidos !== undefined) updateDataUsuario.apellidos = apellidos;
+    if (email !== undefined) updateDataUsuario.email = email;
+    if (telefono !== undefined) updateDataUsuario.telefono = telefono;
+    if (fecha_nacimiento !== undefined) updateDataUsuario.fecha_nacimiento = fecha_nacimiento;
+    if (genero !== undefined) updateDataUsuario.genero = genero;
+    if (avatar_url !== undefined) updateDataUsuario.avatar_url = avatar_url;
+
+    console.log('🔍 Datos a actualizar en usuario:', updateDataUsuario);
+
+    // Solo actualizar si hay datos para actualizar
+    if (Object.keys(updateDataUsuario).length > 0) {
+      console.log('🔍 Ejecutando usuario.update con datos:', JSON.stringify(updateDataUsuario, null, 2));
+      try {
+        await usuario.update(updateDataUsuario);
+        console.log('✅ Usuario actualizado exitosamente');
+      } catch (updateError: any) {
+        console.error('💥 Error en usuario.update:', updateError);
+        console.error('   - Datos que causaron el error:', updateDataUsuario);
+        console.error('   - Error completo:', updateError.message);
+        throw updateError;
+      }
+    }
 
     // Actualizar datos específicos del paciente
     const paciente = await Paciente.findOne({
@@ -160,40 +216,67 @@ export const actualizarPerfilPaciente = async (req: Request, res: Response) => {
     });
 
     if (paciente) {
-      await paciente.update({
-        rut,
-        direccion,
-        contacto_emergencia_nombre,
-        contacto_emergencia_telefono,
-        contacto_emergencia_relacion,
-        observaciones
-      });
+      console.log('✅ Paciente encontrado, actualizando datos específicos');
+      
+      // Crear objeto de actualización solo con campos definidos
+      const updateDataPaciente: any = {};
+      if (rut !== undefined) updateDataPaciente.rut = rut;
+      if (direccion !== undefined) updateDataPaciente.direccion = direccion;
+      if (contacto_emergencia_nombre !== undefined) updateDataPaciente.contacto_emergencia_nombre = contacto_emergencia_nombre;
+      if (contacto_emergencia_telefono !== undefined) updateDataPaciente.contacto_emergencia_telefono = contacto_emergencia_telefono;
+      if (contacto_emergencia_relacion !== undefined) updateDataPaciente.contacto_emergencia_relacion = contacto_emergencia_relacion;
+      if (observaciones !== undefined) updateDataPaciente.observaciones = observaciones;
+
+      console.log('🔍 Datos a actualizar en paciente:', updateDataPaciente);
+
+      // Solo actualizar si hay datos para actualizar
+      if (Object.keys(updateDataPaciente).length > 0) {
+        console.log('🔍 Ejecutando paciente.update con datos:', JSON.stringify(updateDataPaciente, null, 2));
+        try {
+          await paciente.update(updateDataPaciente);
+          console.log('✅ Paciente actualizado exitosamente');
+        } catch (updateError: any) {
+          console.error('💥 Error en paciente.update:', updateError);
+          console.error('   - Datos que causaron el error:', updateDataPaciente);
+          console.error('   - Error completo:', updateError.message);
+          throw updateError;
+        }
+      }
+    } else {
+      console.log('⚠️ No se encontró registro de paciente para usuario:', id);
     }
+
+    // Obtener datos actualizados para la respuesta
+    const usuarioActualizado = await Usuario.findByPk(id);
+    const pacienteActualizado = await Paciente.findOne({ where: { usuario_id: id } });
+
+    console.log('✅ Preparando respuesta con datos actualizados');
 
     return res.json({
       success: true,
       message: 'Perfil actualizado exitosamente',
       data: {
-        id: usuario.id,
-        nombres: usuario.nombres,
-        apellidos: usuario.apellidos,
-        email: usuario.email,
-        telefono: usuario.telefono,
-        fecha_nacimiento: usuario.fecha_nacimiento,
-        genero: usuario.genero,
-        avatar_url: usuario.avatar_url,
+        id: usuarioActualizado?.id,
+        nombres: usuarioActualizado?.nombres,
+        apellidos: usuarioActualizado?.apellidos,
+        email: usuarioActualizado?.email,
+        telefono: usuarioActualizado?.telefono,
+        fecha_nacimiento: usuarioActualizado?.fecha_nacimiento,
+        genero: usuarioActualizado?.genero,
+        avatar_url: usuarioActualizado?.avatar_url,
         // Datos del paciente
-        rut: paciente?.rut,
-        direccion: paciente?.direccion,
-        contacto_emergencia_nombre: paciente?.contacto_emergencia_nombre,
-        contacto_emergencia_telefono: paciente?.contacto_emergencia_telefono,
-        contacto_emergencia_relacion: paciente?.contacto_emergencia_relacion,
-        observaciones: paciente?.observaciones
+        rut: pacienteActualizado?.rut,
+        direccion: pacienteActualizado?.direccion,
+        contacto_emergencia_nombre: pacienteActualizado?.contacto_emergencia_nombre,
+        contacto_emergencia_telefono: pacienteActualizado?.contacto_emergencia_telefono,
+        contacto_emergencia_relacion: pacienteActualizado?.contacto_emergencia_relacion,
+        observaciones: pacienteActualizado?.observaciones
       }
     });
 
   } catch (error: any) {
-    console.error('Error al actualizar perfil del paciente:', error);
+    console.error('💥 Error al actualizar perfil del paciente:', error);
+    console.error('   - Stack:', error.stack);
     return res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -202,22 +285,39 @@ export const actualizarPerfilPaciente = async (req: Request, res: Response) => {
 };
 
 export const subirImagenReal = async (req: Request, res: Response) => {
+  console.log('🚀 subirImagenReal - INICIANDO');
+  console.log('   - Headers:', req.headers);
+  console.log('   - File:', req.file);
+  console.log('   - Body:', req.body);
+  
   try {
     // Verificar que se recibió un archivo
     if (!req.file) {
+      console.log('❌ No se recibió archivo');
       return res.status(400).json({
         success: false,
         message: 'No se proporcionó ninguna imagen'
       });
     }
 
+    console.log('✅ Archivo recibido:', {
+      filename: req.file.filename,
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      path: req.file.path
+    });
+
     // Verificar que el archivo existe en el sistema
     if (!fs.existsSync(req.file.path)) {
+      console.log('❌ Archivo temporal no encontrado en:', req.file.path);
       return res.status(500).json({
         success: false,
         message: 'Error: archivo temporal no encontrado'
       });
     }
+
+    console.log('✅ Archivo temporal encontrado en:', req.file.path);
 
     // Leer el archivo como buffer
     let imageBuffer: Buffer;

@@ -1,18 +1,23 @@
 import express, { Router } from 'express';
-import { obtenerTodos, obtenerPorId, crear, actualizar, eliminar, actualizarPerfilPsicologo, actualizarPerfilPaciente, subirImagenReal } from '../controladores/usuarios.controlador';
+import { obtenerTodos, obtenerPorId, crear, actualizar, eliminar, actualizarPerfilPsicologo, actualizarPerfilPaciente, subirImagenReal, testConnection } from '../controladores/usuarios.controlador';
 import { verificarToken, verificarRol } from '../middleware/auth.middleware';
 import upload from '../middleware/upload.middleware';
 
-const router = Router();
+const router: Router = express.Router();
+
+// Endpoint de prueba
+router.get('/test', testConnection);
 
 // Rutas públicas
 router.get('/', obtenerTodos);
 router.get('/:id', obtenerPorId);
 
 // Rutas protegidas
-router.post('/', verificarToken, verificarRol(['admin']), crear);
-router.put('/:id', verificarToken, verificarRol(['admin']), actualizar);
-router.delete('/:id', verificarToken, verificarRol(['admin']), eliminar);
+router.use(verificarToken);
+
+router.post('/', verificarRol(['admin']), crear);
+router.put('/:id', verificarRol(['admin']), actualizar);
+router.delete('/:id', verificarRol(['admin']), eliminar);
 
 // Rutas de perfil
 router.put('/perfil/:id', verificarToken, actualizarPerfilPsicologo);
