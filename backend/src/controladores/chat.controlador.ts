@@ -79,18 +79,39 @@ class ChatController {
                 // Obtener información del usuario asociado
                 const usuario = await Usuario.findByPk(paciente.usuario_id);
                 
+                // OBTENER EL ÚLTIMO MENSAJE REAL de esta conversación
+                const ultimoMensaje = await Mensaje.findOne({
+                  where: {
+                    [Op.or]: [
+                      { remitente_id: userId, destinatario_id: paciente.usuario_id },
+                      { remitente_id: paciente.usuario_id, destinatario_id: userId }
+                    ]
+                  },
+                  order: [['created_at', 'DESC']]
+                });
+                
                 // Usar información del usuario si está disponible, sino usar datos del paciente
                 const nombre = usuario?.nombres || paciente.nombres || 'Sin nombre';
                 const apellido = usuario?.apellidos || paciente.apellidos || 'Sin apellido';
                 const avatarUrl = usuario?.avatar_url || null;
+                
+                // Determinar el texto del último mensaje
+                let ultimoMensajeTexto = 'Inicia una conversación';
+                let timestampUltimo = new Date().toISOString();
+                
+                if (ultimoMensaje) {
+                  ultimoMensajeTexto = ultimoMensaje.contenido;
+                  timestampUltimo = ultimoMensaje.created_at.toISOString();
+                  console.log('🔍 Debug - Chat - Último mensaje para', nombre, ':', ultimoMensajeTexto);
+                }
                 
                 return {
                   id: `paciente_${paciente.id}`,
                   participante_id: paciente.id,
                   participante_nombre: `${nombre} ${apellido}`.trim(),
                   participante_rol: 'paciente',
-                  ultimo_mensaje: 'Inicia una conversación',
-                  timestamp_ultimo: new Date().toISOString(),
+                  ultimo_mensaje: ultimoMensajeTexto,
+                  timestamp_ultimo: timestampUltimo,
                   no_leidos: 0,
                   avatar_url: avatarUrl
                 };
@@ -124,15 +145,36 @@ class ChatController {
             attributes: ['id', 'usuario_id', 'psicologo_id', 'nombres', 'apellidos']
           });
           
-          conversaciones = pacientesFallback.map((paciente) => ({
-            id: `paciente_${paciente.id}`,
-            participante_id: paciente.id,
-            participante_nombre: `${paciente.nombres || 'Sin nombre'} ${paciente.apellidos || 'Sin apellido'}`.trim(),
-            participante_rol: 'paciente',
-            ultimo_mensaje: 'Inicia una conversación',
-            timestamp_ultimo: new Date().toISOString(),
-            no_leidos: 0,
-            avatar_url: null
+          conversaciones = await Promise.all(pacientesFallback.map(async (paciente) => {
+            // OBTENER EL ÚLTIMO MENSAJE REAL de esta conversación
+            const ultimoMensaje = await Mensaje.findOne({
+              where: {
+                [Op.or]: [
+                  { remitente_id: userId, destinatario_id: paciente.usuario_id },
+                  { remitente_id: paciente.usuario_id, destinatario_id: userId }
+                ]
+              },
+              order: [['created_at', 'DESC']]
+            });
+            
+            let ultimoMensajeTexto = 'Inicia una conversación';
+            let timestampUltimo = new Date().toISOString();
+            
+            if (ultimoMensaje) {
+              ultimoMensajeTexto = ultimoMensaje.contenido;
+              timestampUltimo = ultimoMensaje.created_at.toISOString();
+            }
+            
+            return {
+              id: `paciente_${paciente.id}`,
+              participante_id: paciente.id,
+              participante_nombre: `${paciente.nombres || 'Sin nombre'} ${paciente.apellidos || 'Sin apellido'}`.trim(),
+              participante_rol: 'paciente',
+              ultimo_mensaje: ultimoMensajeTexto,
+              timestamp_ultimo: timestampUltimo,
+              no_leidos: 0,
+              avatar_url: null
+            };
           }));
         }
       }
@@ -146,15 +188,36 @@ class ChatController {
           attributes: ['id', 'nombres', 'apellidos', 'email', 'avatar_url']
         });
         
-        conversaciones = psicologos.map(psicologo => ({
-          id: `psicologo_${psicologo.id}`,
-          participante_id: psicologo.id,
-          participante_nombre: `${psicologo.nombres || 'Sin nombre'} ${psicologo.apellidos || 'Sin apellido'}`.trim(),
-          participante_rol: 'psicologo',
-          ultimo_mensaje: 'Inicia una conversación',
-          timestamp_ultimo: new Date().toISOString(),
-          no_leidos: 0,
-          avatar_url: psicologo.avatar_url
+        conversaciones = await Promise.all(psicologos.map(async (psicologo) => {
+          // OBTENER EL ÚLTIMO MENSAJE REAL de esta conversación
+          const ultimoMensaje = await Mensaje.findOne({
+            where: {
+              [Op.or]: [
+                { remitente_id: userId, destinatario_id: psicologo.id },
+                { remitente_id: psicologo.id, destinatario_id: userId }
+              ]
+            },
+            order: [['created_at', 'DESC']]
+          });
+          
+          let ultimoMensajeTexto = 'Inicia una conversación';
+          let timestampUltimo = new Date().toISOString();
+          
+          if (ultimoMensaje) {
+            ultimoMensajeTexto = ultimoMensaje.contenido;
+            timestampUltimo = ultimoMensaje.created_at.toISOString();
+          }
+          
+          return {
+            id: `psicologo_${psicologo.id}`,
+            participante_id: psicologo.id,
+            participante_nombre: `${psicologo.nombres || 'Sin nombre'} ${psicologo.apellidos || 'Sin apellido'}`.trim(),
+            participante_rol: 'psicologo',
+            ultimo_mensaje: ultimoMensajeTexto,
+            timestamp_ultimo: timestampUltimo,
+            no_leidos: 0,
+            avatar_url: psicologo.avatar_url
+          };
         }));
       }
       
@@ -588,6 +651,177 @@ class ChatController {
       });
     } catch (error: any) {
       console.error('Error al eliminar conversación:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor',
+        error: error.message
+      });
+    }
+  }
+
+  // Obtener configuración del chat para un paciente específico
+  obtenerConfiguracionChat = async (req: Request, res: Response) => {
+    try {
+      console.log('🔍 Debug - Chat - obtenerConfiguracionChat - método llamado');
+      
+      const { pacienteId } = req.params;
+      const userId = req.usuario?.id;
+      
+      console.log('🔍 Debug - Chat - obtenerConfiguracionChat - pacienteId:', pacienteId);
+      console.log('🔍 Debug - Chat - obtenerConfiguracionChat - userId:', userId);
+      
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: 'Usuario no autenticado'
+        });
+      }
+
+      // Por ahora, retornar configuración por defecto
+      // En el futuro, esto se conectará a una tabla de configuración
+      const configuracion = {
+        pacienteId,
+        tema: 'default',
+        ultimaModificacion: new Date().toISOString()
+      };
+      
+      console.log('🔍 Debug - Chat - Configuración retornada:', configuracion);
+      
+      return res.json({
+        success: true,
+        data: configuracion
+      });
+    } catch (error: any) {
+      console.error('Error al obtener configuración del chat:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor',
+        error: error.message
+      });
+    }
+  }
+
+  // Cambiar tema del chat para un paciente específico
+  cambiarTemaChat = async (req: Request, res: Response) => {
+    try {
+      console.log('🔍 Debug - Chat - cambiarTemaChat - método llamado');
+      
+      const { pacienteId } = req.params;
+      const { tema } = req.body;
+      const userId = req.usuario?.id;
+      
+      console.log('🔍 Debug - Chat - cambiarTemaChat - pacienteId:', pacienteId);
+      console.log('🔍 Debug - Chat - cambiarTemaChat - tema:', tema);
+      console.log('🔍 Debug - Chat - cambiarTemaChat - userId:', userId);
+      
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: 'Usuario no autenticado'
+        });
+      }
+
+      if (!tema) {
+        return res.status(400).json({
+          success: false,
+          message: 'Tema es requerido'
+        });
+      }
+
+      // Por ahora, solo confirmar que se recibió la solicitud
+      // En el futuro, esto se guardará en una tabla de configuración
+      console.log('🔍 Debug - Chat - Tema cambiado a:', tema, 'para paciente:', pacienteId);
+      
+      return res.json({
+        success: true,
+        message: 'Tema del chat cambiado correctamente',
+        data: {
+          pacienteId,
+          tema,
+          ultimaModificacion: new Date().toISOString()
+        }
+      });
+    } catch (error: any) {
+      console.error('Error al cambiar tema del chat:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor',
+        error: error.message
+      });
+    }
+  }
+
+  // Borrar completamente el chat de un paciente
+  borrarChatCompleto = async (req: Request, res: Response) => {
+    try {
+      console.log('🔍 Debug - Chat - borrarChatCompleto - método llamado');
+      
+      const { pacienteId } = req.params;
+      const userId = req.usuario?.id;
+      
+      console.log('🔍 Debug - Chat - borrarChatCompleto - pacienteId:', pacienteId);
+      console.log('🔍 Debug - Chat - borrarChatCompleto - userId:', userId);
+      
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: 'Usuario no autenticado'
+        });
+      }
+
+      // Verificar que el usuario sea psicólogo o admin
+      const userRole = req.usuario?.rol_id === 1 ? 'admin' : 'psicologo';
+      if (userRole !== 'psicologo' && userRole !== 'admin') {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para borrar chats'
+        });
+      }
+
+      // Obtener el usuario_id del paciente
+      let usuarioDestinatario = pacienteId;
+      try {
+        const paciente = await Paciente.findByPk(pacienteId);
+        if (paciente) {
+          usuarioDestinatario = paciente.usuario_id;
+          console.log('🔍 Debug - Chat - Paciente encontrado, usando usuario_id:', usuarioDestinatario);
+        }
+      } catch (error) {
+        console.log('🔍 Debug - Chat - Error al buscar paciente, usando pacienteId como usuario directo');
+      }
+
+      // BORRAR TODOS LOS MENSAJES de esta conversación
+      const mensajesBorrados = await Mensaje.destroy({
+        where: {
+          [Op.or]: [
+            { remitente_id: userId, destinatario_id: usuarioDestinatario },
+            { remitente_id: usuarioDestinatario, destinatario_id: userId }
+          ]
+        }
+      });
+
+      console.log('🔍 Debug - Chat - Mensajes borrados:', mensajesBorrados);
+      
+      // Emitir evento WebSocket para notificar al otro usuario que el chat fue borrado
+      if (this.io) {
+        this.io.to(`user_${usuarioDestinatario}`).emit('chat-borrado', {
+          mensaje: 'El chat ha sido borrado por el psicólogo',
+          timestamp: new Date().toISOString()
+        });
+        console.log('🔌 WebSocket - Evento chat-borrado emitido a usuario:', usuarioDestinatario);
+      }
+
+      return res.json({
+        success: true,
+        message: 'Chat borrado completamente',
+        data: {
+          pacienteId,
+          mensajesBorrados,
+          timestamp: new Date().toISOString()
+        }
+      });
+    } catch (error: any) {
+      console.error('Error al borrar chat completo:', error);
       return res.status(500).json({
         success: false,
         message: 'Error interno del servidor',

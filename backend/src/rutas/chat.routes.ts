@@ -42,4 +42,11 @@ router.get('/psicologo-asignado', chatController.obtenerPsicologoAsignado);
 // Eliminar conversación
 router.delete('/conversaciones/:conversacionId', chatController.eliminarConversacion);
 
+// Configuración del chat
+router.get('/configuracion/:pacienteId', chatController.obtenerConfiguracionChat);
+router.post('/configuracion/:pacienteId/tema', chatController.cambiarTemaChat);
+
+// Borrar chat completo
+router.delete('/conversacion/:pacienteId', chatController.borrarChatCompleto);
+
 export default router;

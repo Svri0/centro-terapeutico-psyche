@@ -2,7 +2,9 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { authService } from '../servicios/auth.service';
 import { chatService } from '../servicios/chat.service';
 import { webSocketService } from '../servicios/websocket.service';
+import { chatConfigService } from '../servicios/chatConfig.service';
 import Notificacion from './Notificacion';
+import ConfiguracionChat from './ConfiguracionChat';
 
 interface Mensaje {
   id: string;
@@ -38,6 +40,38 @@ const Chat: React.FC<ChatProps> = () => {
   const [loading, setLoading] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [filtroRol, setFiltroRol] = useState<'todos' | 'pacientes' | 'psicologos' | 'admin'>('todos');
+  
+  // Estado para configuración del chat
+  const [configuracionChatAbierta, setConfiguracionChatAbierta] = useState(false);
+  const [temaChatActual, setTemaChatActual] = useState('default');
+  const [pacienteConfiguracion, setPacienteConfiguracion] = useState<Conversacion | null>(null);
+  
+  // Cargar tema guardado del localStorage al montar el componente
+  useEffect(() => {
+    if (conversacionActiva) {
+      const temaGuardado = localStorage.getItem(`chat_tema_${conversacionActiva}`);
+      if (temaGuardado && temaGuardado !== 'default') {
+        setTemaChatActual(temaGuardado);
+        // Aplicar el tema visualmente
+        aplicarTemaVisual(temaGuardado);
+      } else {
+        // Si no hay tema guardado o es el por defecto, limpiar tema visual
+        setTemaChatActual('default');
+        limpiarTemaVisual();
+      }
+    } else {
+      // Si no hay conversación activa, limpiar tema
+      setTemaChatActual('default');
+      limpiarTemaVisual();
+    }
+  }, [conversacionActiva]);
+
+  // Limpiar tema cuando se deselecciona una conversación
+  useEffect(() => {
+    if (!conversacionActiva) {
+      limpiarTemaVisual();
+    }
+  }, [conversacionActiva]);
   
   const [notificacion, setNotificacion] = useState({
     visible: false,
@@ -468,6 +502,7 @@ const Chat: React.FC<ChatProps> = () => {
     return conversaciones.find(c => c.participante_id === conversacionActiva);
   };
 
+  // Función para formatear timestamp
   const formatearTimestamp = (timestamp: string) => {
     const fecha = new Date(timestamp);
     const ahora = new Date();
@@ -475,9 +510,9 @@ const Chat: React.FC<ChatProps> = () => {
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
-
+    
     if (diffMins < 1) return 'Ahora';
-    if (diffMins < 60) return `Hace ${diffMins} min`;
+    if (diffMins < 60) return `Hace ${diffMins}m`;
     if (diffHours < 24) return `Hace ${diffHours}h`;
     if (diffDays < 7) return `Hace ${diffDays}d`;
     
@@ -486,6 +521,129 @@ const Chat: React.FC<ChatProps> = () => {
       month: '2-digit',
       year: '2-digit'
     });
+  };
+
+  // Funciones para configuración del chat
+  const abrirConfiguracionChat = (paciente: Conversacion) => {
+    setPacienteConfiguracion(paciente);
+    setConfiguracionChatAbierta(true);
+    // Cargar configuración actual del chat
+    cargarConfiguracionChat(paciente.participante_id);
+  };
+
+  const cargarConfiguracionChat = async (pacienteId: string) => {
+    try {
+      const config = await chatConfigService.obtenerConfiguracion(pacienteId);
+      setTemaChatActual(config.tema);
+    } catch (error) {
+      console.error('Error al cargar configuración del chat:', error);
+      setTemaChatActual('default');
+    }
+  };
+
+  // Función para aplicar tema visualmente
+  const aplicarTemaVisual = (tema: string) => {
+    if (!chatContainerRef.current) return;
+    
+    const temas = chatConfigService.obtenerTemasDisponibles();
+    const temaSeleccionado = temas.find(t => t.id === tema);
+    if (temaSeleccionado) {
+      // Limpiar clases anteriores de manera más segura
+      const clasesABorrar = [
+        'bg-white', 'bg-gray-50', 'bg-blue-50', 'bg-green-50', 'bg-purple-50', 'bg-orange-50',
+        'border-gray-200', 'border-blue-200', 'border-green-200', 'border-purple-200', 'border-orange-200'
+      ];
+      
+      clasesABorrar.forEach(clase => {
+        chatContainerRef.current!.classList.remove(clase);
+      });
+      
+      // Agregar nuevas clases una por una
+      const nuevasClases = temaSeleccionado.estilos.fondo.split(' ');
+      nuevasClases.forEach(clase => {
+        if (clase.trim()) {
+          chatContainerRef.current!.classList.add(clase.trim());
+        }
+      });
+      
+      // Aplicar bordes si existen
+      if (temaSeleccionado.estilos.bordes) {
+        const clasesBorde = temaSeleccionado.estilos.bordes.split(' ');
+        clasesBorde.forEach(clase => {
+          if (clase.trim()) {
+            chatContainerRef.current!.classList.add(clase.trim());
+          }
+        });
+      }
+    }
+  };
+
+  // Función para limpiar tema visual (volver al tema por defecto)
+  const limpiarTemaVisual = () => {
+    if (!chatContainerRef.current) return;
+    
+    // Limpiar todas las clases de tema
+    const clasesABorrar = [
+      'bg-white', 'bg-gray-50', 'bg-blue-50', 'bg-green-50', 'bg-purple-50', 'bg-orange-50',
+      'border-gray-200', 'border-blue-200', 'border-green-200', 'border-purple-200', 'border-orange-200'
+    ];
+    
+    clasesABorrar.forEach(clase => {
+      chatContainerRef.current!.classList.remove(clase);
+    });
+    
+    // Restaurar tema por defecto
+    chatContainerRef.current.classList.add('bg-white');
+    chatContainerRef.current.classList.add('border', 'border-gray-200');
+  };
+
+  const cambiarTemaChat = async (nuevoTema: string) => {
+    if (!pacienteConfiguracion) return;
+    
+    try {
+      const exito = await chatConfigService.cambiarTema(pacienteConfiguracion.participante_id, nuevoTema);
+      if (exito) {
+        setTemaChatActual(nuevoTema);
+        
+        // Guardar tema en localStorage para persistencia
+        if (conversacionActiva) {
+          localStorage.setItem(`chat_tema_${conversacionActiva}`, nuevoTema);
+        }
+        
+        // Aplicar el tema visualmente
+        aplicarTemaVisual(nuevoTema);
+        
+        mostrarNotificacion('Tema del chat cambiado correctamente', 'exito');
+      } else {
+        mostrarNotificacion('Error al cambiar el tema del chat', 'error');
+      }
+    } catch (error) {
+      console.error('Error al cambiar tema del chat:', error);
+      mostrarNotificacion('Error al cambiar el tema del chat', 'error');
+    }
+  };
+
+  const borrarChatCompleto = async () => {
+    if (!pacienteConfiguracion) return;
+    
+    try {
+      const exito = await chatConfigService.borrarChat(pacienteConfiguracion.participante_id);
+      if (exito) {
+        mostrarNotificacion('Chat borrado completamente', 'exito');
+        
+        // Limpiar mensajes y conversación activa
+        setMensajes([]);
+        setConversacionActiva(null);
+        
+        // Recargar conversaciones para actualizar la lista
+        cargarConversaciones();
+      } else {
+        mostrarNotificacion('Error al borrar el chat', 'error');
+      }
+    } catch (error) {
+      console.error('Error al borrar chat:', error);
+      mostrarNotificacion('Error al borrar el chat', 'error');
+    }
   };
 
   const filtrarConversaciones = () => {
@@ -621,14 +779,33 @@ const Chat: React.FC<ChatProps> = () => {
                       {obtenerConversacionActiva()?.participante_rol}
                     </p>
                   </div>
-                  <button
-                    onClick={() => setConversacionActiva(null)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
+                  <div className="flex items-center space-x-2">
+                    {/* Botón de configuración del chat */}
+                    <button
+                      onClick={() => {
+                        const conversacion = obtenerConversacionActiva();
+                        if (conversacion) {
+                          abrirConfiguracionChat(conversacion);
+                        }
+                      }}
+                      className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                      title="Configuración del chat"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </button>
+                    {/* Botón de cerrar */}
+                    <button
+                      onClick={() => setConversacionActiva(null)}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -715,6 +892,17 @@ const Chat: React.FC<ChatProps> = () => {
         mensaje={notificacion.mensaje}
         tipo={notificacion.tipo}
         onCerrar={cerrarNotificacion}
+      />
+
+      {/* Configuración del Chat */}
+      <ConfiguracionChat
+        isOpen={configuracionChatAbierta}
+        onClose={() => setConfiguracionChatAbierta(false)}
+        pacienteNombre={pacienteConfiguracion?.participante_nombre || ''}
+        pacienteId={pacienteConfiguracion?.participante_id || ''}
+        onCambiarTema={cambiarTemaChat}
+        onBorrarChat={borrarChatCompleto}
+        temaActual={temaChatActual}
       />
     </div>
   );
