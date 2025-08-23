@@ -326,9 +326,18 @@ export const generarDisponibilidadRecurrente = async (req: Request, res: Respons
     console.log('   - Horarios recibidos:', horarios);
     console.log('   - Primera fecha:', fechas[0]);
     console.log('   - Última fecha:', fechas[fechas.length - 1]);
+    console.log('🔍 Debug - Horarios configurados:');
+    console.log('   - Domingo (0):', horarios[0]);
+    console.log('   - Lunes (1):', horarios[1]);
+    console.log('   - Martes (2):', horarios[2]);
+    console.log('   - Miércoles (3):', horarios[3]);
+    console.log('   - Jueves (4):', horarios[4]);
+    console.log('   - Viernes (5):', horarios[5]);
+    console.log('   - Sábado (6):', horarios[6]);
     
     for (const fecha of fechas) {
-      const diaSemana = new Date(fecha!).getDay(); // 0=Domingo, 1=Lunes, etc.
+      // CORREGIR: Usar formato de fecha que funcione correctamente
+      const diaSemana = new Date(fecha + 'T00:00:00').getDay(); // 0=Domingo, 1=Lunes, etc.
       const nombreDia = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][diaSemana];
       
       console.log(`   - Procesando ${fecha} (${nombreDia}, día ${diaSemana})`);
