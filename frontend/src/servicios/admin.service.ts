@@ -10,6 +10,7 @@ export interface Psicologo {
   genero?: string;
   especialidad?: string;
   descripcion?: string;
+  codigo_sbs?: string;
   avatar_url?: string;
   activo: boolean;
   email_verificado: boolean;
@@ -28,6 +29,7 @@ export interface CrearPsicologoData {
   genero?: string;
   especialidad?: string;
   descripcion?: string;
+  codigo_sbs?: string;
   avatar_url?: string;
 }
 
@@ -40,6 +42,7 @@ export interface ActualizarPsicologoData {
   genero?: string;
   especialidad?: string;
   descripcion?: string;
+  codigo_sbs?: string;
   avatar_url?: string;
   activo?: boolean;
 }

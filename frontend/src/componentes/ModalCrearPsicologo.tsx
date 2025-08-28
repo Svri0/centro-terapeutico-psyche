@@ -21,7 +21,8 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
     fecha_nacimiento: '',
     genero: '',
     especialidad: '',
-    descripcion: ''
+    descripcion: '',
+    codigo_sbs: ''
   });
   const [selectedAvatarId, setSelectedAvatarId] = useState<string>(getRandomAvatar().id);
   const [selectedAvatarUrl, setSelectedAvatarUrl] = useState<string>(getRandomAvatar().url);
@@ -95,6 +96,13 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
       newErrors.password = 'La contraseña es obligatoria';
     } else if (formData.password.length < 6) {
       newErrors.password = 'La contraseña debe tener al menos 6 caracteres';
+    }
+
+    // Validar código SBS
+    if (!formData.codigo_sbs.trim()) {
+      newErrors.codigo_sbs = 'El código SBS es obligatorio';
+    } else if (!/^\d{6,8}$/.test(formData.codigo_sbs.trim())) {
+      newErrors.codigo_sbs = 'El código SBS debe tener entre 6 y 8 dígitos numéricos';
     }
 
     if (formData.telefono && !/^\+?[\d\s\-()]+$/.test(formData.telefono)) {
@@ -342,19 +350,46 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
               </div>
             </div>
 
-            {/* Especialidad */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Especialidad
-              </label>
-              <input
-                type="text"
-                name="especialidad"
-                value={formData.especialidad}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                placeholder="Ej: Psicología Clínica, Terapia Cognitivo-Conductual, etc."
-              />
+            {/* Especialidad y Código SBS */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Especialidad */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Especialidad
+                </label>
+                <input
+                  type="text"
+                  name="especialidad"
+                  value={formData.especialidad}
+                  onChange={handleChange}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                  placeholder="Ej: Psicología Clínica, Terapia Cognitivo-Conductual, etc."
+                />
+              </div>
+
+              {/* Código SBS */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Código SBS *
+                </label>
+                <input
+                  type="text"
+                  name="codigo_sbs"
+                  value={formData.codigo_sbs}
+                  onChange={handleChange}
+                  className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm ${
+                    errors.codigo_sbs ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                  placeholder="Ej: 123456 o 12345678"
+                  maxLength={8}
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Código único de identificación en el sistema de salud (6-8 dígitos)
+                </p>
+                {errors.codigo_sbs && (
+                  <p className="mt-1 text-sm text-red-600">{errors.codigo_sbs}</p>
+                )}
+              </div>
             </div>
 
             {/* Descripción */}

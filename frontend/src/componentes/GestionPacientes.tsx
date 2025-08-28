@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { pacientesService, Paciente, CrearPacienteData, PacienteCreado } from '../servicios/pacientes.service';
 import DetallesPaciente from './DetallesPaciente';
 import EditarPaciente from './EditarPaciente';
+import FichaClinica from './FichaClinica';
 
 interface GestionPacientesProps {
   onPacienteCreado?: (paciente: PacienteCreado) => void;
@@ -22,6 +23,8 @@ const GestionPacientes: React.FC<GestionPacientesProps> = ({ onPacienteCreado })
   const [selectedPacienteId, setSelectedPacienteId] = useState<string | null>(null);
   const [showDetalles, setShowDetalles] = useState(false);
   const [showEditar, setShowEditar] = useState(false);
+  const [showFichaClinica, setShowFichaClinica] = useState(false);
+  const [selectedPaciente, setSelectedPaciente] = useState<Paciente | null>(null);
 
   // Formulario de creación
   const [formData, setFormData] = useState<CrearPacienteData>({
@@ -36,7 +39,13 @@ const GestionPacientes: React.FC<GestionPacientesProps> = ({ onPacienteCreado })
     contacto_emergencia_nombre: '',
     contacto_emergencia_telefono: '',
     contacto_emergencia_relacion: '',
-    observaciones: ''
+    observaciones: '',
+    antecedentes_medicos: [],
+    medicacion_actual: [],
+    alergias: [],
+    condiciones_cronicas: [],
+    historial_psiquiatrico: [],
+    observaciones_medicas: ''
   });
 
   useEffect(() => {
@@ -119,7 +128,13 @@ const GestionPacientes: React.FC<GestionPacientesProps> = ({ onPacienteCreado })
         contacto_emergencia_nombre: '',
         contacto_emergencia_telefono: '',
         contacto_emergencia_relacion: '',
-        observaciones: ''
+        observaciones: '',
+        antecedentes_medicos: [],
+        medicacion_actual: [],
+        alergias: [],
+        condiciones_cronicas: [],
+        historial_psiquiatrico: [],
+        observaciones_medicas: ''
       });
       
       // Recargar lista de pacientes
@@ -175,6 +190,24 @@ const GestionPacientes: React.FC<GestionPacientesProps> = ({ onPacienteCreado })
   const handleEditFromDetalles = () => {
     setShowDetalles(false);
     setShowEditar(true);
+  };
+
+  const handleVerFichaClinica = (paciente: Paciente) => {
+    setSelectedPaciente(paciente);
+    setShowFichaClinica(true);
+  };
+
+  const handleCloseFichaClinica = () => {
+    setShowFichaClinica(false);
+    setSelectedPaciente(null);
+  };
+
+  const handleEditFromFichaClinica = () => {
+    if (selectedPaciente) {
+      setShowFichaClinica(false);
+      setSelectedPacienteId(selectedPaciente.id);
+      setShowEditar(true);
+    }
   };
 
   const getEstadoColor = (estado: string) => {
@@ -282,12 +315,18 @@ const GestionPacientes: React.FC<GestionPacientesProps> = ({ onPacienteCreado })
                       </div>
                     </div>
                     <div className="flex space-x-2">
-                                             <button 
-                         onClick={() => handleVerDetalles(paciente.id)}
-                         className="text-amber-600 hover:text-amber-800 text-sm font-medium"
-                       >
-                         Ver Detalles
-                       </button>
+                      <button 
+                        onClick={() => handleVerFichaClinica(paciente)}
+                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      >
+                        Ficha Clínica
+                      </button>
+                      <button 
+                        onClick={() => handleVerDetalles(paciente.id)}
+                        className="text-amber-600 hover:text-amber-800 text-sm font-medium"
+                      >
+                        Ver Detalles
+                      </button>
                       <button 
                         onClick={() => handleEditar(paciente.id)}
                         className="text-gray-600 hover:text-gray-800 text-sm font-medium"
@@ -444,8 +483,123 @@ const GestionPacientes: React.FC<GestionPacientesProps> = ({ onPacienteCreado })
                 </div>
               </div>
 
+              {/* Sección de Antecedentes Médicos */}
+              <div className="border-t pt-4">
+                <h4 className="text-lg font-medium text-gray-900 mb-4">Antecedentes Médicos</h4>
+                
+                {/* Antecedentes Médicos */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Antecedentes Médicos (separados por comas)
+                  </label>
+                  <input
+                    type="text"
+                    name="antecedentes_medicos"
+                    value={Array.isArray(formData.antecedentes_medicos) ? formData.antecedentes_medicos.join(', ') : ''}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const antecedentes = value ? value.split(',').map(item => item.trim()).filter(item => item) : [];
+                      setFormData(prev => ({ ...prev, antecedentes_medicos: antecedentes }));
+                    }}
+                    placeholder="Ej: Diabetes, Hipertensión, Epilepsia"
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                {/* Medicación Actual */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Medicación Actual (separados por comas)
+                  </label>
+                  <input
+                    type="text"
+                    name="medicacion_actual"
+                    value={Array.isArray(formData.medicacion_actual) ? formData.medicacion_actual.join(', ') : ''}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const medicacion = value ? value.split(',').map(item => item.trim()).filter(item => item) : [];
+                      setFormData(prev => ({ ...prev, medicacion_actual: medicacion }));
+                    }}
+                    placeholder="Ej: Metformina, Sertralina, Paracetamol"
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                {/* Alergias */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Alergias (separadas por comas)
+                  </label>
+                  <input
+                    type="text"
+                    name="alergias"
+                    value={Array.isArray(formData.alergias) ? formData.alergias.join(', ') : ''}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const alergias = value ? value.split(',').map(item => item.trim()).filter(item => item) : [];
+                      setFormData(prev => ({ ...prev, alergias: alergias }));
+                    }}
+                    placeholder="Ej: Penicilina, Polen, Látex"
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                {/* Condiciones Crónicas */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Condiciones Crónicas (separadas por comas)
+                  </label>
+                  <input
+                    type="text"
+                    name="condiciones_cronicas"
+                    value={Array.isArray(formData.condiciones_cronicas) ? formData.condiciones_cronicas.join(', ') : ''}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const condiciones = value ? value.split(',').map(item => item.trim()).filter(item => item) : [];
+                      setFormData(prev => ({ ...prev, condiciones_cronicas: condiciones }));
+                    }}
+                    placeholder="Ej: Asma, Artritis, Depresión"
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                {/* Historial Psiquiátrico */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Historial Psiquiátrico (separados por comas)
+                  </label>
+                  <input
+                    type="text"
+                    name="historial_psiquiatrico"
+                    value={Array.isArray(formData.historial_psiquiatrico) ? formData.historial_psiquiatrico.join(', ') : ''}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const historial = value ? value.split(',').map(item => item.trim()).filter(item => item) : [];
+                      setFormData(prev => ({ ...prev, historial_psiquiatrico: historial }));
+                    }}
+                    placeholder="Ej: Tratamiento previo por ansiedad, Hospitalización por depresión"
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                {/* Observaciones Médicas */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Observaciones Médicas
+                  </label>
+                  <textarea
+                    name="observaciones_medicas"
+                    value={formData.observaciones_medicas}
+                    onChange={handleInputChange}
+                    rows={3}
+                    placeholder="Observaciones médicas adicionales, consideraciones especiales..."
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700">Observaciones</label>
+                <label className="block text-sm font-medium text-gray-700">Observaciones Generales</label>
                 <textarea
                   name="observaciones"
                   value={formData.observaciones}
@@ -491,6 +645,15 @@ const GestionPacientes: React.FC<GestionPacientesProps> = ({ onPacienteCreado })
           pacienteId={selectedPacienteId}
           onClose={handleCloseEditar}
           onSave={handleSaveEditar}
+        />
+      )}
+
+      {/* Modal de Ficha Clínica */}
+      {showFichaClinica && selectedPaciente && (
+        <FichaClinica
+          paciente={selectedPaciente}
+          onClose={handleCloseFichaClinica}
+          onEdit={handleEditFromFichaClinica}
         />
       )}
     </div>

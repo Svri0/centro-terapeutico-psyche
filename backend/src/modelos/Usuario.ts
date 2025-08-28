@@ -15,6 +15,7 @@ export interface UsuarioAttributes {
   avatar_url?: string;
   especialidad?: string;
   descripcion?: string;
+  codigo_sbs?: string;
   rol_id: number;
   activo: boolean;
   email_verificado: boolean;
@@ -42,6 +43,7 @@ class Usuario extends Model<UsuarioAttributes, UsuarioCreationAttributes> implem
   public avatar_url?: string;
   public especialidad?: string;
   public descripcion?: string;
+  public codigo_sbs?: string;
   public rol_id!: number;
   public activo!: boolean;
   public email_verificado!: boolean;
@@ -108,6 +110,10 @@ Usuario.init(
     },
     descripcion: {
       type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    codigo_sbs: {
+      type: DataTypes.STRING(50),
       allowNull: true,
     },
     rol_id: {

@@ -237,6 +237,16 @@ const DetallesPsicologo: React.FC<DetallesPsicologoProps> = ({
                           <span className="font-semibold">Especialidad:</span> {psicologo.especialidad || 'No especificada'}
                         </p>
                         <p className="text-sm text-gray-600 mb-1">
+                          <span className="font-semibold">Código SBS:</span> 
+                          <span className={`ml-1 px-2 py-1 text-xs font-semibold rounded-full ${
+                            psicologo.codigo_sbs
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-gray-100 text-gray-600'
+                          }`}>
+                            {psicologo.codigo_sbs || 'Sin SBS registrado'}
+                          </span>
+                        </p>
+                        <p className="text-sm text-gray-600 mb-1">
                           <span className="font-semibold">Email verificado:</span> 
                           <span className={`ml-1 px-2 py-1 text-xs font-semibold rounded-full ${
                             psicologo.email_verificado

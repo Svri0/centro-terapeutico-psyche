@@ -79,6 +79,9 @@ const TablaPsicologos: React.FC<TablaPsicologosProps> = ({
                                  <th className="px-3 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-widest w-1/5">
                    Especialidad
                  </th>
+                 <th className="px-3 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-widest w-1/8">
+                   Código SBS
+                 </th>
                 <th className="px-3 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-widest w-1/8">
                   Estado
                 </th>
@@ -130,6 +133,19 @@ const TablaPsicologos: React.FC<TablaPsicologosProps> = ({
                                      <td className="px-3 py-3">
                      <div className="text-sm font-medium text-gray-900" title={psicologo.especialidad || 'Sin especialidad'}>
                        {truncarEspecialidad(psicologo.especialidad || '')}
+                     </div>
+                   </td>
+                   <td className="px-3 py-3">
+                     <div className="text-sm font-medium text-gray-900">
+                       {psicologo.codigo_sbs ? (
+                         <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-50 text-blue-700">
+                           {psicologo.codigo_sbs}
+                         </span>
+                       ) : (
+                         <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-50 text-gray-600">
+                           Sin SBS
+                         </span>
+                       )}
                      </div>
                    </td>
                   <td className="px-3 py-3">

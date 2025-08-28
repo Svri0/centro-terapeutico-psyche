@@ -20,7 +20,8 @@ const ModalEditarPsicologo: React.FC<ModalEditarPsicologoProps> = ({
     fecha_nacimiento: '',
     genero: '',
     especialidad: '',
-    descripcion: ''
+    descripcion: '',
+    codigo_sbs: ''
   });
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -36,7 +37,8 @@ const ModalEditarPsicologo: React.FC<ModalEditarPsicologoProps> = ({
       fecha_nacimiento: psicologo.fecha_nacimiento || '',
       genero: psicologo.genero || '',
       especialidad: psicologo.especialidad || '',
-      descripcion: psicologo.descripcion || ''
+      descripcion: psicologo.descripcion || '',
+      codigo_sbs: psicologo.codigo_sbs || ''
     });
   }, [psicologo]);
 
@@ -75,6 +77,11 @@ const ModalEditarPsicologo: React.FC<ModalEditarPsicologoProps> = ({
 
     if (formData.telefono && !/^\+?[\d\s\-\(\)]+$/.test(formData.telefono)) {
       newErrors.telefono = 'El teléfono no es válido';
+    }
+
+    // Validar código SBS si se proporciona
+    if (formData.codigo_sbs && !/^\d{6,8}$/.test(formData.codigo_sbs.trim())) {
+      newErrors.codigo_sbs = 'El código SBS debe tener entre 6 y 8 dígitos numéricos';
     }
 
     setErrors(newErrors);
@@ -282,6 +289,30 @@ const ModalEditarPsicologo: React.FC<ModalEditarPsicologoProps> = ({
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 placeholder="Ej: Psicología Clínica, Terapia Cognitivo-Conductual, etc."
               />
+            </div>
+
+            {/* Código SBS */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Código SBS
+              </label>
+              <input
+                type="text"
+                name="codigo_sbs"
+                value={formData.codigo_sbs || ''}
+                onChange={handleChange}
+                className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
+                  errors.codigo_sbs ? 'border-red-300' : 'border-gray-300'
+                }`}
+                placeholder="Ej: 123456 o 12345678"
+                maxLength={8}
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Código único de identificación en el sistema de salud (6-8 dígitos)
+              </p>
+              {errors.codigo_sbs && (
+                <p className="mt-1 text-sm text-red-600">{errors.codigo_sbs}</p>
+              )}
             </div>
 
             {/* Descripción */}

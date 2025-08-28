@@ -12,6 +12,17 @@ export interface Paciente {
   created_at: string;
   updated_at: string;
   numero_ficha?: string;
+  rut?: string;
+  direccion?: string;
+  contacto_emergencia_nombre?: string;
+  contacto_emergencia_telefono?: string;
+  contacto_emergencia_relacion?: string;
+  antecedentes_medicos?: any[];
+  medicacion_actual?: any[];
+  alergias?: any[];
+  condiciones_cronicas?: any[];
+  historial_psiquiatrico?: any[];
+  observaciones_medicas?: string;
 }
 
 export interface CrearPacienteData {
@@ -27,6 +38,12 @@ export interface CrearPacienteData {
   contacto_emergencia_telefono?: string;
   contacto_emergencia_relacion?: string;
   observaciones?: string;
+  antecedentes_medicos?: any[];
+  medicacion_actual?: any[];
+  alergias?: any[];
+  condiciones_cronicas?: any[];
+  historial_psiquiatrico?: any[];
+  observaciones_medicas?: string;
 }
 
 export interface ActualizarPacienteData {
