@@ -44,6 +44,68 @@ Sistema completo de gestión para centro terapéutico con funcionalidades para p
 - Responsive design
 - Hot reload con Vite
 
+## 🚀 **Instalación y Configuración**
+
+### 📋 Requisitos Previos
+- Node.js 18+ 
+- PostgreSQL 12+
+- Git
+
+### 🔧 Pasos de Instalación
+
+1. **Clonar el repositorio**
+   ```bash
+   git clone <tu-repositorio>
+   cd centro-terapeutico-psyche
+   ```
+
+2. **Instalar dependencias**
+   ```bash
+   npm install
+   cd backend && npm install
+   cd ../frontend && npm install
+   ```
+
+3. **Configurar variables de entorno (RÁPIDO)**
+   ```bash
+   cd backend
+   node scripts/setup-rapido.js
+   ```
+   *Solo necesitas tu contraseña de PostgreSQL - el resto ya está configurado*
+
+4. **Configurar base de datos**
+   ```bash
+   npm run db:migrate
+   npm run db:seed
+   ```
+
+5. **Crear usuario administrador**
+   ```bash
+   node scripts/crear-admin.js
+   ```
+
+6. **Ejecutar el servidor**
+   ```bash
+   npm run dev
+   ```
+
+## 🔐 **Configuración del Equipo**
+
+### 📧 Configuración del Equipo
+El equipo comparte la misma configuración:
+- ✅ Email: `dentrodepsyche@gmail.com` (compartido)
+- ✅ Contraseña de aplicación: ya configurada
+- ✅ JWT Secret: ya configurado
+- ✅ Puerto: 3002 (estándar)
+- 🔐 Solo necesitas tu contraseña de PostgreSQL local
+
+### 🛠️ Scripts Útiles
+- `node scripts/setup-rapido.js` - **CONFIGURACIÓN RÁPIDA** (solo PostgreSQL)
+- `node scripts/setup-env.js` - Configuración completa personalizada
+- `node scripts/crear-admin.js` - Crear usuario administrador
+- `node scripts/verificar-usuarios-admin.js` - Diagnosticar problemas de admin
+- `node scripts/test-email-real.js` - Probar envío de emails
+
 ## 🚀 **Tecnologías Utilizadas**
 
 ### **Backend**

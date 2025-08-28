@@ -1,123 +1,95 @@
-const { Sequelize } = require('sequelize');
-const bcrypt = require('bcryptjs');
-const { v4: uuidv4 } = require('uuid');
-require('dotenv').config();
+const { Usuario } = require('../dist/modelos');
+const bcrypt = require('bcrypt');
+const readline = require('readline');
 
-// Configuración de la base de datos
-const sequelize = new Sequelize({
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  username: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'Ferreteriakm6',
-  database: process.env.DB_NAME || 'psyche_db',
-  dialect: 'postgres',
-  logging: false
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
+
+async function pregunta(pregunta) {
+  return new Promise((resolve) => {
+    rl.question(pregunta, resolve);
+  });
+}
 
 async function crearAdmin() {
   try {
-    console.log('🔧 Creando nuevo usuario administrador...\n');
+    console.log('👑 CREADOR DE USUARIO ADMINISTRADOR');
+    console.log('====================================\n');
 
-    // 1. Verificar conexión
-    await sequelize.authenticate();
-    console.log('✅ Conexión a la base de datos exitosa');
+    // Solicitar datos del admin
+    const nombres = await pregunta('👤 Nombres del administrador: ');
+    const apellidos = await pregunta('👤 Apellidos del administrador: ');
+    const email = await pregunta('📧 Email del administrador: ');
+    const telefono = await pregunta('📱 Teléfono (opcional): ') || null;
+    const password = await pregunta('🔑 Contraseña: ');
+    const confirmPassword = await pregunta('🔑 Confirmar contraseña: ');
 
-    // 2. Obtener el rol de administrador
-    console.log('2️⃣ Buscando rol de administrador...');
-    const [adminRole] = await sequelize.query(
-      "SELECT id FROM roles WHERE nombre = 'administrador'",
-      { type: Sequelize.QueryTypes.SELECT }
-    );
-
-    if (adminRole.length === 0) {
-      console.log('❌ No se encontró el rol de administrador');
-      console.log('💡 Ejecuta: npx sequelize-cli db:seed:all');
+    // Validaciones
+    if (!nombres || !apellidos || !email || !password) {
+      console.log('❌ Todos los campos obligatorios deben estar completos');
+      rl.close();
       return;
     }
 
-    console.log('✅ Rol de administrador encontrado');
+    if (password !== confirmPassword) {
+      console.log('❌ Las contraseñas no coinciden');
+      rl.close();
+      return;
+    }
 
-    // 3. Crear hash de la contraseña
-    console.log('3️⃣ Creando hash de la contraseña...');
-    const passwordHash = await bcrypt.hash('admin123', 12);
-    console.log('✅ Hash de contraseña creado');
+    if (password.length < 6) {
+      console.log('❌ La contraseña debe tener al menos 6 caracteres');
+      rl.close();
+      return;
+    }
 
-    // 4. Crear usuario administrador
-    console.log('4️⃣ Creando usuario administrador...');
-    const newAdminUser = {
-      id: uuidv4(),
-      nombres: 'Admin',
-      apellidos: 'Sistema',
-      email: 'admin@admin.com',
-      password_hash: passwordHash,
-      telefono: '+56912345678',
-      rol_id: adminRole[0].id,
+    // Verificar si el email ya existe
+    const usuarioExistente = await Usuario.findOne({ where: { email } });
+    if (usuarioExistente) {
+      console.log('❌ Ya existe un usuario con ese email');
+      rl.close();
+      return;
+    }
+
+    // Hash de la contraseña
+    const saltRounds = 10;
+    const passwordHash = await bcrypt.hash(password, saltRounds);
+
+    // Crear el usuario administrador
+    const nuevoAdmin = await Usuario.create({
+      nombres,
+      apellidos,
+      email,
+      telefono,
+      password: passwordHash,
+      rol_id: 1, // 1 = Administrador
       activo: true,
-      email_verificado: true,
-      configuracion: JSON.stringify({}),
-      created_at: new Date(),
-      updated_at: new Date()
-    };
-
-    await sequelize.query(`
-      INSERT INTO usuarios (id, nombres, apellidos, email, password_hash, telefono, rol_id, activo, email_verificado, configuracion, created_at, updated_at)
-      VALUES (:id, :nombres, :apellidos, :email, :password_hash, :telefono, :rol_id, :activo, :email_verificado, :configuracion, :created_at, :updated_at)
-    `, {
-      replacements: newAdminUser
+      email_verificado: true
     });
 
-    console.log('✅ Usuario administrador creado exitosamente');
-    console.log('');
-    console.log('🎉 ¡Nuevas credenciales creadas!');
-    console.log('═══════════════════════════════════════════════════════════════');
-    console.log('📧 Email: admin@admin.com');
-    console.log('🔑 Contraseña: admin123');
-    console.log('═══════════════════════════════════════════════════════════════');
-    console.log('');
-    console.log('💡 Ahora puedes usar estas credenciales para ingresar al sistema');
+    console.log('\n✅ USUARIO ADMINISTRADOR CREADO EXITOSAMENTE');
+    console.log('=============================================');
+    console.log(`👤 ID: ${nuevoAdmin.id}`);
+    console.log(`👤 Nombre: ${nuevoAdmin.nombres} ${nuevoAdmin.apellidos}`);
+    console.log(`📧 Email: ${nuevoAdmin.email}`);
+    console.log(`🔑 Contraseña: ${password} (guardada en hash)`);
+    console.log(`👑 Rol: Administrador`);
+    console.log(`📅 Creado: ${nuevoAdmin.created_at}`);
+    console.log('\n🚀 ¡Ya puedes iniciar sesión como administrador!');
+
+    // Mostrar credenciales de acceso
+    console.log('\n🔑 CREDENCIALES DE ACCESO:');
+    console.log('---------------------------');
+    console.log(`📧 Email: ${email}`);
+    console.log(`🔑 Contraseña: ${password}`);
+    console.log('\n⚠️  GUARDA ESTAS CREDENCIALES EN UN LUGAR SEGURO');
 
   } catch (error) {
-    console.error('❌ Error durante la creación:', error.message);
-    
-    if (error.message.includes('duplicate key')) {
-      console.log('💡 El usuario ya existe, intentando con credenciales diferentes...');
-      
-      // Intentar con un email diferente
-      const newEmail = 'admin2@admin.com';
-      console.log(`📧 Intentando con email: ${newEmail}`);
-      
-      const newAdminUser2 = {
-        id: uuidv4(),
-        nombres: 'Admin',
-        apellidos: 'Sistema',
-        email: newEmail,
-        password_hash: await bcrypt.hash('admin123', 12),
-        telefono: '+56912345678',
-        rol_id: adminRole[0].id,
-        activo: true,
-        email_verificado: true,
-        configuracion: JSON.stringify({}),
-        created_at: new Date(),
-        updated_at: new Date()
-      };
-
-      await sequelize.query(`
-        INSERT INTO usuarios (id, nombres, apellidos, email, password_hash, telefono, rol_id, activo, email_verificado, configuracion, created_at, updated_at)
-        VALUES (:id, :nombres, :apellidos, :email, :password_hash, :telefono, :rol_id, :activo, :email_verificado, :configuracion, :created_at, :updated_at)
-      `, {
-        replacements: newAdminUser2
-      });
-
-      console.log('✅ Usuario administrador creado exitosamente');
-      console.log('');
-      console.log('🎉 ¡Nuevas credenciales creadas!');
-      console.log('═══════════════════════════════════════════════════════════════');
-      console.log(`📧 Email: ${newEmail}`);
-      console.log('🔑 Contraseña: admin123');
-      console.log('═══════════════════════════════════════════════════════════════');
-    }
+    console.error('❌ Error al crear el administrador:', error);
   } finally {
-    await sequelize.close();
+    rl.close();
   }
 }
 
