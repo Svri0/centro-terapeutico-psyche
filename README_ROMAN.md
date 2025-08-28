@@ -40,6 +40,9 @@ npm run db:seed
 ```bash
 node scripts/crear-admin.js
 ```
+*Crea automáticamente un admin con:*
+*- Email: admin@admin.cl*
+*- Contraseña: admin123*
 
 ### **Paso 5: Ejecutar**
 ```bash
@@ -52,6 +55,7 @@ npm run dev
 - `node scripts/setup-rapido.js` - Configuración rápida estándar
 - `node scripts/crear-admin.js` - Crear usuario administrador
 - `node scripts/verificar-usuarios-admin.js` - Diagnosticar problemas
+- `node scripts/verificar-admin-rapido.js` - Verificar admin estándar
 
 ## 📧 **Configuración del Equipo (Automática)**
 - ✅ Email: `dentrodepsyche@gmail.com`

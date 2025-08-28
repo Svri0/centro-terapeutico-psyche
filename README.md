@@ -103,8 +103,9 @@ El equipo comparte la misma configuración:
 - `node scripts/setup-rapido.js` - **CONFIGURACIÓN RÁPIDA** (solo PostgreSQL)
 - `node scripts/setup-roman.js` - **CONFIGURACIÓN AUTOMÁTICA PARA ROMÁN** (detecta OS)
 - `node scripts/setup-env.js` - Configuración completa personalizada
-- `node scripts/crear-admin.js` - Crear usuario administrador
+- `node scripts/crear-admin.js` - Crear usuario administrador (admin@admin.cl / admin123)
 - `node scripts/verificar-usuarios-admin.js` - Diagnosticar problemas de admin
+- `node scripts/verificar-admin-rapido.js` - Verificar admin estándar
 - `node scripts/test-email-real.js` - Probar envío de emails
 
 ## 🚀 **Tecnologías Utilizadas**

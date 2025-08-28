@@ -16,44 +16,34 @@ async function pregunta(pregunta) {
 async function crearAdmin() {
   try {
     console.log('👑 CREADOR DE USUARIO ADMINISTRADOR');
-    console.log('====================================\n');
+    console.log('=====================================\n');
 
-    // Solicitar datos del admin
-    const nombres = await pregunta('👤 Nombres del administrador: ');
-    const apellidos = await pregunta('👤 Apellidos del administrador: ');
-    const email = await pregunta('📧 Email del administrador: ');
-    const telefono = await pregunta('📱 Teléfono (opcional): ') || null;
-    const password = await pregunta('🔑 Contraseña: ');
-    const confirmPassword = await pregunta('🔑 Confirmar contraseña: ');
+    // Usar credenciales predefinidas
+    const nombres = 'Administrador';
+    const apellidos = 'Sistema';
+    const email = 'admin@admin.cl';
+    const telefono = '+56 9 0000 0000';
+    const password = 'admin123';
 
-    // Validaciones
-    if (!nombres || !apellidos || !email || !password) {
-      console.log('❌ Todos los campos obligatorios deben estar completos');
-      rl.close();
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      console.log('❌ Las contraseñas no coinciden');
-      rl.close();
-      return;
-    }
-
-    if (password.length < 6) {
-      console.log('❌ La contraseña debe tener al menos 6 caracteres');
-      rl.close();
-      return;
-    }
+    console.log('🎯 USANDO CREDENCIALES PREDEFINIDAS:');
+    console.log('-------------------------------------');
+    console.log(`👤 Nombre: ${nombres} ${apellidos}`);
+    console.log(`📧 Email: ${email}`);
+    console.log(`🔐 Contraseña: ${password}`);
+    console.log(`📱 Teléfono: ${telefono}`);
 
     // Verificar si el email ya existe
     const usuarioExistente = await Usuario.findOne({ where: { email } });
     if (usuarioExistente) {
-      console.log('❌ Ya existe un usuario con ese email');
+      console.log('\n⚠️  Ya existe un usuario con ese email');
+      console.log('💡 Puedes usar estas credenciales para iniciar sesión:');
+      console.log(`   📧 Email: ${email}`);
+      console.log(`   🔐 Contraseña: ${password}`);
       rl.close();
       return;
     }
 
-    // Hash de la contraseña
+    // Generar hash de la contraseña
     const saltRounds = 10;
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
@@ -64,27 +54,31 @@ async function crearAdmin() {
       email,
       telefono,
       password: passwordHash,
-      rol_id: 1, // 1 = Administrador
+      rol_id: 1, // Rol de administrador
       activo: true,
       email_verificado: true
     });
 
     console.log('\n✅ USUARIO ADMINISTRADOR CREADO EXITOSAMENTE');
     console.log('=============================================');
-    console.log(`👤 ID: ${nuevoAdmin.id}`);
-    console.log(`👤 Nombre: ${nuevoAdmin.nombres} ${nuevoAdmin.apellidos}`);
-    console.log(`📧 Email: ${nuevoAdmin.email}`);
-    console.log(`🔑 Contraseña: ${password} (guardada en hash)`);
+    console.log(`👤 Nombre: ${nombres} ${apellidos}`);
+    console.log(`📧 Email: ${email}`);
+    console.log(`📱 Teléfono: ${telefono}`);
+    console.log(`🔐 Contraseña: ${password}`);
+    console.log(`🆔 ID del usuario: ${nuevoAdmin.id}`);
     console.log(`👑 Rol: Administrador`);
-    console.log(`📅 Creado: ${nuevoAdmin.created_at}`);
+
+    console.log('\n💡 CREDENCIALES DE ACCESO:');
+    console.log('----------------------------');
+    console.log(`📧 Email: ${email}`);
+    console.log(`🔐 Contraseña: ${password}`);
     console.log('\n🚀 ¡Ya puedes iniciar sesión como administrador!');
 
-    // Mostrar credenciales de acceso
-    console.log('\n🔑 CREDENCIALES DE ACCESO:');
-    console.log('---------------------------');
-    console.log(`📧 Email: ${email}`);
-    console.log(`🔑 Contraseña: ${password}`);
-    console.log('\n⚠️  GUARDA ESTAS CREDENCIALES EN UN LUGAR SEGURO');
+    console.log('\n📋 INFORMACIÓN IMPORTANTE:');
+    console.log('----------------------------');
+    console.log('🔒 Estas credenciales son estándar para desarrollo');
+    console.log('⚠️  Cambia la contraseña en producción');
+    console.log('💡 Puedes compartir estas credenciales con tu equipo');
 
   } catch (error) {
     console.error('❌ Error al crear el administrador:', error);
