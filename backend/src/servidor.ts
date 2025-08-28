@@ -54,6 +54,24 @@ chatController.setIo(io);
 console.log('🔌 Servidor - chatController.io DESPUÉS:', chatController.isIoConfigured());
 console.log('🔌 ChatController configurado con WebSocket - CONFIRMADO');
 
+// Configurar ChatAutomaticoService con WebSocket
+console.log('🔌 Configurando ChatAutomaticoService con WebSocket...');
+import('./utilidades/chat-automatico.service').then(({ ChatAutomaticoService }) => {
+  ChatAutomaticoService.setIo(io);
+  console.log('🔌 ChatAutomaticoService configurado con WebSocket - CONFIRMADO');
+}).catch(error => {
+  console.error('❌ Error al configurar ChatAutomaticoService:', error);
+});
+
+// Configurar Limpiador Automático de Citas Canceladas
+console.log('🧹 Configurando Limpiador Automático de Citas...');
+import('./utilidades/limpiador-citas.service').then(({ LimpiadorCitasService }) => {
+  LimpiadorCitasService.iniciar();
+  console.log('🧹 Limpiador Automático de Citas configurado - CONFIRMADO');
+}).catch(error => {
+  console.error('❌ Error al configurar Limpiador de Citas:', error);
+});
+
 // Middleware
 app.use(helmet());
 

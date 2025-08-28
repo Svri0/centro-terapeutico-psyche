@@ -1,15 +1,16 @@
 import { Router } from 'express';
 import { verificarToken } from '../middleware/auth.middleware';
-import {
-  obtenerCitasPsicologo,
-  obtenerCitasPaciente,
-  obtenerCita,
-  crearCita,
-  actualizarCita,
-  actualizarEstadoCita,
-  cancelarCita,
-  obtenerDisponibilidad,
-  obtenerEstadisticasCitas
+import { 
+  obtenerCitasPsicologo, 
+  obtenerCitasPaciente, 
+  obtenerCita, 
+  crearCita, 
+  actualizarCita, 
+  actualizarEstadoCita, 
+  cancelarCita, 
+  obtenerDisponibilidad, 
+  obtenerEstadisticasCitas,
+  limpiarCitasCanceladas
 } from '../controladores/citas.controlador';
 
 const router = Router();
@@ -43,5 +44,8 @@ router.patch('/:id/estado', actualizarEstadoCita);
 
 // Cancelar una cita
 router.delete('/:id', cancelarCita);
+
+// Limpiar citas canceladas manualmente (solo admin)
+router.delete('/limpiar-canceladas', limpiarCitasCanceladas);
 
 export default router; 

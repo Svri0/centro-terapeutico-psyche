@@ -79,12 +79,18 @@ class CitasService {
   }
 
   // Obtener citas del paciente autenticado
-  async obtenerCitasPaciente(): Promise<Cita[]> {
+  async obtenerCitasPaciente(): Promise<any> {
     try {
+      console.log('🔍 Servicio - Haciendo petición a /citas/paciente');
       const response = await api.get('/citas/paciente');
-      return response.data.data || [];
+      console.log('🔍 Servicio - Respuesta completa:', response);
+      console.log('🔍 Servicio - response.data:', response.data);
+      console.log('🔍 Servicio - response.data.data:', response.data.data);
+      
+      // Devolver la respuesta completa para diagnóstico
+      return response;
     } catch (error: any) {
-      console.error('Error al obtener citas del paciente:', error);
+      console.error('❌ Servicio - Error al obtener citas del paciente:', error);
       throw new Error(error.response?.data?.message || 'Error al obtener las citas');
     }
   }

@@ -3,6 +3,7 @@ import { ManejadorRespuestas } from '../utilidades/respuestas';
 import { log } from '../utilidades/logger';
 import sequelize from '../configuracion/database';
 import { verificarToken } from '../middleware/auth.middleware';
+import { enviarEmailConfirmacionCita } from '../utilidades/email.service';
 
 // Importar tipos para Request extendido
 import '../middleware/auth.middleware';
@@ -75,9 +76,9 @@ export const obtenerCitasPsicologo = async (req: Request, res: Response) => {
 // Obtener citas del paciente autenticado
 export const obtenerCitasPaciente = async (req: Request, res: Response) => {
   try {
-    const pacienteId = req.usuario?.id;
+    const usuarioId = req.usuario?.id;
     
-    if (!pacienteId) {
+    if (!usuarioId) {
       return ManejadorRespuestas.noAutorizado(
         res,
         'No autorizado',
@@ -85,6 +86,28 @@ export const obtenerCitasPaciente = async (req: Request, res: Response) => {
       );
     }
 
+    console.log('🔍 Backend - Obteniendo citas para usuario ID:', usuarioId);
+    
+    // Primero obtener el paciente_id real de la tabla pacientes
+    const [pacienteData] = await sequelize.query(
+      `SELECT id FROM pacientes WHERE usuario_id = :usuarioId`,
+      {
+        replacements: { usuarioId }
+      }
+    ) as [any[], unknown];
+
+    if (!Array.isArray(pacienteData) || pacienteData.length === 0) {
+      console.log('❌ Paciente no encontrado para usuario_id:', usuarioId);
+      return ManejadorRespuestas.noEncontrado(
+        res,
+        'Paciente no encontrado',
+        'CITAS_004'
+      );
+    }
+
+    const pacienteId = pacienteData[0].id;
+    console.log('🔍 Backend - Paciente encontrado, ID real:', pacienteId);
+    
     const [citas] = await sequelize.query(
       `SELECT 
         c.id,
@@ -105,13 +128,16 @@ export const obtenerCitasPaciente = async (req: Request, res: Response) => {
         c.created_at,
         c.updated_at
        FROM citas c
-       INNER JOIN usuarios u ON c.psicologo_id = u.id
+       LEFT JOIN usuarios u ON c.psicologo_id = u.id
        WHERE c.paciente_id = :pacienteId
        ORDER BY c.fecha ASC, c.hora_inicio ASC`,
       {
         replacements: { pacienteId }
       }
     ) as [any[], unknown];
+    
+    console.log('🔍 Backend - Citas encontradas:', citas);
+    console.log('🔍 Backend - Número de citas:', Array.isArray(citas) ? citas.length : 0);
 
     return ManejadorRespuestas.exito(
       res,
@@ -316,35 +342,81 @@ export const crearCita = async (req: Request, res: Response) => {
       );
     }
 
-         // Crear la cita
-     const [resultado] = await sequelize.query(
-       `INSERT INTO citas (
-         id, paciente_id, psicologo_id, fecha, hora_inicio, hora_fin,
-         duracion_minutos, tipo_sesion, modalidad, notas_paciente,
-         estado, recordatorio_enviado, created_at, updated_at
-       ) VALUES (
-         gen_random_uuid(), :pacienteId, :psicologoId, :fecha, :horaInicio, :horaFin,
-         :duracionMinutos, :tipoSesion, :modalidad, :notasPaciente,
-         'programada', false, NOW(), NOW()
-       ) RETURNING id`,
-       {
-         replacements: {
-           pacienteId: req.body.paciente_id, // Usar el paciente_id actualizado
-           psicologoId,
-           fecha,
-           horaInicio: hora_inicio,
-           horaFin: hora_fin,
-           duracionMinutos: duracion_minutos,
-           tipoSesion: tipo_sesion,
-           modalidad,
-           notasPaciente: notas_paciente
-         }
-       }
-     ) as [any[], unknown];
+    // Crear la cita
+    const [resultado] = await sequelize.query(
+      `INSERT INTO citas (
+        id, paciente_id, psicologo_id, fecha, hora_inicio, hora_fin,
+        duracion_minutos, tipo_sesion, modalidad, notas_paciente,
+        estado, recordatorio_enviado, created_at, updated_at
+      ) VALUES (
+        gen_random_uuid(), :pacienteId, :psicologoId, :fecha, :horaInicio, :horaFin,
+        :duracionMinutos, :tipoSesion, :modalidad, :notasPaciente,
+        'programada', false, NOW(), NOW()
+      ) RETURNING id`,
+      {
+        replacements: {
+          pacienteId: req.body.paciente_id, // Usar el paciente_id actualizado
+          psicologoId,
+          fecha,
+          horaInicio: hora_inicio,
+          horaFin: hora_fin,
+          duracionMinutos: duracion_minutos,
+          tipoSesion: tipo_sesion,
+          modalidad,
+          notasPaciente: notas_paciente
+        }
+      }
+    ) as [any[], unknown];
 
     const citaId = Array.isArray(resultado) ? resultado[0]?.id : null;
 
     console.log('✅ Cita creada exitosamente con ID:', citaId);
+
+    // Enviar email de confirmación al paciente
+    try {
+      // Obtener información del paciente y psicólogo para el email
+      const [infoCita] = await sequelize.query(
+        `SELECT 
+          p.nombres as paciente_nombres,
+          p.apellidos as paciente_apellidos,
+          p.email as paciente_email,
+          u.nombres as psicologo_nombres,
+          u.apellidos as psicologo_apellidos
+         FROM citas c
+         INNER JOIN pacientes p ON c.paciente_id = p.id
+         INNER JOIN usuarios u ON c.psicologo_id = u.id
+         WHERE c.id = :citaId`,
+        {
+          replacements: { citaId }
+        }
+      ) as [any[], unknown];
+
+      if (Array.isArray(infoCita) && infoCita.length > 0) {
+        const citaInfo = infoCita[0] as any;
+        const nombrePaciente = `${citaInfo.paciente_nombres} ${citaInfo.paciente_apellidos}`;
+        const nombrePsicologo = `${citaInfo.psicologo_nombres} ${citaInfo.psicologo_apellidos}`;
+        
+        const emailEnviado = await enviarEmailConfirmacionCita(
+          citaInfo.paciente_email,
+          nombrePaciente,
+          nombrePsicologo,
+          fecha,
+          hora_inicio,
+          tipo_sesion,
+          modalidad,
+          citaId
+        );
+
+        if (emailEnviado) {
+          log.info(`Email de confirmación de cita enviado exitosamente a: ${citaInfo.paciente_email}`);
+        } else {
+          log.warn(`No se pudo enviar el email de confirmación de cita a: ${citaInfo.paciente_email}`);
+        }
+      }
+    } catch (emailError) {
+      log.error('Error al enviar email de confirmación de cita:', emailError);
+      // No fallar la creación de la cita si falla el email
+    }
 
     return ManejadorRespuestas.creado(
       res,
@@ -523,6 +595,8 @@ export const cancelarCita = async (req: Request, res: Response) => {
     const { id } = req.params;
     const userId = req.usuario?.id;
 
+    console.log('🔍 Cancelando cita con ID:', id, 'Usuario:', userId);
+
     if (!userId) {
       return ManejadorRespuestas.noAutorizado(
         res,
@@ -531,15 +605,35 @@ export const cancelarCita = async (req: Request, res: Response) => {
       );
     }
 
-    // Verificar que la cita existe y pertenece al usuario
-    const [cita] = await sequelize.query(
-      `SELECT id FROM citas WHERE id = :id AND (paciente_id = :userId OR psicologo_id = :userId)`,
+    // Obtener información completa de la cita antes de cancelarla
+    const [citaData] = await sequelize.query(
+      `SELECT 
+        c.id,
+        c.paciente_id,
+        c.psicologo_id,
+        c.fecha,
+        c.hora_inicio,
+        c.hora_fin,
+        c.tipo_sesion,
+        c.modalidad,
+        c.estado,
+        p.nombres as paciente_nombres,
+        p.apellidos as paciente_apellidos,
+        p.email as paciente_email,
+        u.nombres as psicologo_nombres,
+        u.apellidos as psicologo_apellidos,
+        u.email as psicologo_email
+       FROM citas c
+       INNER JOIN pacientes p ON c.paciente_id = p.id
+       INNER JOIN usuarios u ON c.psicologo_id = u.id
+       WHERE c.id = :id AND (p.usuario_id = :userId OR c.psicologo_id = :userId)`,
       {
         replacements: { id, userId }
       }
     ) as [any[], unknown];
 
-    if (!Array.isArray(cita) || cita.length === 0) {
+    if (!Array.isArray(citaData) || citaData.length === 0) {
+      console.log('❌ Cita no encontrada o no pertenece al usuario');
       return ManejadorRespuestas.noEncontrado(
         res,
         'Cita no encontrada',
@@ -547,12 +641,66 @@ export const cancelarCita = async (req: Request, res: Response) => {
       );
     }
 
+    const cita = citaData[0];
+    console.log('✅ Cita encontrada para cancelar:', cita);
+
+    // Actualizar estado de la cita a cancelada
     await sequelize.query(
       `UPDATE citas SET estado = 'cancelada', updated_at = NOW() WHERE id = :id`,
       {
         replacements: { id }
       }
     );
+
+    console.log('✅ Cita marcada como cancelada en la base de datos');
+
+    // Importar servicios necesarios
+    const { ChatAutomaticoService } = await import('../utilidades/chat-automatico.service');
+    const { enviarEmailCancelacionCitaPsicologo } = await import('../utilidades/email.service');
+
+    // Enviar mensaje automático al chat
+    try {
+      const mensajeEnviado = await ChatAutomaticoService.enviarMensajeCancelacionCita(
+        cita.id,
+        cita.paciente_id,
+        cita.psicologo_id,
+        cita.fecha,
+        cita.hora_inicio
+      );
+
+      if (mensajeEnviado) {
+        console.log('✅ Mensaje automático de cancelación enviado al chat');
+      } else {
+        console.log('⚠️ No se pudo enviar el mensaje automático al chat');
+      }
+    } catch (chatError) {
+      console.error('❌ Error al enviar mensaje automático al chat:', chatError);
+      // No fallar la cancelación si falla el chat
+    }
+
+    // Enviar email de notificación al psicólogo
+    try {
+      const emailEnviado = await enviarEmailCancelacionCitaPsicologo(
+        cita.psicologo_email,
+        `${cita.psicologo_nombres} ${cita.psicologo_apellidos}`,
+        `${cita.paciente_nombres} ${cita.paciente_apellidos}`,
+        cita.fecha,
+        cita.hora_inicio,
+        cita.tipo_sesion,
+        cita.modalidad
+      );
+
+      if (emailEnviado) {
+        console.log('✅ Email de notificación de cancelación enviado al psicólogo');
+      } else {
+        console.log('⚠️ No se pudo enviar el email de notificación al psicólogo');
+      }
+    } catch (emailError) {
+      console.error('❌ Error al enviar email de notificación:', emailError);
+      // No fallar la cancelación si falla el email
+    }
+
+    console.log('✅ Cita cancelada exitosamente con todas las notificaciones');
 
     return ManejadorRespuestas.exito(
       res,
@@ -657,6 +805,40 @@ export const obtenerEstadisticasCitas = async (req: Request, res: Response) => {
       res,
       'Error al obtener las estadísticas',
       'CITAS_035'
+    );
+  }
+};
+
+// Limpiar citas canceladas manualmente (solo admin)
+export const limpiarCitasCanceladas = async (req: Request, res: Response) => {
+  try {
+    const userId = req.usuario?.id;
+    const userRole = req.usuario?.rol_id;
+
+    if (!userId || userRole !== 1) { // Solo admin (rol_id = 1)
+      return ManejadorRespuestas.noAutorizado(
+        res,
+        'Solo los administradores pueden ejecutar esta acción',
+        'CITAS_036'
+      );
+    }
+
+    const { LimpiadorCitasService } = await import('../utilidades/limpiador-citas.service');
+    const citasEliminadas = await LimpiadorCitasService.limpiarManual();
+
+    return ManejadorRespuestas.exito(
+      res,
+      'Limpieza de citas canceladas completada',
+      { citasEliminadas },
+      'CITAS_037'
+    );
+
+  } catch (error) {
+    log.error('Error en limpiarCitasCanceladas:', error);
+    return ManejadorRespuestas.errorInterno(
+      res,
+      'Error al limpiar las citas canceladas',
+      'CITAS_038'
     );
   }
 }; 

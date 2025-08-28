@@ -22,6 +22,7 @@ interface CrearPsicologoData {
   especialidad?: string;
   descripcion?: string;
   avatar_url?: string;
+  codigo_sbs?: string;
 }
 
 // Interfaz para actualizar psicólogo
@@ -94,7 +95,7 @@ export const crearPsicologo = async (req: Request, res: Response) => {
   const transaction = await sequelize.transaction();
   
   try {
-    const { nombres, apellidos, email, password, telefono, fecha_nacimiento, genero, especialidad, descripcion, avatar_url }: CrearPsicologoData = req.body;
+    const { nombres, apellidos, email, password, telefono, fecha_nacimiento, genero, especialidad, descripcion, avatar_url, codigo_sbs }: CrearPsicologoData = req.body;
     
     // Usar el avatar_url del body si se proporciona, o usar uno aleatorio de robots
     const avataresRobots = [
@@ -121,6 +122,17 @@ export const crearPsicologo = async (req: Request, res: Response) => {
         'Nombres, apellidos, email y contraseña son requeridos',
         { camposRequeridos: ['nombres', 'apellidos', 'email', 'password'] },
         'ADMIN_003'
+      );
+    }
+
+    // Validar código SBS si se proporciona
+    if (codigo_sbs && (codigo_sbs.length < 6 || codigo_sbs.length > 8 || !/^\d+$/.test(codigo_sbs))) {
+      await transaction.rollback();
+      return ManejadorRespuestas.errorValidacion(
+        res,
+        'El código SBS debe tener entre 6 y 8 dígitos numéricos',
+        { codigo_sbs },
+        'ADMIN_009'
       );
     }
 
@@ -188,12 +200,12 @@ export const crearPsicologo = async (req: Request, res: Response) => {
     const [nuevoUsuario] = await sequelize.query(
       `INSERT INTO usuarios (
         id, nombres, apellidos, email, password_hash, telefono, 
-        fecha_nacimiento, genero, especialidad, descripcion, avatar_url, rol_id, activo, email_verificado,
+        fecha_nacimiento, genero, especialidad, descripcion, avatar_url, codigo_sbs, rol_id, activo, email_verificado,
         token_activacion, token_activacion_expira, configuracion,
         created_at, updated_at
       ) VALUES (
         :id, :nombres, :apellidos, :email, :password_hash, :telefono,
-        :fecha_nacimiento, :genero, :especialidad, :descripcion, :avatar_url, :rol_id, :activo, :email_verificado,
+        :fecha_nacimiento, :genero, :especialidad, :descripcion, :avatar_url, :codigo_sbs, :rol_id, :activo, :email_verificado,
         :token_activacion, :token_activacion_expira, :configuracion,
         :created_at, :updated_at
       ) RETURNING id, nombres, apellidos, email, created_at`,
@@ -210,6 +222,7 @@ export const crearPsicologo = async (req: Request, res: Response) => {
           especialidad: especialidad || null,
           descripcion: descripcion || null,
           avatar_url: avatarUrl,
+          codigo_sbs: codigo_sbs || null,
           rol_id: rolId,
           activo: true,
           email_verificado: false,

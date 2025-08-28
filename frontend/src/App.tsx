@@ -1,9 +1,11 @@
 import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import Login from './paginas/Login';
 import PanelAdmin from './paginas/PanelAdmin';
 import PanelPsicologo from './paginas/PanelPsicologo';
 import PanelPaciente from './paginas/PanelPaciente';
+import PerfilPaciente from './componentes/PerfilPaciente';
 import { authService } from './servicios/auth.service';
 
 function App() {
@@ -26,26 +28,42 @@ function App() {
     return <Login />;
   }
 
-  // Si está autenticado y es admin, mostrar panel de administrador
-  if (isAdmin) {
-    return <PanelAdmin />;
-  }
-
-  // Si está autenticado y es psicólogo, mostrar panel del psicólogo
-  if (isPsicologo) {
-    return <PanelPsicologo />;
-  }
-
-  // Si está autenticado y es paciente, mostrar panel del paciente
-  if (isPaciente) {
-    return <PanelPaciente />;
-  }
-
-  // Si está autenticado pero no tiene un rol válido, limpiar y mostrar login
-  console.log('⚠️ Usuario autenticado pero sin datos válidos. Limpiando...');
-  localStorage.clear();
-  window.location.reload();
-  return <Login />;
+  return (
+    <Router>
+      <Routes>
+        {/* Ruta para el perfil del paciente */}
+        <Route 
+          path="/perfil-paciente" 
+          element={
+            isPaciente ? <PerfilPaciente /> : <Navigate to="/" replace />
+          } 
+        />
+        
+        {/* Ruta principal */}
+        <Route 
+          path="/" 
+          element={
+            isAdmin ? <PanelAdmin /> :
+            isPsicologo ? <PanelPsicologo /> :
+            isPaciente ? <PanelPaciente /> :
+            <Navigate to="/login" replace />
+          } 
+        />
+        
+        {/* Ruta de login */}
+        <Route 
+          path="/login" 
+          element={<Login />} 
+        />
+        
+        {/* Ruta por defecto */}
+        <Route 
+          path="*" 
+          element={<Navigate to="/" replace />} 
+        />
+      </Routes>
+    </Router>
+  );
 }
 
 export default App;

@@ -182,3 +182,215 @@ export const enviarEmailBienvenidaPsicologo = async (
     html
   });
 };
+
+export const enviarEmailConfirmacionCita = async (
+  emailPaciente: string,
+  nombrePaciente: string,
+  nombrePsicologo: string,
+  fecha: string,
+  hora: string,
+  tipoSesion: string,
+  modalidad: string,
+  citaId: string
+): Promise<boolean> => {
+  const subject = '✅ Cita Confirmada - Centro Terapéutico Psyche';
+  
+  // Formatear fecha y hora
+  const fechaFormateada = new Date(fecha).toLocaleDateString('es-CL', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: visible; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+      <!-- Header con gradiente -->
+      <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; text-align: center;">
+        <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">🧠 Centro Terapéutico Psyche</h1>
+        <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Tu cita ha sido confirmada exitosamente</p>
+      </div>
+      
+      <!-- Contenido principal -->
+      <div style="padding: 40px 30px;">
+        <div style="text-align: center; margin-bottom: 30px; padding: 20px; background-color: #d1fae5; border-radius: 15px; border: 3px solid #10b981;">
+          <div style="width: 80px; height: 80px; border-radius: 50%; background-color: #10b981; display: flex; align-items: center; justify-content: center; margin: 0 auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);">
+            <span style="font-size: 40px; color: #ffffff;">✅</span>
+          </div>
+          <p style="margin-top: 15px; color: #065f46; font-weight: bold; font-size: 18px;">Cita Confirmada</p>
+        </div>
+        
+        <h2 style="color: #1f2937; margin-top: 0; font-size: 24px;">¡Hola ${nombrePaciente}!</h2>
+        
+        <p style="color: #374151; font-size: 16px; line-height: 1.6;">
+          Tu cita de terapia ha sido <strong>confirmada exitosamente</strong> en el Centro Terapéutico Psyche.
+        </p>
+        
+        <div style="background-color: #f3f4f6; padding: 25px; border-radius: 12px; margin: 25px 0; border: 2px solid #e5e7eb;">
+          <h3 style="color: #1f2937; margin-top: 0; font-size: 18px;">📅 Detalles de tu Cita</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+            <div>
+              <p style="color: #374151; margin: 5px 0; font-weight: 500;"><strong>👨‍⚕️ Psicólogo:</strong></p>
+              <p style="color: #6b7280; margin: 5px 0;">${nombrePsicologo}</p>
+            </div>
+            <div>
+              <p style="color: #374151; margin: 5px 0; font-weight: 500;"><strong>📅 Fecha:</strong></p>
+              <p style="color: #6b7280; margin: 5px 0;">${fechaFormateada}</p>
+            </div>
+            <div>
+              <p style="color: #374151; margin: 5px 0; font-weight: 500;"><strong>🕐 Hora:</strong></p>
+              <p style="color: #6b7280; margin: 5px 0;">${hora}</p>
+            </div>
+            <div>
+              <p style="color: #374151; margin: 5px 0; font-weight: 500;"><strong>🎯 Tipo:</strong></p>
+              <p style="color: #6b7280; margin: 5px 0;">${tipoSesion}</p>
+            </div>
+            <div>
+              <p style="color: #374151; margin: 5px 0; font-weight: 500;"><strong>💻 Modalidad:</strong></p>
+              <p style="color: #6b7280; margin: 5px 0;">${modalidad}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div style="background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); padding: 25px; border-radius: 12px; margin: 25px 0;">
+          <h3 style="color: #065f46; margin-top: 0; font-size: 18px;">🚀 Próximos Pasos</h3>
+          <ol style="color: #065f46; line-height: 1.8;">
+            <li><strong>Prepara tu sesión:</strong> Ten listos los temas que quieres tratar</li>
+            <li><strong>Llega 10 minutos antes:</strong> Para completar cualquier documentación</li>
+            <li><strong>Trae tu identificación:</strong> Para verificar tu identidad</li>
+            ${modalidad === 'virtual' ? '<li><strong>Prueba tu conexión:</strong> Verifica que tu cámara y micrófono funcionen</li>' : ''}
+          </ol>
+        </div>
+        
+        <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+          <h3 style="color: #92400e; margin-top: 0; font-size: 18px;">⚠️ ¿No solicitaste esta cita?</h3>
+          <p style="color: #92400e; margin: 10px 0; line-height: 1.6;">
+            Si no solicitaste esta cita o necesitas cancelarla, puedes hacerlo desde tu perfil en el sistema.
+          </p>
+          <div style="margin-top: 15px;">
+            <a href="${process.env.FRONTEND_URL}/perfil-paciente" style="display: inline-block; background-color: #f59e0b; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 500; transition: background-color 0.3s;">
+              🚫 Cancelar Cita
+            </a>
+          </div>
+        </div>
+        
+        <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+          <h3 style="color: #1e40af; margin-top: 0; font-size: 18px;">📱 Acceso desde tu Dispositivo</h3>
+          <p style="color: #1e40af; margin: 10px 0; line-height: 1.6;">
+            Puedes acceder a tu perfil y gestionar tus citas desde cualquier dispositivo ingresando a:
+          </p>
+          <div style="margin-top: 15px;">
+            <a href="${process.env.FRONTEND_URL}/login" style="display: inline-block; background-color: #3b82f6; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 500; transition: background-color 0.3s;">
+              🔐 Acceder al Sistema
+            </a>
+          </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px; padding: 20px; background-color: #f9fafb; border-radius: 12px;">
+          <p style="color: #6b7280; font-size: 14px; margin: 0;">
+            <strong>ID de Cita:</strong> ${citaId}<br>
+            <strong>Centro Terapéutico Psyche</strong><br>
+            📧 info@psyche.cl | 📱 +56 9 1234 5678
+          </p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  return await enviarEmail({
+    to: emailPaciente,
+    subject,
+    html
+  });
+};
+
+// Enviar email de notificación de cancelación de cita al psicólogo
+export const enviarEmailCancelacionCitaPsicologo = async (
+  emailPsicologo: string,
+  nombrePsicologo: string,
+  nombrePaciente: string,
+  fecha: string,
+  hora: string,
+  tipoSesion: string,
+  modalidad: string
+): Promise<boolean> => {
+  try {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD
+      }
+    });
+
+    const mailOptions = {
+      from: `"${process.env.EMAIL_APP_NAME || 'Dentro de Psyché'}" <${process.env.EMAIL_USER}>`,
+      to: emailPsicologo,
+      subject: '🚫 Cita Cancelada - Notificación Importante',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
+          <div style="background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <h1 style="color: #e74c3c; margin: 0; font-size: 28px;">🚫 Cita Cancelada</h1>
+              <p style="color: #7f8c8d; margin: 10px 0 0 0; font-size: 16px;">Notificación Importante</p>
+            </div>
+            
+            <div style="background-color: #fff5f5; border-left: 4px solid #e74c3c; padding: 20px; margin-bottom: 25px;">
+              <h2 style="color: #c0392b; margin: 0 0 15px 0; font-size: 20px;">Hola ${nombrePsicologo},</h2>
+              <p style="color: #2c3e50; margin: 0; line-height: 1.6; font-size: 16px;">
+                Te informamos que una cita ha sido cancelada por el paciente.
+              </p>
+            </div>
+            
+            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+              <h3 style="color: #34495e; margin: 0 0 15px 0; font-size: 18px;">📅 Detalles de la Cita Cancelada:</h3>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div>
+                  <p style="margin: 8px 0; color: #2c3e50;"><strong>👤 Paciente:</strong> ${nombrePaciente}</p>
+                  <p style="margin: 8px 0; color: #2c3e50;"><strong>📅 Fecha:</strong> ${fecha}</p>
+                </div>
+                <div>
+                  <p style="margin: 8px 0; color: #2c3e50;"><strong>🕐 Hora:</strong> ${hora}</p>
+                  <p style="margin: 8px 0; color: #2c3e50;"><strong>🏥 Tipo:</strong> ${tipoSesion}</p>
+                </div>
+              </div>
+              <p style="margin: 8px 0; color: #2c3e50;"><strong>📍 Modalidad:</strong> ${modalidad}</p>
+            </div>
+            
+            <div style="background-color: #e8f5e8; border-left: 4px solid #27ae60; padding: 20px; margin-bottom: 25px;">
+              <h3 style="color: #27ae60; margin: 0 0 15px 0; font-size: 18px;">💡 Acciones Recomendadas:</h3>
+              <ul style="color: #2c3e50; line-height: 1.6; margin: 0; padding-left: 20px;">
+                <li>Actualiza tu agenda para liberar ese horario</li>
+                <li>Considera ofrecer el horario a otros pacientes en lista de espera</li>
+                <li>Revisa si hay pacientes que necesiten reprogramación</li>
+                <li>Contacta al paciente si necesitas más información sobre la cancelación</li>
+              </ul>
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px;">
+              <p style="color: #7f8c8d; margin: 0; font-size: 14px;">
+                Este es un mensaje automático del sistema de gestión de citas.
+              </p>
+              <p style="color: #7f8c8d; margin: 5px 0 0 0; font-size: 14px;">
+                Si tienes alguna pregunta, contacta al administrador del sistema.
+              </p>
+            </div>
+          </div>
+          
+          <div style="text-align: center; margin-top: 20px;">
+            <p style="color: #95a5a6; margin: 0; font-size: 12px;">
+              © ${new Date().getFullYear()} ${process.env.EMAIL_APP_NAME || 'Dentro de Psyché'}. Todos los derechos reservados.
+            </p>
+          </div>
+        </div>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    logger.info(`✅ Email de cancelación enviado exitosamente a: ${emailPsicologo}`, { messageId: info.messageId });
+    return true;
+  } catch (error) {
+    logger.error('❌ Error al enviar email de cancelación:', error);
+    return false;
+  }
+};
