@@ -101,6 +101,7 @@ El equipo comparte la misma configuración:
 
 ### 🛠️ Scripts Útiles
 - `node scripts/setup-rapido.js` - **CONFIGURACIÓN RÁPIDA** (solo PostgreSQL)
+- `node scripts/setup-roman.js` - **CONFIGURACIÓN AUTOMÁTICA PARA ROMÁN** (detecta OS)
 - `node scripts/setup-env.js` - Configuración completa personalizada
 - `node scripts/crear-admin.js` - Crear usuario administrador
 - `node scripts/verificar-usuarios-admin.js` - Diagnosticar problemas de admin
