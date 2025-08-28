@@ -54,7 +54,7 @@ async function verificarUsuariosAdmin() {
     // 4. Sugerencias de solución
     console.log('\n💡 SUGERENCIAS DE SOLUCIÓN:');
     console.log('=============================');
-    console.log('1. Si no hay admins: Crear uno nuevo con el script crear-admin.js');
+    console.log('1. Si no hay admins: Crear uno nuevo con el script crear-admin');
     console.log('2. Si hay admins pero no entran:');
     console.log('   - Verificar que la contraseña esté correctamente hasheada');
     console.log('   - Probar resetear la contraseña');
@@ -63,7 +63,7 @@ async function verificarUsuariosAdmin() {
 
     // 5. Opción para crear admin
     console.log('\n🚀 ¿Quieres crear un nuevo usuario administrador?');
-    console.log('   Ejecuta: node scripts/crear-admin.js');
+    console.log('   Ejecuta: npm run crear-admin');
 
   } catch (error) {
     console.error('❌ Error durante la verificación:', error);

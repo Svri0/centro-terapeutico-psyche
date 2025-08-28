@@ -81,7 +81,7 @@ Sistema completo de gestión para centro terapéutico con funcionalidades para p
 
 5. **Crear usuario administrador**
    ```bash
-   node scripts/crear-admin.js
+   npm run crear-admin
    ```
 
 6. **Ejecutar el servidor**
@@ -103,7 +103,7 @@ El equipo comparte la misma configuración:
 - `node scripts/setup-rapido.js` - **CONFIGURACIÓN RÁPIDA** (solo PostgreSQL)
 - `node scripts/setup-roman.js` - **CONFIGURACIÓN AUTOMÁTICA PARA ROMÁN** (detecta OS)
 - `node scripts/setup-env.js` - Configuración completa personalizada
-- `node scripts/crear-admin.js` - Crear usuario administrador (admin@admin.cl / admin123)
+- `npm run crear-admin` - Crear usuario administrador (admin@admin.cl / admin123)
 - `node scripts/verificar-usuarios-admin.js` - Diagnosticar problemas de admin
 - `node scripts/verificar-admin-rapido.js` - Verificar admin estándar
 - `node scripts/test-email-real.js` - Probar envío de emails

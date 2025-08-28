@@ -142,7 +142,7 @@ NODE_ENV=${configuracion.nodeEnv}
     console.log('1. ✅ .env configurado automáticamente');
     console.log('2. 🔄 Ejecutar: npm run db:migrate');
     console.log('3. 🌱 Ejecutar: npm run db:seed');
-    console.log('4. 👑 Ejecutar: node scripts/crear-admin.js');
+    console.log('4. 👑 Ejecutar: npm run crear-admin');
     console.log('5. 🚀 Ejecutar: npm run dev');
 
     // Mostrar información específica del sistema

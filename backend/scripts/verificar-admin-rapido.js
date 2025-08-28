@@ -43,7 +43,7 @@ async function verificarAdminRapido() {
       console.log('\n❌ ADMIN NO ENCONTRADO');
       console.log('------------------------');
       console.log('💡 Para crear el admin estándar, ejecuta:');
-      console.log('   node scripts/crear-admin.js');
+      console.log('   npm run crear-admin');
       console.log('\n🎯 Este script creará automáticamente:');
       console.log(`   📧 Email: ${email}`);
       console.log(`   🔐 Contraseña: ${password}`);

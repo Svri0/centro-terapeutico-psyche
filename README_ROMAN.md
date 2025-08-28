@@ -38,7 +38,7 @@ npm run db:seed
 
 ### **Paso 4: Crear Admin**
 ```bash
-node scripts/crear-admin.js
+npm run crear-admin
 ```
 *Crea automáticamente un admin con:*
 *- Email: admin@admin.cl*
@@ -53,7 +53,7 @@ npm run dev
 
 - `node scripts/setup-roman.js` - **CONFIGURACIÓN AUTOMÁTICA** (detecta OS)
 - `node scripts/setup-rapido.js` - Configuración rápida estándar
-- `node scripts/crear-admin.js` - Crear usuario administrador
+- `npm run crear-admin` - Crear usuario administrador
 - `node scripts/verificar-usuarios-admin.js` - Diagnosticar problemas
 - `node scripts/verificar-admin-rapido.js` - Verificar admin estándar
 
@@ -108,7 +108,7 @@ node scripts/setup-rapido.js
 node scripts/verificar-usuarios-admin.js
 
 # Crear admin
-node scripts/crear-admin.js
+npm run crear-admin
 ```
 
 ## 🎯 **Ventajas de tu Configuración**

@@ -31,14 +31,14 @@ module.exports = {
     }
 
     // Crear hash de la contraseña
-    const passwordHash = await bcrypt.hash('Admin123!', 12);
+    const passwordHash = await bcrypt.hash('admin123', 12);
 
     // Crear usuario administrador inicial
     const adminUser = {
       id: uuidv4(),
       nombres: 'Administrador',
       apellidos: 'Sistema',
-      email: 'admin@terapia.cl',
+      email: 'admin@admin.cl',
       password_hash: passwordHash,
       telefono: '+56912345678',
       rol_id: adminRole[0].id,
@@ -52,15 +52,15 @@ module.exports = {
     await queryInterface.bulkInsert('usuarios', [adminUser], {});
     
     console.log('✅ Usuario administrador creado exitosamente');
-    console.log('📧 Email: admin@terapia.cl');
-    console.log('🔑 Contraseña: Admin123!');
+    console.log('📧 Email: admin@admin.cl');
+    console.log('🔑 Contraseña: admin123');
     console.log('⚠️  IMPORTANTE: Cambia la contraseña después del primer inicio de sesión');
   },
 
   async down(queryInterface, Sequelize) {
     // Eliminar usuario administrador inicial
     await queryInterface.sequelize.query(
-      "DELETE FROM usuarios WHERE email = 'admin@terapia.cl'"
+      "DELETE FROM usuarios WHERE email = 'admin@admin.cl'"
     );
   }
 }; 
