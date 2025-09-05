@@ -1,27 +1,29 @@
-import { Router } from 'express';
-import { 
-  obtenerTodosUsuarios, 
-  obtenerUsuarioPorId, 
-  crearUsuario, 
-  actualizarUsuario, 
-  eliminarUsuario 
-} from '../controladores';
+import express, { Router } from 'express';
+import { obtenerTodos, obtenerPorId, crear, actualizar, eliminar, actualizarPerfilPsicologo, actualizarPerfilPaciente, subirImagenReal, testConnection } from '../controladores/usuarios.controlador';
+import { verificarToken, verificarRol } from '../middleware/auth.middleware';
+import upload from '../middleware/upload.middleware';
 
-const router = Router();
+const router: Router = express.Router();
 
-// GET /usuarios
-router.get('/', obtenerTodosUsuarios);
+// Endpoint de prueba
+router.get('/test', testConnection);
 
-// GET /usuarios/:id
-router.get('/:id', obtenerUsuarioPorId);
+// Rutas públicas
+router.get('/', obtenerTodos);
+router.get('/:id', obtenerPorId);
 
-// POST /usuarios
-router.post('/', crearUsuario);
+// Rutas protegidas
+router.use(verificarToken);
 
-// PUT /usuarios/:id
-router.put('/:id', actualizarUsuario);
+router.post('/', verificarRol(['admin']), crear);
+router.put('/:id', verificarRol(['admin']), actualizar);
+router.delete('/:id', verificarRol(['admin']), eliminar);
 
-// DELETE /usuarios/:id
-router.delete('/:id', eliminarUsuario);
+// Rutas de perfil
+router.put('/perfil/:id', verificarToken, actualizarPerfilPsicologo);
+router.put('/perfil-paciente/:id', verificarToken, actualizarPerfilPaciente);
+
+// Ruta para subir imagen
+router.post('/subir-imagen', verificarToken, upload.single('avatar'), subirImagenReal);
 
 export default router; 

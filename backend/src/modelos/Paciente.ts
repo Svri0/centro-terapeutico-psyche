@@ -1,6 +1,5 @@
 import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../configuracion/database';
-import Usuario from './Usuario';
 
 // Interfaz para las propiedades requeridas
 export interface PacienteAttributes {
@@ -27,6 +26,12 @@ export interface PacienteAttributes {
   fecha_ingreso: Date;
   fecha_alta?: Date;
   observaciones?: string;
+  antecedentes_medicos: any[];
+  medicacion_actual: any[];
+  alergias: any[];
+  condiciones_cronicas: any[];
+  historial_psiquiatrico: any[];
+  observaciones_medicas?: string;
   created_at: Date;
   updated_at: Date;
   deleted_at?: Date;
@@ -59,6 +64,12 @@ class Paciente extends Model<PacienteAttributes, PacienteCreationAttributes> imp
   public fecha_ingreso!: Date;
   public fecha_alta?: Date;
   public observaciones?: string;
+  public antecedentes_medicos!: any[];
+  public medicacion_actual!: any[];
+  public alergias!: any[];
+  public condiciones_cronicas!: any[];
+  public historial_psiquiatrico!: any[];
+  public observaciones_medicas?: string;
   public created_at!: Date;
   public updated_at!: Date;
   public deleted_at?: Date;
@@ -67,10 +78,6 @@ class Paciente extends Model<PacienteAttributes, PacienteCreationAttributes> imp
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
   public readonly deletedAt?: Date;
-
-  // Asociaciones
-  public readonly usuario?: Usuario;
-  public readonly psicologo?: Usuario;
 }
 
 Paciente.init(
@@ -181,6 +188,35 @@ Paciente.init(
       allowNull: true,
     },
     observaciones: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    antecedentes_medicos: {
+      type: DataTypes.JSONB,
+      allowNull: false,
+      defaultValue: [],
+    },
+    medicacion_actual: {
+      type: DataTypes.JSONB,
+      allowNull: false,
+      defaultValue: [],
+    },
+    alergias: {
+      type: DataTypes.JSONB,
+      allowNull: false,
+      defaultValue: [],
+    },
+    condiciones_cronicas: {
+      type: DataTypes.JSONB,
+      allowNull: false,
+      defaultValue: [],
+    },
+    historial_psiquiatrico: {
+      type: DataTypes.JSONB,
+      allowNull: false,
+      defaultValue: [],
+    },
+    observaciones_medicas: {
       type: DataTypes.TEXT,
       allowNull: true,
     },

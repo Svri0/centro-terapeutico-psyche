@@ -8,7 +8,7 @@ services:
     environment:
       POSTGRES_DB: psyche_db
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: psyche_password
+      POSTGRES_PASSWORD: VMlover01!
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
     ports:
       - "5432:5432"
@@ -54,7 +54,7 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: postgres
-      DB_PASSWORD: psyche_password
+      DB_PASSWORD: VMlover01!
       DB_NAME: psyche_db
       JWT_SECRET: psyche_jwt_secret_dev_super_seguro_para_desarrollo
       JWT_EXPIRES_IN: 24h
@@ -110,7 +110,7 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: postgres
-      DB_PASSWORD: psyche_password
+      DB_PASSWORD: VMlover01!
       DB_NAME: psyche_db
     ports:
       - "3003:3003"

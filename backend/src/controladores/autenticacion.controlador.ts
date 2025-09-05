@@ -28,7 +28,7 @@ export const iniciarSesion = async (req: Request, res: Response) => {
 
     // Buscar usuario en la base de datos usando parámetros preparados
     const usuarios = await sequelize.query(
-      `SELECT u.id, u.nombres, u.apellidos, u.email, u.password_hash, u.activo, u.rol_id, r.nombre as rol_nombre
+      `SELECT u.id, u.nombres, u.apellidos, u.email, u.telefono, u.especialidad, u.descripcion, u.avatar_url, u.password_hash, u.activo, u.rol_id, r.nombre as rol_nombre
        FROM usuarios u
        INNER JOIN roles r ON u.rol_id = r.id
        WHERE u.email = :email AND u.deleted_at IS NULL`,
@@ -112,6 +112,10 @@ export const iniciarSesion = async (req: Request, res: Response) => {
         nombres: usuario.nombres,
         apellidos: usuario.apellidos,
         email: usuario.email,
+        telefono: usuario.telefono,
+        especialidad: usuario.especialidad,
+        descripcion: usuario.descripcion,
+        avatar_url: usuario.avatar_url,
         rol: usuario.rol_nombre,
         rol_id: usuario.rol_id
       },
@@ -213,9 +217,9 @@ export const cerrarSesion = async (_req: Request, res: Response) => {
 export const obtenerPerfil = async (req: Request, res: Response) => {
   try {
     // El usuario ya está autenticado por el middleware de auth
-    const usuario = (req as any).usuario;
+    const usuarioAutenticado = (req as any).usuario;
 
-    if (!usuario) {
+    if (!usuarioAutenticado) {
       return ManejadorRespuestas.noAutorizado(
         res,
         'Usuario no autenticado',
@@ -223,11 +227,33 @@ export const obtenerPerfil = async (req: Request, res: Response) => {
       );
     }
 
+    // Obtener usuario completo de la base de datos
+    const usuarios = await sequelize.query(
+      `SELECT u.id, u.nombres, u.apellidos, u.email, u.telefono, u.especialidad, u.descripcion, u.avatar_url, u.rol_id, r.nombre as rol
+       FROM usuarios u
+       INNER JOIN roles r ON u.rol_id = r.id
+       WHERE u.id = :id AND u.deleted_at IS NULL`,
+      {
+        replacements: { id: usuarioAutenticado.id },
+        type: QueryTypes.SELECT
+      }
+    ) as any[];
+
+    if (!Array.isArray(usuarios) || usuarios.length === 0) {
+      return ManejadorRespuestas.noEncontrado(
+        res,
+        'Usuario no encontrado',
+        'AUTH_013'
+      );
+    }
+
+    const usuario = usuarios[0];
+
     return ManejadorRespuestas.exito(
       res,
       'Perfil obtenido exitosamente',
       { usuario },
-      'AUTH_013'
+      'AUTH_014'
     );
 
   } catch (error) {
@@ -235,7 +261,7 @@ export const obtenerPerfil = async (req: Request, res: Response) => {
     return ManejadorRespuestas.errorInterno(
       res,
       'Error interno del servidor',
-      'AUTH_014'
+      'AUTH_015'
     );
   }
 };

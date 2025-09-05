@@ -1,27 +1,45 @@
 import { Router } from 'express';
+import autenticacionRoutes from './autenticacion.routes';
+import usuariosRoutes from './usuarios.routes';
+import pacientesRoutes from './pacientes.routes';
+import tareasRoutes from './tareas.routes';
+import citasRoutes from './citas.routes';
+import disponibilidadRoutes from './disponibilidad.routes';
+import disponibilidadMensualRoutes from './disponibilidadMensual.routes';
+import serviciosRoutes from './servicios.routes';
+import adminRoutes from './admin.routes';
+import chatRoutes from './chat.routes';
 
 const router = Router();
 
-// Importar rutas
-import autenticacionRoutes from './autenticacion.routes';
-import usuariosRoutes from './usuarios.routes';
-import sesionesRoutes from './sesiones.routes';
-import tareasRoutes from './tareas.routes';
-import pacientesRoutes from './pacientes.routes';
-import reportesRoutes from './reportes.routes';
-import adminRoutes from './admin.routes';
-import citasRoutes from './citas.routes';
-import disponibilidadRoutes from './disponibilidad.routes';
-
-// Configurar rutas
+// Rutas de autenticación
 router.use('/autenticacion', autenticacionRoutes);
+
+// Rutas de usuarios
 router.use('/usuarios', usuariosRoutes);
-router.use('/sesiones', sesionesRoutes);
-router.use('/tareas', tareasRoutes);
+
+// Rutas de pacientes
 router.use('/pacientes', pacientesRoutes);
-router.use('/reportes', reportesRoutes);
-router.use('/admin', adminRoutes);
+
+// Rutas de tareas
+router.use('/tareas', tareasRoutes);
+
+// Rutas de citas
 router.use('/citas', citasRoutes);
+
+// Rutas de disponibilidad (semanal - legacy)
 router.use('/disponibilidad', disponibilidadRoutes);
+
+// Rutas de disponibilidad mensual
+router.use('/disponibilidad-mensual', disponibilidadMensualRoutes);
+
+// Rutas de servicios
+router.use('/servicios', serviciosRoutes);
+
+// Rutas de administración
+router.use('/admin', adminRoutes);
+
+// Rutas de chat
+router.use('/chat', chatRoutes);
 
 export default router; 

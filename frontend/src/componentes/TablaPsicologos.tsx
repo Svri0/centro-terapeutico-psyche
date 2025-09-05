@@ -43,6 +43,12 @@ const TablaPsicologos: React.FC<TablaPsicologosProps> = ({
     return `${dia}-${mes}-${año} ${hora12}:${minuto} ${ampm}`;
   };
 
+  const truncarEspecialidad = (especialidad: string, maxLength: number = 40) => {
+    if (!especialidad) return 'Sin especialidad';
+    if (especialidad.length <= maxLength) return especialidad;
+    return especialidad.substring(0, maxLength) + '...';
+  };
+
   if (!psicologos || psicologos.length === 0) {
     return (
       <div className="text-center py-12">
@@ -64,12 +70,18 @@ const TablaPsicologos: React.FC<TablaPsicologosProps> = ({
           <table className="w-full divide-y divide-gray-100">
             <thead className="bg-gray-25">
               <tr>
-                <th className="px-3 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-widest w-1/4">
-                  Psicólogo
-                </th>
-                <th className="px-3 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-widest w-1/3">
-                  Contacto
-                </th>
+                                 <th className="px-3 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-widest w-1/6">
+                   Psicólogo
+                 </th>
+                 <th className="px-3 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-widest w-1/6">
+                   Contacto
+                 </th>
+                                 <th className="px-3 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-widest w-1/5">
+                   Especialidad
+                 </th>
+                 <th className="px-3 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-widest w-1/8">
+                   Código SBS
+                 </th>
                 <th className="px-3 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-widest w-1/8">
                   Estado
                 </th>
@@ -79,9 +91,9 @@ const TablaPsicologos: React.FC<TablaPsicologosProps> = ({
                 <th className="px-3 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-widest w-1/8">
                   Fecha Creación
                 </th>
-                <th className="px-3 py-3 text-center text-xs font-bold text-gray-600 uppercase tracking-widest w-1/8">
-                  Acciones
-                </th>
+                                 <th className="px-3 py-3 text-center text-xs font-bold text-gray-600 uppercase tracking-widest w-1/6">
+                   Acciones
+                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
@@ -90,11 +102,19 @@ const TablaPsicologos: React.FC<TablaPsicologosProps> = ({
                   <td className="px-3 py-3">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-8 w-8">
-                        <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center">
-                          <span className="text-xs font-light text-amber-600">
-                            {psicologo.nombres.charAt(0)}{psicologo.apellidos.charAt(0)}
-                          </span>
-                        </div>
+                        {psicologo.avatar_url ? (
+                          <img
+                            src={psicologo.avatar_url}
+                            alt={`${psicologo.nombres} ${psicologo.apellidos}`}
+                            className="h-8 w-8 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center">
+                            <span className="text-xs font-light text-amber-600">
+                              {psicologo.nombres.charAt(0)}{psicologo.apellidos.charAt(0)}
+                            </span>
+                          </div>
+                        )}
                       </div>
                       <div className="ml-3">
                         <div className="text-sm font-semibold text-gray-900 truncate">
@@ -110,6 +130,24 @@ const TablaPsicologos: React.FC<TablaPsicologosProps> = ({
                     <div className="text-sm font-semibold text-gray-900 truncate">{psicologo.email}</div>
                     <div className="text-xs font-medium text-gray-600 truncate">{psicologo.telefono || 'Sin teléfono'}</div>
                   </td>
+                                     <td className="px-3 py-3">
+                     <div className="text-sm font-medium text-gray-900" title={psicologo.especialidad || 'Sin especialidad'}>
+                       {truncarEspecialidad(psicologo.especialidad || '')}
+                     </div>
+                   </td>
+                   <td className="px-3 py-3">
+                     <div className="text-sm font-medium text-gray-900">
+                       {psicologo.codigo_sbs ? (
+                         <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-50 text-blue-700">
+                           {psicologo.codigo_sbs}
+                         </span>
+                       ) : (
+                         <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-50 text-gray-600">
+                           Sin SBS
+                         </span>
+                       )}
+                     </div>
+                   </td>
                   <td className="px-3 py-3">
                     <div className="space-y-1">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -133,7 +171,7 @@ const TablaPsicologos: React.FC<TablaPsicologosProps> = ({
                     {formatearFecha(psicologo.created_at)}
                   </td>
                   <td className="px-3 py-3 text-center text-sm font-medium">
-                    <div className="flex justify-center space-x-2">
+                    <div className="flex justify-center space-x-1">
                       <button
                         onClick={() => {
                           setSelectedPsicologo(psicologo);
@@ -141,34 +179,34 @@ const TablaPsicologos: React.FC<TablaPsicologosProps> = ({
                         }}
                         className="px-2 py-1 text-xs font-semibold bg-gradient-to-r from-purple-100 to-purple-200 hover:from-purple-200 hover:to-purple-300 text-purple-700 rounded-md transition-all duration-200 hover-bounce shadow-sm hover:shadow-md animate-bounce-in"
                       >
-                        Detalles
+                                                 Detalles
                       </button>
                       <button
                         onClick={() => onEditar(psicologo)}
                         className="px-2 py-1 text-xs font-semibold bg-gradient-to-r from-blue-100 to-blue-200 hover:from-blue-200 hover:to-blue-300 text-blue-700 rounded-md transition-all duration-200 hover-bounce shadow-sm hover:shadow-md animate-bounce-in"
                       >
-                        Editar
+                                                 Editar
                       </button>
                       {psicologo.activo ? (
                         <button
                           onClick={() => onDesactivar(psicologo.id)}
                           className="px-2 py-1 text-xs font-semibold bg-gradient-to-r from-red-100 to-red-200 hover:from-red-200 hover:to-red-300 text-red-700 rounded-md transition-all duration-200 hover-bounce shadow-sm hover:shadow-md animate-bounce-in"
                         >
-                          Desactivar
+                                                     Desactivar
                         </button>
                       ) : (
                         <button
                           onClick={() => onReactivar(psicologo.id)}
                           className="px-2 py-1 text-xs font-semibold bg-gradient-to-r from-green-200 to-green-300 hover:from-green-300 hover:to-green-400 text-green-800 rounded-md transition-all duration-200 hover-bounce shadow-sm hover:shadow-md animate-bounce-in"
                         >
-                          Reactivar
+                                                     Reactivar
                         </button>
                       )}
                       <button
                         onClick={() => onEliminar(psicologo.id)}
                         className="px-2 py-1 text-xs font-semibold bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-700 rounded-md transition-all duration-200 hover-bounce shadow-sm hover:shadow-md animate-bounce-in"
                       >
-                        Eliminar
+                                                 Eliminar
                       </button>
                     </div>
                   </td>

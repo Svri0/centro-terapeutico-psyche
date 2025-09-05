@@ -1,27 +1,39 @@
 import { Router } from 'express';
 import { 
-  obtenerTodasTareas, 
-  obtenerTareaPorId, 
-  crearTarea, 
-  actualizarTarea, 
-  eliminarTarea 
-} from '../controladores';
+  obtenerTodas, 
+  obtenerPorId, 
+  crear, 
+  actualizar, 
+  eliminar,
+  obtenerTareasPaciente,
+  actualizarTareaPaciente,
+  crearTareaAvanzada,
+  guardarRespuesta,
+  obtenerRespuestas,
+  evaluarRespuesta
+} from '../controladores/tareas.controlador';
+import { verificarToken, verificarRol } from '../middleware/auth.middleware';
 
 const router = Router();
 
-// GET /tareas
-router.get('/', obtenerTodasTareas);
+// Middleware de autenticación para todas las rutas
+router.use(verificarToken);
 
-// GET /tareas/:id
-router.get('/:id', obtenerTareaPorId);
+// Rutas para pacientes (deben ir antes de las rutas con parámetros)
+router.get('/paciente/mis-tareas', verificarRol(['paciente']), obtenerTareasPaciente);
+router.put('/paciente/mis-tareas/:id', verificarRol(['paciente']), actualizarTareaPaciente);
 
-// POST /tareas
-router.post('/', crearTarea);
+// Rutas para psicólogos
+router.get('/', verificarRol(['psicologo', 'admin']), obtenerTodas);
+router.get('/:id', verificarRol(['psicologo', 'admin']), obtenerPorId);
+router.post('/', verificarRol(['psicologo', 'admin']), crear);
+router.post('/avanzada', verificarRol(['psicologo', 'admin']), crearTareaAvanzada);
+router.put('/:id', verificarRol(['psicologo', 'admin']), actualizar);
+router.delete('/:id', verificarRol(['psicologo', 'admin']), eliminar);
 
-// PUT /tareas/:id
-router.put('/:id', actualizarTarea);
-
-// DELETE /tareas/:id
-router.delete('/:id', eliminarTarea);
+// Rutas para respuestas
+router.get('/:tarea_id/respuestas', verificarRol(['psicologo', 'admin']), obtenerRespuestas);
+router.post('/:tarea_id/respuestas', verificarRol(['paciente']), guardarRespuesta);
+router.put('/respuestas/:respuesta_id/evaluar', verificarRol(['psicologo', 'admin']), evaluarRespuesta);
 
 export default router; 

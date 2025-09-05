@@ -1,129 +1,124 @@
 const axios = require('axios');
 
-const API_BASE_URL = 'http://localhost:3001/api';
-
-// Función para obtener el token de administrador
-async function obtenerTokenAdmin() {
-  try {
-    const response = await axios.post(`${API_BASE_URL}/auth/login`, {
-      email: 'admin@psyche.cl',
-      password: 'admin123'
-    });
-    return response.data.data.token;
-  } catch (error) {
-    console.error('Error al obtener token de admin:', error.response?.data || error.message);
-    throw error;
-  }
-}
-
-// Función para obtener todos los psicólogos
-async function obtenerPsicologos(token) {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/admin/psicologos`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    return response.data.data;
-  } catch (error) {
-    console.error('Error al obtener psicólogos:', error.response?.data || error.message);
-    throw error;
-  }
-}
-
-// Función para intentar eliminar un psicólogo
-async function eliminarPsicologo(token, psicologoId) {
-  try {
-    const response = await axios.delete(`${API_BASE_URL}/admin/psicologos/${psicologoId}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Error al eliminar psicólogo:', error.response?.data || error.message);
-    return {
-      error: true,
-      data: error.response?.data || { mensaje: error.message }
-    };
-  }
-}
-
-// Función principal de prueba
 async function testEliminarPsicologo() {
+  console.log('🧪 Probando eliminación de psicólogos...\n');
+
   try {
-    console.log('🔧 Iniciando prueba de eliminación de psicólogos...\n');
-
-    // Obtener token de admin
-    console.log('1. Obteniendo token de administrador...');
-    const token = await obtenerTokenAdmin();
-    console.log('✅ Token obtenido correctamente\n');
-
-    // Obtener lista de psicólogos
-    console.log('2. Obteniendo lista de psicólogos...');
-    const psicologos = await obtenerPsicologos(token);
-    console.log(`✅ Se encontraron ${psicologos.length} psicólogos:`);
+    // 1. Primero hacer login como admin
+    console.log('1️⃣ Haciendo login como admin...');
     
-    psicologos.forEach((psicologo, index) => {
-      console.log(`   ${index + 1}. ${psicologo.nombres} ${psicologo.apellidos} (ID: ${psicologo.id}) - Estado: ${psicologo.activo ? 'Activo' : 'Inactivo'}`);
+    const loginData = {
+      email: 'admin@admin.cl',
+      password: 'admin123'
+    };
+
+    const loginResponse = await axios.post('http://localhost:3002/api/v1/autenticacion/login', loginData, {
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      timeout: 10000
     });
-    console.log('');
 
-    // Buscar a Laura Fernández
-    const lauraFernandez = psicologos.find(p => 
-      p.nombres.toLowerCase().includes('laura') && 
-      p.apellidos.toLowerCase().includes('fernandez')
-    );
+    const token = loginResponse.data.data.token;
+    console.log('✅ Login exitoso, token obtenido');
 
-    if (lauraFernandez) {
-      console.log('3. Probando eliminación de Laura Fernández...');
-      console.log(`   ID: ${lauraFernandez.id}`);
-      console.log(`   Nombre: ${lauraFernandez.nombres} ${lauraFernandez.apellidos}`);
-      console.log(`   Estado: ${lauraFernandez.activo ? 'Activo' : 'Inactivo'}`);
-      console.log('');
+    // 2. Obtener lista de psicólogos
+    console.log('\n2️⃣ Obteniendo lista de psicólogos...');
+    
+    const psicologosResponse = await axios.get('http://localhost:3002/api/v1/admin/psicologos', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      timeout: 10000
+    });
 
-      const resultado = await eliminarPsicologo(token, lauraFernandez.id);
+    const psicologos = psicologosResponse.data.data;
+    console.log(`✅ Se encontraron ${psicologos.length} psicólogos`);
+
+    if (psicologos.length === 0) {
+      console.log('❌ No hay psicólogos para probar la eliminación');
+      return;
+    }
+
+    // Mostrar información de los psicólogos
+    psicologos.forEach((psicologo, index) => {
+      console.log(`   ${index + 1}. ${psicologo.nombres} ${psicologo.apellidos} (${psicologo.email}) - Activo: ${psicologo.activo}`);
+    });
+
+    // 3. Intentar eliminar el primer psicólogo
+    const psicologoAEliminar = psicologos[0];
+    console.log(`\n3️⃣ Intentando eliminar psicólogo: ${psicologoAEliminar.nombres} ${psicologoAEliminar.apellidos}`);
+    
+    try {
+      const eliminarResponse = await axios.delete(`http://localhost:3002/api/v1/admin/psicologos/${psicologoAEliminar.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 15000
+      });
+
+      console.log('✅ Psicólogo eliminado exitosamente!');
+      console.log('📊 Respuesta del servidor:');
+      console.log(`   - Estado: ${eliminarResponse.status}`);
+      console.log(`   - Mensaje: ${eliminarResponse.data.mensaje}`);
+      console.log(`   - Datos:`, eliminarResponse.data.data);
+
+    } catch (eliminarError) {
+      console.log('❌ Error al eliminar psicólogo');
+      console.log('📊 Detalles del error:');
       
-      if (resultado.error) {
-        console.log('❌ Error al eliminar Laura Fernández:');
-        console.log(`   Código: ${resultado.data.codigo || 'N/A'}`);
-        console.log(`   Mensaje: ${resultado.data.mensaje || resultado.data.error || 'Error desconocido'}`);
-        console.log(`   Detalles: ${JSON.stringify(resultado.data.detalles || {}, null, 2)}`);
-      } else {
-        console.log('✅ Laura Fernández eliminada correctamente');
-        console.log(`   Respuesta: ${JSON.stringify(resultado, null, 2)}`);
-      }
-    } else {
-      console.log('⚠️  No se encontró a Laura Fernández en la lista de psicólogos');
-      
-      // Probar con el primer psicólogo disponible
-      if (psicologos.length > 0) {
-        const primerPsicologo = psicologos[0];
-        console.log(`\n3. Probando eliminación con ${primerPsicologo.nombres} ${primerPsicologo.apellidos}...`);
+      if (eliminarError.response) {
+        console.log(`   - Estado: ${eliminarError.response.status}`);
+        console.log(`   - Mensaje: ${eliminarError.response.data?.mensaje || 'Sin mensaje'}`);
+        console.log(`   - Error: ${eliminarError.response.data?.error || 'Sin error específico'}`);
+        console.log(`   - Código: ${eliminarError.response.data?.codigo || 'Sin código'}`);
         
-        const resultado = await eliminarPsicologo(token, primerPsicologo.id);
-        
-        if (resultado.error) {
-          console.log('❌ Error al eliminar psicólogo:');
-          console.log(`   Código: ${resultado.data.codigo || 'N/A'}`);
-          console.log(`   Mensaje: ${resultado.data.mensaje || resultado.data.error || 'Error desconocido'}`);
-          console.log(`   Detalles: ${JSON.stringify(resultado.data.detalles || {}, null, 2)}`);
-        } else {
-          console.log('✅ Psicólogo eliminado correctamente');
-          console.log(`   Respuesta: ${JSON.stringify(resultado, null, 2)}`);
+        if (eliminarError.response.data?.data) {
+          console.log(`   - Datos adicionales:`, eliminarError.response.data.data);
         }
+      } else {
+        console.log(`   - Error de red: ${eliminarError.message}`);
       }
     }
 
-    console.log('\n✅ Prueba completada');
+    // 4. Verificar que el psicólogo ya no existe
+    console.log('\n4️⃣ Verificando que el psicólogo fue eliminado...');
+    
+    try {
+      const psicologosDespuesResponse = await axios.get('http://localhost:3002/api/v1/admin/psicologos', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 10000
+      });
+
+      const psicologosDespues = psicologosDespuesResponse.data.data;
+      const psicologoEliminado = psicologosDespues.find(p => p.id === psicologoAEliminar.id);
+      
+      if (!psicologoEliminado) {
+        console.log('✅ Psicólogo eliminado correctamente de la lista');
+      } else {
+        console.log('⚠️ El psicólogo aún aparece en la lista');
+      }
+
+    } catch (verificarError) {
+      console.log('❌ Error al verificar la eliminación:', verificarError.message);
+    }
 
   } catch (error) {
-    console.error('❌ Error en la prueba:', error.message);
+    console.error('❌ Error general durante la prueba:', error.message);
+    
     if (error.response) {
-      console.error('   Respuesta del servidor:', error.response.data);
+      console.error('📊 Detalles del error:');
+      console.error(`   - Estado: ${error.response.status}`);
+      console.error(`   - Mensaje: ${error.response.data?.mensaje || 'Sin mensaje'}`);
+      console.error(`   - Error: ${error.response.data?.error || 'Sin error específico'}`);
     }
   }
 }
 
-// Ejecutar la prueba
+// Ejecutar prueba
 testEliminarPsicologo(); 

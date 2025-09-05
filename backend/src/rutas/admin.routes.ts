@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authAdmin } from '../middleware/auth.middleware';
+import upload, { handleUploadError } from '../middleware/upload.middleware';
 import {
   obtenerPsicologos,
   obtenerPsicologoPorId,
@@ -32,10 +33,10 @@ router.get('/psicologos/disponibles', obtenerPsicologosDisponibles);
 router.get('/psicologos/:id', obtenerPsicologoPorId);
 
 // POST /admin/psicologos - Crear nuevo psicólogo
-router.post('/psicologos', crearPsicologo);
+router.post('/psicologos', upload.single('avatar'), handleUploadError, crearPsicologo);
 
 // PUT /admin/psicologos/:id - Actualizar psicólogo
-router.put('/psicologos/:id', actualizarPsicologo);
+router.put('/psicologos/:id', upload.single('avatar'), handleUploadError, actualizarPsicologo);
 
 // PATCH /admin/psicologos/:id/desactivar - Desactivar psicólogo
 router.patch('/psicologos/:id/desactivar', desactivarPsicologo);

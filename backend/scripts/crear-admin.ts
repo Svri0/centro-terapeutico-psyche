@@ -68,7 +68,7 @@ async function crearAdmin(): Promise<void> {
       id: uuidv4(),
       nombres: 'Admin',
       apellidos: 'Sistema',
-      email: 'admin@admin.com',
+      email: 'admin@admin.cl',
       password_hash: passwordHash,
       telefono: '+56912345678',
       rol_id: adminRole.id,
@@ -90,7 +90,7 @@ async function crearAdmin(): Promise<void> {
     console.log('');
     console.log('🎉 ¡Nuevas credenciales creadas!');
     console.log('═══════════════════════════════════════════════════════════════');
-    console.log('📧 Email: admin@admin.com');
+    console.log('📧 Email: admin@admin.cl');
     console.log('🔑 Contraseña: admin123');
     console.log('═══════════════════════════════════════════════════════════════');
     console.log('');
@@ -111,7 +111,7 @@ async function crearAdmin(): Promise<void> {
       const adminRoleRetry = adminRolesRetry[0];
       
       // Intentar con un email diferente
-      const newEmail = 'admin2@admin.com';
+      const newEmail = 'admin2@admin.cl';
       console.log(`📧 Intentando con email: ${newEmail}`);
       
       const newAdminUser2 = {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Cita, citasService } from '../servicios/citas.service';
 import { authService } from '../servicios/auth.service';
 import { AgendarCita } from './AgendarCita';
+import { obtenerEstadoTexto, obtenerEstadoColor } from '../utilidades/estados-citas';
 
 const FeedPaciente: React.FC = () => {
   const [citas, setCitas] = useState<Cita[]>([]);
@@ -61,43 +62,7 @@ const FeedPaciente: React.FC = () => {
     return hora.slice(0, 5);
   };
 
-  const obtenerEstadoColor = (estado: string) => {
-    switch (estado) {
-      case 'programada':
-        return 'bg-blue-100 text-blue-800';
-      case 'confirmada':
-        return 'bg-green-100 text-green-800';
-      case 'en_progreso':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'completada':
-        return 'bg-gray-100 text-gray-800';
-      case 'cancelada':
-        return 'bg-red-100 text-red-800';
-      case 'no_show':
-        return 'bg-orange-100 text-orange-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
 
-  const obtenerEstadoTexto = (estado: string) => {
-    switch (estado) {
-      case 'programada':
-        return 'Programada';
-      case 'confirmada':
-        return 'Confirmada';
-      case 'en_progreso':
-        return 'En Progreso';
-      case 'completada':
-        return 'Completada';
-      case 'cancelada':
-        return 'Cancelada';
-      case 'no_show':
-        return 'No Asistió';
-      default:
-        return estado;
-    }
-  };
 
   const handleCancelarCita = async (citaId: string) => {
     if (!window.confirm('¿Estás seguro de que quieres cancelar esta cita?')) {

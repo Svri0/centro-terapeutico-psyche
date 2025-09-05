@@ -4,7 +4,7 @@ import { Psicologo, ActualizarPsicologoData } from '../servicios/admin.service';
 interface ModalEditarPsicologoProps {
   psicologo: Psicologo;
   onClose: () => void;
-  onSubmit: (data: ActualizarPsicologoData) => void;
+  onSubmit: (data: ActualizarPsicologoData, avatar?: File | null) => void;
 }
 
 const ModalEditarPsicologo: React.FC<ModalEditarPsicologoProps> = ({ 
@@ -18,8 +18,12 @@ const ModalEditarPsicologo: React.FC<ModalEditarPsicologoProps> = ({
     email: '',
     telefono: '',
     fecha_nacimiento: '',
-    genero: ''
+    genero: '',
+    especialidad: '',
+    descripcion: '',
+    codigo_sbs: ''
   });
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -31,11 +35,14 @@ const ModalEditarPsicologo: React.FC<ModalEditarPsicologoProps> = ({
       email: psicologo.email,
       telefono: psicologo.telefono || '',
       fecha_nacimiento: psicologo.fecha_nacimiento || '',
-      genero: psicologo.genero || ''
+      genero: psicologo.genero || '',
+      especialidad: psicologo.especialidad || '',
+      descripcion: psicologo.descripcion || '',
+      codigo_sbs: psicologo.codigo_sbs || ''
     });
   }, [psicologo]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -72,6 +79,11 @@ const ModalEditarPsicologo: React.FC<ModalEditarPsicologoProps> = ({
       newErrors.telefono = 'El teléfono no es válido';
     }
 
+    // Validar código SBS si se proporciona
+    if (formData.codigo_sbs && !/^\d{6,8}$/.test(formData.codigo_sbs.trim())) {
+      newErrors.codigo_sbs = 'El código SBS debe tener entre 6 y 8 dígitos numéricos';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -85,7 +97,7 @@ const ModalEditarPsicologo: React.FC<ModalEditarPsicologoProps> = ({
 
     setLoading(true);
     try {
-      await onSubmit(formData);
+      await onSubmit(formData, selectedImage);
     } catch (error) {
       // El error se maneja en el componente padre
     } finally {
@@ -235,6 +247,87 @@ const ModalEditarPsicologo: React.FC<ModalEditarPsicologoProps> = ({
                 <option value="no_binario">No binario</option>
                 <option value="prefiero_no_decir">Prefiero no decir</option>
               </select>
+            </div>
+
+            {/* Foto de Perfil */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Foto de Perfil
+              </label>
+              <div className="mt-1 flex items-center space-x-4">
+                {psicologo.avatar_url && (
+                  <img
+                    src={psicologo.avatar_url}
+                    alt="Avatar actual"
+                    className="h-16 w-16 rounded-full object-cover border-2 border-gray-200"
+                  />
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setSelectedImage(file);
+                    }
+                  }}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                />
+              </div>
+            </div>
+
+            {/* Especialidad */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Especialidad
+              </label>
+              <input
+                type="text"
+                name="especialidad"
+                value={formData.especialidad || ''}
+                onChange={handleChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="Ej: Psicología Clínica, Terapia Cognitivo-Conductual, etc."
+              />
+            </div>
+
+            {/* Código SBS */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Código SBS
+              </label>
+              <input
+                type="text"
+                name="codigo_sbs"
+                value={formData.codigo_sbs || ''}
+                onChange={handleChange}
+                className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
+                  errors.codigo_sbs ? 'border-red-300' : 'border-gray-300'
+                }`}
+                placeholder="Ej: 123456 o 12345678"
+                maxLength={8}
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Código único de identificación en el sistema de salud (6-8 dígitos)
+              </p>
+              {errors.codigo_sbs && (
+                <p className="mt-1 text-sm text-red-600">{errors.codigo_sbs}</p>
+              )}
+            </div>
+
+            {/* Descripción */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Descripción Profesional
+              </label>
+              <textarea
+                name="descripcion"
+                value={formData.descripcion || ''}
+                onChange={handleChange}
+                rows={4}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="Describe tu experiencia, enfoque terapéutico, y cómo puedes ayudar a tus pacientes..."
+              />
             </div>
 
             {/* Botones */}

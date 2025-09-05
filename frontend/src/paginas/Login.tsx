@@ -310,7 +310,7 @@ const Login: React.FC = () => {
               <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                 <h4 className="text-sm font-medium text-gray-700 mb-2">💡 Credenciales de Prueba</h4>
                 <div className="space-y-1 text-xs text-gray-600">
-                  <p><strong>Administrador:</strong> admin@admin.com / admin123</p>
+                  <p><strong>Administrador:</strong> admin@admin.cl / admin123</p>
                   <p><strong>Psicólogo:</strong> laura.fernandez@psyche.cl / psicologo123</p>
                 </div>
               </div>

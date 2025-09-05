@@ -13,6 +13,9 @@ export interface UsuarioAttributes {
   fecha_nacimiento?: Date;
   genero?: 'masculino' | 'femenino' | 'otro' | 'prefiero_no_decir';
   avatar_url?: string;
+  especialidad?: string;
+  descripcion?: string;
+  codigo_sbs?: string;
   rol_id: number;
   activo: boolean;
   email_verificado: boolean;
@@ -38,6 +41,9 @@ class Usuario extends Model<UsuarioAttributes, UsuarioCreationAttributes> implem
   public fecha_nacimiento?: Date;
   public genero?: 'masculino' | 'femenino' | 'otro' | 'prefiero_no_decir';
   public avatar_url?: string;
+  public especialidad?: string;
+  public descripcion?: string;
+  public codigo_sbs?: string;
   public rol_id!: number;
   public activo!: boolean;
   public email_verificado!: boolean;
@@ -96,6 +102,18 @@ Usuario.init(
     },
     avatar_url: {
       type: DataTypes.STRING(500),
+      allowNull: true,
+    },
+    especialidad: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    descripcion: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    codigo_sbs: {
+      type: DataTypes.STRING(50),
       allowNull: true,
     },
     rol_id: {

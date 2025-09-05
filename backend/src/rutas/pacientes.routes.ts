@@ -8,9 +8,10 @@ import {
   eliminar,
   obtenerHistorial,
   obtenerPorId,
+  obtenerPsicologoAsignado,
   obtenerTodos
 } from '../controladores/pacientes.controlador';
-import { authPsicologo } from '../middleware/auth.middleware';
+import { authPsicologo, verificarRol, verificarToken } from '../middleware/auth.middleware';
 
 const router = Router();
 
@@ -26,5 +27,8 @@ router.delete('/:id', authPsicologo, eliminar); // DELETE /api/v1/pacientes/:id
 // Rutas específicas de pacientes
 router.put('/:pacienteId/asignar-psicologo', authPsicologo, asignarPsicologo); // PUT /api/v1/pacientes/:pacienteId/asignar-psicologo
 router.get('/:id/historial', authPsicologo, obtenerHistorial); // GET /api/v1/pacientes/:id/historial
+
+// Ruta para que el paciente obtenga información de su psicólogo asignado
+router.get('/mi-psicologo/psicologo-asignado', verificarToken, verificarRol(['paciente']), obtenerPsicologoAsignado); // GET /api/v1/pacientes/mi-psicologo/psicologo-asignado
 
 export default router;

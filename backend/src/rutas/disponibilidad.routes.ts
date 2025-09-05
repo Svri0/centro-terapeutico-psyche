@@ -1,16 +1,27 @@
 import { Router } from 'express';
+import { verificarToken, verificarRol } from '../middleware/auth.middleware';
 import {
-  obtenerDisponibilidadPsicologo,
-  actualizarDisponibilidad
+  obtenerDisponibilidad,
+  crearDisponibilidad,
+  actualizarDisponibilidad,
+  actualizarDisponibilidadMultiple,
+  obtenerDisponibilidadPaciente,
+  verificarDisponibilidadDia
 } from '../controladores/disponibilidad.controlador';
-import { authPsicologo } from '../middleware/auth.middleware';
 
 const router = Router();
 
-// Obtener disponibilidad de un psicólogo
-router.get('/:psicologoId', obtenerDisponibilidadPsicologo);
+// Aplicar middleware de autenticación a todas las rutas
+router.use(verificarToken);
 
-// Actualizar disponibilidad (solo psicólogos)
-router.put('/', authPsicologo, actualizarDisponibilidad);
+// Rutas para psicólogos
+router.get('/psicologo/:psicologoId', verificarRol(['psicologo', 'admin']), obtenerDisponibilidad);
+router.post('/', verificarRol(['psicologo', 'admin']), crearDisponibilidad);
+router.put('/:id', verificarRol(['psicologo', 'admin']), actualizarDisponibilidad);
+router.put('/psicologo/:psicologoId', verificarRol(['psicologo', 'admin']), actualizarDisponibilidadMultiple);
+
+// Rutas para pacientes
+router.get('/paciente/:psicologoId', verificarRol(['paciente', 'psicologo', 'admin']), obtenerDisponibilidadPaciente);
+router.get('/verificar/:psicologoId', verificarRol(['paciente', 'psicologo', 'admin']), verificarDisponibilidadDia);
 
 export default router; 

@@ -1,0 +1,145 @@
+================================================================
+CONFIGURACIÓN DE EMAIL PARA EL EQUIPO - CENTRO TERAPÉUTICO PSYCHE
+================================================================
+
+📧 CONFIGURACIÓN DE GMAIL COMPARTIDO
+====================================
+
+🔑 CREDENCIALES (COMPARTIR POR CANAL SEGURO):
+EMAIL_USER=tu_email_compartido@gmail.com
+EMAIL_PASSWORD=tu_password_de_aplicacion_de_16_caracteres
+FRONTEND_URL=http://localhost:3000
+
+📋 PASOS PARA CONFIGURAR GMAIL:
+================================
+
+1. HABILITAR VERIFICACIÓN EN DOS PASOS:
+   - Ve a: https://myaccount.google.com/
+   - Seguridad → Verificación en dos pasos → ACTIVAR
+
+2. GENERAR CONTRASEÑA DE APLICACIÓN:
+   - Ve a: https://myaccount.google.com/
+   - Seguridad → Verificación en dos pasos → Contraseñas de aplicación
+   - Selecciona "Otra aplicación personalizada"
+   - Nombre: "Centro Terapéutico Psyche"
+   - Genera la contraseña de 16 caracteres
+
+3. CONFIGURAR ARCHIVO .env:
+   - Crear archivo .env en la raíz del proyecto
+   - Copiar la configuración completa de abajo
+
+🚀 PROMPT PARA CURSOR:
+======================
+
+"Configura las credenciales de email para el proyecto Centro Terapéutico Psyche. Necesito que:
+
+1. Cree un archivo .env en la raíz del proyecto
+2. Configure las variables de email con las credenciales compartidas:
+   - EMAIL_USER=tu_email_compartido@gmail.com
+   - EMAIL_PASSWORD=tu_password_de_aplicacion_de_16_caracteres
+   - FRONTEND_URL=http://localhost:3000
+3. Configure las variables de base de datos PostgreSQL
+4. Configure el puerto del servidor en 3002
+5. Configure un JWT_SECRET seguro
+6. Asegúrese de que el archivo .env esté en .gitignore
+
+Las credenciales de email son compartidas con el equipo y ya están configuradas en Gmail con verificación en dos pasos y contraseña de aplicación."
+
+📁 ARCHIVO .env COMPLETO:
+=========================
+
+# ========================================
+# CONFIGURACIÓN DEL CENTRO TERAPÉUTICO PSYCHE
+# ========================================
+
+# ========================================
+# CONFIGURACIÓN DE BASE DE DATOS
+# ========================================
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=psyche_db
+DB_USER=postgres
+DB_PASSWORD=TU_CONTRASEÑA_PERSONAL_DE_POSTGRESQL
+
+# Base de datos para testing (opcional)
+DB_NAME_TEST=psyche_db_test
+
+# ========================================
+# CONFIGURACIÓN DEL SERVIDOR
+# ========================================
+PORT=3002
+NODE_ENV=development
+
+# ========================================
+# CONFIGURACIÓN DE SEGURIDAD
+# ========================================
+JWT_SECRET=tu_secreto_super_seguro_aqui
+
+# ========================================
+# CONFIGURACIÓN DE EMAIL (Gmail)
+# ========================================
+EMAIL_USER=tu_email_compartido@gmail.com
+EMAIL_PASSWORD=tu_password_de_aplicacion_de_16_caracteres
+FRONTEND_URL=http://localhost:3000
+
+# ========================================
+# CONFIGURACIÓN DE FRONTEND (opcional)
+# ========================================
+# VITE_API_URL=http://localhost:3002/api/v1
+
+# ========================================
+# CONFIGURACIÓN DE LOGS (opcional)
+# ========================================
+# LOG_LEVEL=info
+# LOG_FILE=logs/app.log
+
+# ========================================
+# CONFIGURACIÓN DE CORS (opcional)
+# ========================================
+# CORS_ORIGIN=http://localhost:3000
+
+🔒 SEGURIDAD IMPORTANTE:
+========================
+
+✅ NUNCA subas el archivo .env al repositorio
+✅ Comparte las credenciales por un canal seguro (Slack, WhatsApp, etc.)
+✅ Cada desarrollador debe tener su propio archivo .env
+✅ Las credenciales de email son compartidas pero seguras
+
+📧 FUNCIONALIDADES DE EMAIL IMPLEMENTADAS:
+==========================================
+
+✅ Email de bienvenida para nuevos psicólogos
+✅ Notificaciones de citas
+✅ Recordatorios automáticos
+✅ Plantillas personalizadas
+✅ Logging de emails enviados
+
+🧪 TESTING DE EMAIL:
+====================
+
+Para probar el email:
+1. Ve a la carpeta backend/scripts/
+2. Ejecuta: node test-email-simple.js
+
+🔧 SOLUCIÓN DE PROBLEMAS:
+==========================
+
+Si hay problemas:
+1. Verificar que Gmail tenga verificación en dos pasos activada
+2. Verificar que la contraseña de aplicación sea de 16 caracteres
+3. Verificar que el archivo .env esté en la raíz del proyecto
+4. Reiniciar el servidor después de configurar las variables
+
+📞 SOPORTE:
+===========
+
+Si necesitas ayuda:
+- Revisar logs del servidor
+- Verificar configuración de Gmail
+- Probar con script de testing
+- Reiniciar servidor
+
+================================================================
+FIN DE CONFIGURACIÓN
+================================================================ 

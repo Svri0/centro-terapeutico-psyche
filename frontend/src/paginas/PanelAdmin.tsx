@@ -52,6 +52,11 @@ const PanelAdmin: React.FC = () => {
     cargarPsicologos();
   }, []);
 
+  // Debug para el modal de cambiar contraseña
+  useEffect(() => {
+    console.log('🔍 Estado showChangePassword cambiado:', showChangePassword);
+  }, [showChangePassword]);
+
   // Efecto para ocultar notificaciones después de 3 segundos
   useEffect(() => {
     if (notification?.visible) {
@@ -65,6 +70,14 @@ const PanelAdmin: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [notification]);
+
+  const mostrarNotificacion = (mensaje: string, tipo: 'success' | 'error') => {
+    setNotification({
+      message: mensaje,
+      type: tipo,
+      visible: true
+    });
+  };
 
   const cargarPsicologos = async () => {
     try {
@@ -83,24 +96,28 @@ const PanelAdmin: React.FC = () => {
     }
   };
 
-  const handleCrearPsicologo = async (data: any) => {
+  const handleCrearPsicologo = async (data: any, avatar?: File | null) => {
     try {
-      await adminService.crearPsicologo(data);
+      await adminService.crearPsicologo(data, avatar || undefined);
       setShowCrearModal(false);
       cargarPsicologos();
+      mostrarNotificacion('Psicólogo creado exitosamente', 'success');
     } catch (error: any) {
       setError(error.message);
+      mostrarNotificacion(error.message, 'error');
     }
   };
 
-  const handleEditarPsicologo = async (id: string, data: any) => {
+  const handleEditarPsicologo = async (id: string, data: any, avatar?: File | null) => {
     try {
-      await adminService.actualizarPsicologo(id, data);
+      await adminService.actualizarPsicologo(id, data, avatar || undefined);
       setShowEditarModal(false);
       setPsicologoSeleccionado(null);
       cargarPsicologos();
+      mostrarNotificacion('Psicólogo actualizado exitosamente', 'success');
     } catch (error: any) {
       setError(error.message);
+      mostrarNotificacion(error.message, 'error');
     }
   };
 
@@ -312,7 +329,7 @@ const PanelAdmin: React.FC = () => {
     <div className="min-h-screen font-sans" style={{ backgroundColor: '#fff6ed' }}>
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-amber-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
               <div className="flex-shrink-0 mr-4">
@@ -330,7 +347,10 @@ const PanelAdmin: React.FC = () => {
                 Bienvenido, {user.nombres} {user.apellidos}
               </div>
               <button
-                onClick={() => setShowChangePassword(true)}
+                onClick={() => {
+                  console.log('🔍 Botón Cambiar Contraseña clickeado');
+                  setShowChangePassword(true);
+                }}
                 className="text-sm text-amber-600 hover:text-amber-800 transition-colors"
               >
                 Cambiar Contraseña
@@ -347,9 +367,9 @@ const PanelAdmin: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6">
+      <main className="w-full py-6">
         {/* Page Header */}
-        <div className="px-4 py-6 sm:px-0">
+        <div className="px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-xl font-bold text-gray-900 tracking-widest uppercase">Gestión de Psicólogos</h2>
@@ -371,13 +391,13 @@ const PanelAdmin: React.FC = () => {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          <div className="mx-4 sm:mx-6 lg:mx-8 mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
             {error}
           </div>
         )}
 
         {/* Content */}
-        <div className="py-6">
+        <div className="px-4 sm:px-6 lg:px-8 py-6">
           {loading ? (
             <div className="flex justify-center items-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600"></div>
@@ -418,7 +438,7 @@ const PanelAdmin: React.FC = () => {
 
       {/* Modal Cambiar Contraseña */}
       {showChangePassword && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 animate-fade-in">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999] animate-fade-in">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white animate-slide-in-right shadow-glow">
             <div className="mt-3">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Cambiar Contraseña</h3>
@@ -490,7 +510,7 @@ const PanelAdmin: React.FC = () => {
 
       {/* Modal de Confirmación */}
       {showConfirmModal && confirmAction && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 animate-fade-in">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9998] animate-fade-in">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white animate-slide-in-right shadow-glow">
             <div className="mt-3">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Confirmar Acción</h3>

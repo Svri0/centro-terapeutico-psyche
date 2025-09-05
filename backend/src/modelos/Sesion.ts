@@ -19,6 +19,12 @@ export interface SesionAttributes {
   tecnicas_utilizadas: any[];
   evaluacion_paciente?: any;
   observaciones?: string;
+  resumen_sesion?: string;
+  objetivos_alcanzados: any[];
+  tareas_asignadas: any[];
+  progreso_paciente?: 'excelente' | 'bueno' | 'regular' | 'necesita_mejora';
+  derivacion_recomendada: any;
+  archivos_sesion: any[];
   archivos_adjuntos: any[];
   created_at: Date;
   updated_at: Date;
@@ -43,6 +49,12 @@ class Sesion extends Model<SesionAttributes, SesionCreationAttributes> implement
   public tecnicas_utilizadas!: any[];
   public evaluacion_paciente?: any;
   public observaciones?: string;
+  public resumen_sesion?: string;
+  public objetivos_alcanzados!: any[];
+  public tareas_asignadas!: any[];
+  public progreso_paciente?: 'excelente' | 'bueno' | 'regular' | 'necesita_mejora';
+  public derivacion_recomendada!: any;
+  public archivos_sesion!: any[];
   public archivos_adjuntos!: any[];
   public created_at!: Date;
   public updated_at!: Date;
@@ -128,6 +140,34 @@ Sesion.init(
     observaciones: {
       type: DataTypes.TEXT,
       allowNull: true,
+    },
+    resumen_sesion: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    objetivos_alcanzados: {
+      type: DataTypes.JSONB,
+      allowNull: false,
+      defaultValue: [],
+    },
+    tareas_asignadas: {
+      type: DataTypes.JSONB,
+      allowNull: false,
+      defaultValue: [],
+    },
+    progreso_paciente: {
+      type: DataTypes.ENUM('excelente', 'bueno', 'regular', 'necesita_mejora'),
+      allowNull: true,
+    },
+    derivacion_recomendada: {
+      type: DataTypes.JSONB,
+      allowNull: false,
+      defaultValue: {},
+    },
+    archivos_sesion: {
+      type: DataTypes.JSONB,
+      allowNull: false,
+      defaultValue: [],
     },
     archivos_adjuntos: {
       type: DataTypes.JSONB,

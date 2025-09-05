@@ -1,11 +1,14 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
+import fs from 'fs';
+import path from 'path';
 import sequelize from '../configuracion/database';
 import { ManejadorRespuestas } from '../utilidades/respuestas';
 import { log } from '../utilidades/logger';
-import { crearDisponibilidadPorDefecto } from './disponibilidad.controlador';
+// import { crearDisponibilidadPorDefecto } from './disponibilidad.controlador';
 import AuditoriaService from '../utilidades/auditoria.service';
+import { enviarEmailBienvenidaPsicologo } from '../utilidades/email.service';
 
 // Interfaz para crear psicólogo
 interface CrearPsicologoData {
@@ -16,6 +19,10 @@ interface CrearPsicologoData {
   telefono?: string;
   fecha_nacimiento?: string;
   genero?: 'masculino' | 'femenino' | 'otro' | 'prefiero_no_decir';
+  especialidad?: string;
+  descripcion?: string;
+  avatar_url?: string;
+  codigo_sbs?: string;
 }
 
 // Interfaz para actualizar psicólogo
@@ -26,11 +33,16 @@ interface ActualizarPsicologoData {
   telefono?: string;
   fecha_nacimiento?: string;
   genero?: 'masculino' | 'femenino' | 'otro' | 'prefiero_no_decir';
+  especialidad?: string;
+  descripcion?: string;
+  avatar_url?: string;
 }
 
 // Obtener todos los psicólogos
 export const obtenerPsicologos = async (_req: Request, res: Response) => {
   try {
+    console.log('🔍 Admin solicitando lista de psicólogos...');
+    
     const query = `
       SELECT 
         u.id,
@@ -40,6 +52,9 @@ export const obtenerPsicologos = async (_req: Request, res: Response) => {
         u.telefono,
         u.fecha_nacimiento,
         u.genero,
+        u.especialidad,
+        u.descripcion,
+        u.avatar_url,
         u.activo,
         u.email_verificado,
         u.ultimo_acceso,
@@ -51,7 +66,12 @@ export const obtenerPsicologos = async (_req: Request, res: Response) => {
       ORDER BY u.created_at DESC
     `;
 
+    console.log('🔍 Ejecutando query:', query);
+
     const [psicologos] = await sequelize.query(query) as [any[], unknown];
+
+    console.log('✅ Psicólogos encontrados:', psicologos.length);
+    console.log('📋 Datos de psicólogos:', psicologos);
 
     return ManejadorRespuestas.exito(
       res,
@@ -60,6 +80,7 @@ export const obtenerPsicologos = async (_req: Request, res: Response) => {
       'ADMIN_001'
     );
   } catch (error) {
+    console.error('❌ Error en obtenerPsicologos:', error);
     log.error('Error en obtenerPsicologos:', error);
     return ManejadorRespuestas.errorInterno(
       res,
@@ -74,7 +95,24 @@ export const crearPsicologo = async (req: Request, res: Response) => {
   const transaction = await sequelize.transaction();
   
   try {
-    const { nombres, apellidos, email, password, telefono, fecha_nacimiento, genero }: CrearPsicologoData = req.body;
+    const { nombres, apellidos, email, password, telefono, fecha_nacimiento, genero, especialidad, descripcion, avatar_url, codigo_sbs }: CrearPsicologoData = req.body;
+    
+    // Usar el avatar_url del body si se proporciona, o usar uno aleatorio de robots
+    const avataresRobots = [
+      'https://api.dicebear.com/7.x/bottts/svg?seed=lion&backgroundColor=ffdfbf&scale=80&mouth=smile&eyes=happy',
+      'https://api.dicebear.com/7.x/bottts/svg?seed=dolphin&backgroundColor=bfdfff&scale=80&mouth=smile&eyes=happy',
+      'https://api.dicebear.com/7.x/bottts/svg?seed=owl&backgroundColor=8b4513&scale=80&mouth=smile&eyes=happy',
+      'https://api.dicebear.com/7.x/bottts/svg?seed=butterfly&backgroundColor=ffb6c1&scale=80&mouth=smile&eyes=happy',
+      'https://api.dicebear.com/7.x/bottts/svg?seed=bee&backgroundColor=ffff00&scale=80&mouth=smile&eyes=happy',
+      'https://api.dicebear.com/7.x/bottts/svg?seed=turtle&backgroundColor=90ee90&scale=80&mouth=smile&eyes=happy',
+      'https://api.dicebear.com/7.x/bottts/svg?seed=rabbit&backgroundColor=ffffff&scale=80&mouth=smile&eyes=happy',
+      'https://api.dicebear.com/7.x/bottts/svg?seed=penguin&backgroundColor=000000&scale=80&mouth=smile&eyes=happy',
+      'https://api.dicebear.com/7.x/bottts/svg?seed=giraffe&backgroundColor=daa520&scale=80&mouth=smile&eyes=happy',
+      'https://api.dicebear.com/7.x/bottts/svg?seed=koala&backgroundColor=8b4513&scale=80&mouth=smile&eyes=happy',
+      'https://api.dicebear.com/7.x/bottts/svg?seed=panda&backgroundColor=000000&scale=80&mouth=smile&eyes=happy'
+    ];
+    
+    const avatarUrl = avatar_url || avataresRobots[Math.floor(Math.random() * avataresRobots.length)];
 
     // Validar campos obligatorios
     if (!nombres || !apellidos || !email || !password) {
@@ -84,6 +122,17 @@ export const crearPsicologo = async (req: Request, res: Response) => {
         'Nombres, apellidos, email y contraseña son requeridos',
         { camposRequeridos: ['nombres', 'apellidos', 'email', 'password'] },
         'ADMIN_003'
+      );
+    }
+
+    // Validar código SBS si se proporciona
+    if (codigo_sbs && (codigo_sbs.length < 6 || codigo_sbs.length > 8 || !/^\d+$/.test(codigo_sbs))) {
+      await transaction.rollback();
+      return ManejadorRespuestas.errorValidacion(
+        res,
+        'El código SBS debe tener entre 6 y 8 dígitos numéricos',
+        { codigo_sbs },
+        'ADMIN_009'
       );
     }
 
@@ -151,12 +200,12 @@ export const crearPsicologo = async (req: Request, res: Response) => {
     const [nuevoUsuario] = await sequelize.query(
       `INSERT INTO usuarios (
         id, nombres, apellidos, email, password_hash, telefono, 
-        fecha_nacimiento, genero, rol_id, activo, email_verificado,
+        fecha_nacimiento, genero, especialidad, descripcion, avatar_url, codigo_sbs, rol_id, activo, email_verificado,
         token_activacion, token_activacion_expira, configuracion,
         created_at, updated_at
       ) VALUES (
         :id, :nombres, :apellidos, :email, :password_hash, :telefono,
-        :fecha_nacimiento, :genero, :rol_id, :activo, :email_verificado,
+        :fecha_nacimiento, :genero, :especialidad, :descripcion, :avatar_url, :codigo_sbs, :rol_id, :activo, :email_verificado,
         :token_activacion, :token_activacion_expira, :configuracion,
         :created_at, :updated_at
       ) RETURNING id, nombres, apellidos, email, created_at`,
@@ -170,6 +219,10 @@ export const crearPsicologo = async (req: Request, res: Response) => {
           telefono: telefono || null,
           fecha_nacimiento: fecha_nacimiento || null,
           genero: genero || null,
+          especialidad: especialidad || null,
+          descripcion: descripcion || null,
+          avatar_url: avatarUrl,
+          codigo_sbs: codigo_sbs || null,
           rol_id: rolId,
           activo: true,
           email_verificado: false,
@@ -187,16 +240,55 @@ export const crearPsicologo = async (req: Request, res: Response) => {
 
     // Crear disponibilidad por defecto para el psicólogo
     const psicologoId = nuevoUsuario[0].id;
-    await crearDisponibilidadPorDefecto(psicologoId);
+            // await crearDisponibilidadPorDefecto(psicologoId);
 
-    // TODO: Enviar email de activación con el token
+    // Enviar email de bienvenida al psicólogo
+    const nombreCompleto = `${nombres} ${apellidos}`;
+    
+    // Función para convertir imagen a base64
+    const convertirImagenABase64 = (filePath: string): string | null => {
+      try {
+        const fullPath = path.join(__dirname, '..', '..', 'uploads', 'avatars', path.basename(filePath));
+        log.info(`DEBUG - Intentando leer imagen desde: ${fullPath}`);
+        
+        if (fs.existsSync(fullPath)) {
+          const imageBuffer = fs.readFileSync(fullPath);
+          const base64 = imageBuffer.toString('base64');
+          const mimeType = 'image/png'; // Asumimos PNG por el componente CircularImageEditor
+          return `data:${mimeType};base64,${base64}`;
+        } else {
+          log.warn(`DEBUG - Archivo no encontrado: ${fullPath}`);
+          return null;
+        }
+      } catch (error) {
+        log.error('Error al convertir imagen a base64:', error);
+        return null;
+      }
+    };
+    
+    // Usar la URL del avatar directamente para el email
+    const emailEnviado = await enviarEmailBienvenidaPsicologo(
+      email,
+      nombreCompleto,
+      password,
+      especialidad,
+      avatarUrl
+    );
+
+    if (emailEnviado) {
+      log.info(`Email de bienvenida enviado exitosamente a: ${email}`);
+    } else {
+      log.warn(`No se pudo enviar el email de bienvenida a: ${email}`);
+    }
+
     log.info(`Nuevo psicólogo creado: ${email} con token: ${tokenActivacion}`);
 
     return ManejadorRespuestas.creado(
       res,
-      'Psicólogo creado exitosamente. Se ha enviado un email de activación.',
+      'Psicólogo creado exitosamente. Se ha enviado un email de bienvenida.',
       {
         usuario: nuevoUsuario[0],
+        email_enviado: emailEnviado,
         token_activacion: tokenActivacion // Solo para desarrollo, en producción no enviar
       },
       'ADMIN_007'
@@ -272,7 +364,10 @@ export const actualizarPsicologo = async (req: Request, res: Response) => {
   
   try {
     const { id } = req.params;
-    const { nombres, apellidos, email, telefono, fecha_nacimiento, genero }: ActualizarPsicologoData = req.body;
+    const { nombres, apellidos, email, telefono, fecha_nacimiento, genero, especialidad, descripcion }: ActualizarPsicologoData = req.body;
+    
+    // Obtener la URL del avatar si se subió una imagen
+    const avatar_url = req.file ? `/uploads/avatars/${req.file.filename}` : undefined;
 
     // Verificar que el psicólogo existe
     const [psicologoExistente] = await sequelize.query(
@@ -354,6 +449,18 @@ export const actualizarPsicologo = async (req: Request, res: Response) => {
     if (genero !== undefined) {
       camposActualizar.push('genero = :genero');
       replacements.genero = genero;
+    }
+    if (especialidad !== undefined) {
+      camposActualizar.push('especialidad = :especialidad');
+      replacements.especialidad = especialidad;
+    }
+    if (descripcion !== undefined) {
+      camposActualizar.push('descripcion = :descripcion');
+      replacements.descripcion = descripcion;
+    }
+    if (avatar_url !== undefined) {
+      camposActualizar.push('avatar_url = :avatar_url');
+      replacements.avatar_url = avatar_url;
     }
 
     if (camposActualizar.length === 0) {
@@ -699,7 +806,7 @@ export const eliminarPsicologo = async (req: Request, res: Response) => {
       { query: 'DELETE FROM logs_auditoria WHERE usuario_id = :id', name: 'logs_auditoria' },
       { query: 'DELETE FROM disponibilidad_psicologos WHERE psicologo_id = :id', name: 'disponibilidad_psicologos' },
       { query: 'DELETE FROM tareas WHERE psicologo_id = :id', name: 'tareas' },
-      { query: 'DELETE FROM mensajes WHERE psicologo_id = :id', name: 'mensajes' }
+      { query: 'DELETE FROM mensajes WHERE remitente_id = :id OR destinatario_id = :id', name: 'mensajes' }
     ];
 
     for (const deleteQuery of deleteQueries) {

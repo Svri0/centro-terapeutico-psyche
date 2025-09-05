@@ -7,8 +7,12 @@ import dotenv from 'dotenv';
 import express from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import path from 'path';
+import { createServer } from 'http';
+import { Server as SocketIOServer } from 'socket.io';
 import { MENSAJES_GENERALES } from './utilidades/mensajes';
 import { ManejadorRespuestas } from './utilidades/respuestas';
+import chatController from './controladores/chat.controlador';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -16,13 +20,187 @@ dotenv.config();
 const app = express();
 const PUERTO = process.env.PORT || 3002;
 
+// Crear servidor HTTP para Socket.io
+const httpServer = createServer(app);
+const io = new SocketIOServer(httpServer, {
+  cors: {
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:3002',
+      'http://localhost:3003',
+      'http://localhost:3004',
+      'http://localhost:3005',
+      'http://localhost:5173',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:3001',
+      'http://127.0.0.1:3002',
+      'http://127.0.0.1:3003',
+      'http://127.0.0.1:3004',
+      'http://127.0.0.1:3005',
+      'http://127.0.0.1:5173'
+    ],
+    credentials: true
+  }
+});
+
+// CONFIGURAR IO DESPUÉS DE CREAR EL SERVIDOR - SOLUCIÓN DEFINITIVA
+console.log('🔌 Configurando ChatController con WebSocket...');
+console.log('🔌 Servidor - chatController disponible:', !!chatController);
+console.log('🔌 Servidor - chatController.io ANTES:', chatController.isIoConfigured());
+
+chatController.setIo(io);
+
+console.log('🔌 Servidor - chatController.io DESPUÉS:', chatController.isIoConfigured());
+console.log('🔌 ChatController configurado con WebSocket - CONFIRMADO');
+
+// Configurar ChatAutomaticoService con WebSocket
+console.log('🔌 Configurando ChatAutomaticoService con WebSocket...');
+import('./utilidades/chat-automatico.service').then(({ ChatAutomaticoService }) => {
+  ChatAutomaticoService.setIo(io);
+  console.log('🔌 ChatAutomaticoService configurado con WebSocket - CONFIRMADO');
+}).catch(error => {
+  console.error('❌ Error al configurar ChatAutomaticoService:', error);
+});
+
+// Configurar Limpiador Automático de Citas Canceladas
+console.log('🧹 Configurando Limpiador Automático de Citas...');
+import('./utilidades/limpiador-citas.service').then(({ LimpiadorCitasService }) => {
+  LimpiadorCitasService.iniciar();
+  console.log('🧹 Limpiador Automático de Citas configurado - CONFIRMADO');
+}).catch(error => {
+  console.error('❌ Error al configurar Limpiador de Citas:', error);
+});
+
 // Middleware
 app.use(helmet());
-app.use(cors());
+
+// Configuración de CORS más específica
+const corsOptions = {
+  origin: function (origin: string | undefined, callback: Function) {
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:3002',
+      'http://localhost:3003',
+      'http://localhost:3004',
+      'http://localhost:3005',
+      'http://localhost:5173',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:3001',
+      'http://127.0.0.1:3002',
+      'http://127.0.0.1:3003',
+      'http://127.0.0.1:3004',
+      'http://127.0.0.1:3005',
+      'http://127.0.0.1:5173'
+    ];
+    
+    // Permitir requests sin origin (como imágenes)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200
+};
+app.use(cors(corsOptions));
+
 app.use(compression());
 app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// Endpoint específico para servir imágenes con CORS configurado
+app.get('/api/v1/images/:filename', (req, res) => {
+  const { filename } = req.params;
+  const imagePath = path.join(__dirname, '..', 'uploads', 'avatars', filename);
+  
+  // Configurar headers CORS específicos para imágenes
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3002',
+    'http://localhost:3003',
+    'http://localhost:3004',
+    'http://localhost:3005',
+    'http://localhost:5173',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001',
+    'http://127.0.0.1:3002',
+    'http://127.0.0.1:3003',
+    'http://127.0.0.1:3004',
+    'http://127.0.0.1:3005',
+    'http://127.0.0.1:5173'
+  ];
+  
+  if (origin && allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  } else {
+    res.header('Access-Control-Allow-Origin', '*');
+  }
+  
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.header('Cross-Origin-Embedder-Policy', 'unsafe-none');
+  res.header('Cache-Control', 'public, max-age=31536000');
+  
+  // Servir la imagen
+  res.sendFile(imagePath, (err) => {
+    if (err) {
+      console.error('Error al servir imagen:', err);
+      res.status(404).json({ error: 'Imagen no encontrada' });
+    }
+  });
+});
+
+// Servir archivos estáticos para avatares con CORS específico (mantener para compatibilidad)
+app.use('/uploads', (req, res, next) => {
+  // Configuración más específica para imágenes
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3002',
+    'http://localhost:3003',
+    'http://localhost:3004',
+    'http://localhost:3005',
+    'http://localhost:5173',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001',
+    'http://127.0.0.1:3002',
+    'http://127.0.0.1:3003',
+    'http://127.0.0.1:3004',
+    'http://127.0.0.1:3005',
+    'http://127.0.0.1:5173'
+  ];
+  
+  if (origin && allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  } else {
+    res.header('Access-Control-Allow-Origin', '*');
+  }
+  
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.header('Cross-Origin-Embedder-Policy', 'unsafe-none');
+  
+  // Manejar preflight requests
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+    return;
+  }
+  
+  next();
+}, express.static(path.join(__dirname, '..', 'uploads')));
 
 // Endpoint de verificación de salud con mensaje personalizado (JSON para sistemas)
 app.get('/salud', (_req, res) => {
@@ -464,7 +642,7 @@ const iniciarServidor = async () => {
       console.log('   Los modelos JavaScript seguirán funcionando normalmente');
     }
 
-    const servidor = app
+    const servidor = httpServer
       .listen(PUERTO, () => {
         console.log('\n🎉 ═══════════════════════════════════════════════════════');
         console.log('✅ BACKEND FUNCIONANDO CORRECTAMENTE');
@@ -474,9 +652,12 @@ const iniciarServidor = async () => {
         console.log(`🌐 Dashboard bonito: http://localhost:${PUERTO}/dashboard`);
         console.log(`📊 Salud (JSON): http://localhost:${PUERTO}/salud`);
         console.log(`🔗 API Base: http://localhost:${PUERTO}/api/v1`);
+        console.log(`🔌 WebSocket: ws://localhost:${PUERTO}`);
         console.log(`📄 Info (JSON): http://localhost:${PUERTO}/`);
         console.log(`⏰ Iniciado: ${new Date().toLocaleString('es-CL')}`);
         console.log('═══════════════════════════════════════════════════════\n');
+        
+        configurarEventosServidor(servidor);
       })
       .on('error', async (err: any) => {
         if (err.code === 'EADDRINUSE') {
@@ -487,7 +668,7 @@ const iniciarServidor = async () => {
             const puertoAlternativo = await encontrarPuertoDisponible(Number(PUERTO) + 1);
             console.log(`✅ Puerto alternativo encontrado: ${puertoAlternativo}`);
 
-            const servidorAlternativo = app.listen(puertoAlternativo, () => {
+            const servidorAlternativo = httpServer.listen(puertoAlternativo, () => {
               console.log('\n🎉 ═══════════════════════════════════════════════════════');
               console.log('✅ BACKEND FUNCIONANDO CORRECTAMENTE (PUERTO ALTERNATIVO)');
               console.log(`🚀 Puerto ${puertoAlternativo} funcionando correctamente`);
@@ -496,6 +677,7 @@ const iniciarServidor = async () => {
               console.log(`🌐 Dashboard bonito: http://localhost:${puertoAlternativo}/dashboard`);
               console.log(`📊 Salud (JSON): http://localhost:${puertoAlternativo}/salud`);
               console.log(`🔗 API Base: http://localhost:${puertoAlternativo}/api/v1`);
+              console.log(`🔌 WebSocket: ws://localhost:${puertoAlternativo}`);
               console.log(`📄 Info (JSON): http://localhost:${puertoAlternativo}/`);
               console.log(`⚠️  Nota: Puerto original ${PUERTO} estaba ocupado`);
               console.log(`⏰ Iniciado: ${new Date().toLocaleString('es-CL')}`);
@@ -538,6 +720,43 @@ const iniciarServidor = async () => {
 
 // Configurar eventos del servidor
 const configurarEventosServidor = (servidor: any) => {
+  // Configurar Socket.io
+  io.on('connection', (socket) => {
+    console.log('🔌 Usuario conectado:', socket.id);
+    
+    // Unir usuario a sala personal
+    socket.on('join-user', (userId: string) => {
+      socket.join(`user_${userId}`);
+      console.log(`👤 Usuario ${userId} unido a sala user_${userId}`);
+    });
+    
+    // Unir a sala de chat
+    socket.on('join-chat', (chatId: string) => {
+      socket.join(`chat_${chatId}`);
+      console.log(`💬 Usuario unido al chat: ${chatId}`);
+    });
+    
+    // Manejar mensajes de chat
+    socket.on('send-message', (data) => {
+      const { chatId, message, senderId } = data;
+      
+      // Emitir mensaje a todos en el chat
+      io.to(`chat_${chatId}`).emit('new-message', {
+        chatId,
+        message,
+        senderId,
+        timestamp: new Date().toISOString()
+      });
+      
+      console.log(`📨 Mensaje enviado en chat ${chatId}:`, message);
+    });
+    
+    // Desconexión
+    socket.on('disconnect', () => {
+      console.log('🔌 Usuario desconectado:', socket.id);
+    });
+  });
+
   // Cierre graceful con mensajes personalizados
   process.on('SIGTERM', () => {
     console.log('\n🛑 ═══════════════════════════════════════════════════════');

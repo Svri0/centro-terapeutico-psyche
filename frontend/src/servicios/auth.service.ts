@@ -18,6 +18,10 @@ export interface User {
   nombres: string;
   apellidos: string;
   email: string;
+  telefono?: string;
+  especialidad?: string;
+  descripcion?: string;
+  avatar_url?: string;
   rol: string;
   rol_id: number;
 }
@@ -70,8 +74,10 @@ class AuthService {
     } catch (error) {
       console.error('Error en logout:', error);
     } finally {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      // Limpiar todo el localStorage
+      localStorage.clear();
+      // Redirigir al login
+      window.location.href = '/login';
     }
   }
 
@@ -110,7 +116,8 @@ class AuthService {
 
   isAuthenticated(): boolean {
     const token = localStorage.getItem('token');
-    return !!token;
+    const user = this.getCurrentUser();
+    return !!token && !!user; // Debe tener tanto token como datos del usuario
   }
 
   getCurrentUser(): User | null {
@@ -133,19 +140,30 @@ class AuthService {
     return this.getCurrentUser();
   }
 
+  // Función de debug para ver los datos del usuario
+  debugUser(): void {
+    const user = this.getCurrentUser();
+    console.log('🔍 Debug User Data:', user);
+    console.log('🔍 User rol_id:', user?.rol_id);
+    console.log('🔍 User rol:', user?.rol);
+    console.log('🔍 Is Admin:', this.isAdmin());
+    console.log('🔍 Is Psicologo:', this.isPsicologo());
+    console.log('🔍 Is Paciente:', this.isPaciente());
+  }
+
   isAdmin(): boolean {
     const user = this.getCurrentUser();
-    return user?.rol_id === 1;
+    return user?.rol_id === 1 || user?.rol === 'admin';
   }
 
   isPsicologo(): boolean {
     const user = this.getCurrentUser();
-    return user?.rol_id === 2;
+    return user?.rol_id === 2 || user?.rol === 'psicologo';
   }
 
   isPaciente(): boolean {
     const user = this.getCurrentUser();
-    return user?.rol_id === 3;
+    return user?.rol_id === 3 || user?.rol === 'paciente';
   }
 }
 
