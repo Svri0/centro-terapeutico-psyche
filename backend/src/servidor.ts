@@ -9,10 +9,8 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import path from 'path';
 import { createServer } from 'http';
-import { Server as SocketIOServer } from 'socket.io';
 import { MENSAJES_GENERALES } from './utilidades/mensajes';
 import { ManejadorRespuestas } from './utilidades/respuestas';
-import chatController from './controladores/chat.controlador';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -20,48 +18,8 @@ dotenv.config();
 const app = express();
 const PUERTO = process.env.PORT || 3002;
 
-// Crear servidor HTTP para Socket.io
+// Crear servidor HTTP
 const httpServer = createServer(app);
-const io = new SocketIOServer(httpServer, {
-  cors: {
-    origin: [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://localhost:3002',
-      'http://localhost:3003',
-      'http://localhost:3004',
-      'http://localhost:3005',
-      'http://localhost:5173',
-      'http://127.0.0.1:3000',
-      'http://127.0.0.1:3001',
-      'http://127.0.0.1:3002',
-      'http://127.0.0.1:3003',
-      'http://127.0.0.1:3004',
-      'http://127.0.0.1:3005',
-      'http://127.0.0.1:5173'
-    ],
-    credentials: true
-  }
-});
-
-// CONFIGURAR IO DESPUÉS DE CREAR EL SERVIDOR - SOLUCIÓN DEFINITIVA
-console.log('🔌 Configurando ChatController con WebSocket...');
-console.log('🔌 Servidor - chatController disponible:', !!chatController);
-console.log('🔌 Servidor - chatController.io ANTES:', chatController.isIoConfigured());
-
-chatController.setIo(io);
-
-console.log('🔌 Servidor - chatController.io DESPUÉS:', chatController.isIoConfigured());
-console.log('🔌 ChatController configurado con WebSocket - CONFIRMADO');
-
-// Configurar ChatAutomaticoService con WebSocket
-console.log('🔌 Configurando ChatAutomaticoService con WebSocket...');
-import('./utilidades/chat-automatico.service').then(({ ChatAutomaticoService }) => {
-  ChatAutomaticoService.setIo(io);
-  console.log('🔌 ChatAutomaticoService configurado con WebSocket - CONFIRMADO');
-}).catch(error => {
-  console.error('❌ Error al configurar ChatAutomaticoService:', error);
-});
 
 // Configurar Limpiador Automático de Citas Canceladas
 console.log('🧹 Configurando Limpiador Automático de Citas...');
@@ -657,7 +615,6 @@ const iniciarServidor = async () => {
         console.log(`⏰ Iniciado: ${new Date().toLocaleString('es-CL')}`);
         console.log('═══════════════════════════════════════════════════════\n');
         
-        configurarEventosServidor(servidor);
       })
       .on('error', async (err: any) => {
         if (err.code === 'EADDRINUSE') {
@@ -683,7 +640,6 @@ const iniciarServidor = async () => {
               console.log(`⏰ Iniciado: ${new Date().toLocaleString('es-CL')}`);
               console.log('═══════════════════════════════════════════════════════\n');
 
-              configurarEventosServidor(servidorAlternativo);
             });
           } catch (error) {
             console.log('\n💥 ═══════════════════════════════════════════════════════');
@@ -707,6 +663,7 @@ const iniciarServidor = async () => {
         }
       });
 
+    // Configurar eventos del servidor
     configurarEventosServidor(servidor);
   } catch (error) {
     console.log('\n💥 ═══════════════════════════════════════════════════════');
@@ -720,42 +677,7 @@ const iniciarServidor = async () => {
 
 // Configurar eventos del servidor
 const configurarEventosServidor = (servidor: any) => {
-  // Configurar Socket.io
-  io.on('connection', (socket) => {
-    console.log('🔌 Usuario conectado:', socket.id);
-    
-    // Unir usuario a sala personal
-    socket.on('join-user', (userId: string) => {
-      socket.join(`user_${userId}`);
-      console.log(`👤 Usuario ${userId} unido a sala user_${userId}`);
-    });
-    
-    // Unir a sala de chat
-    socket.on('join-chat', (chatId: string) => {
-      socket.join(`chat_${chatId}`);
-      console.log(`💬 Usuario unido al chat: ${chatId}`);
-    });
-    
-    // Manejar mensajes de chat
-    socket.on('send-message', (data) => {
-      const { chatId, message, senderId } = data;
-      
-      // Emitir mensaje a todos en el chat
-      io.to(`chat_${chatId}`).emit('new-message', {
-        chatId,
-        message,
-        senderId,
-        timestamp: new Date().toISOString()
-      });
-      
-      console.log(`📨 Mensaje enviado en chat ${chatId}:`, message);
-    });
-    
-    // Desconexión
-    socket.on('disconnect', () => {
-      console.log('🔌 Usuario desconectado:', socket.id);
-    });
-  });
+  console.log('✅ Eventos del servidor configurados correctamente');
 
   // Cierre graceful con mensajes personalizados
   process.on('SIGTERM', () => {

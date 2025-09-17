@@ -52,7 +52,7 @@ const RegistroPaciente: React.FC = () => {
 
   const verificarToken = async () => {
     try {
-      const response = await axios.get(`http://localhost:3004/api/v1/pacientes/verificar-token/${token}`);
+      const response = await axios.get(`http://localhost:3002/api/v1/pacientes/verificar-token/${token}`);
       
       if (response.data.exito) {
         setUsuarioTemporal(response.data.data.usuario);
@@ -105,7 +105,7 @@ const RegistroPaciente: React.FC = () => {
     setError('');
 
     try {
-      const response = await axios.post('http://localhost:3004/api/v1/pacientes/completar-registro', {
+      const response = await axios.post('http://localhost:3002/api/v1/pacientes/completar-registro', {
         token,
         ...formData
       });

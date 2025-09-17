@@ -190,7 +190,8 @@ export const verificarRol = (rolesPermitidos: string[]) => {
       const rolMap: { [key: number]: string } = {
         1: 'admin',
         2: 'psicologo',
-        3: 'paciente'
+        3: 'paciente',
+        4: 'recepcionista'
       };
 
       const rolUsuario = rolMap[req.usuario.rol_id];
