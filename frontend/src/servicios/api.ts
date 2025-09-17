@@ -24,8 +24,31 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      // Solo cerrar sesión si es un error de token expirado o inválido
+      // Y solo si estamos en rutas protegidas (NUNCA en la página de inicio)
+      const errorMessage = error.response?.data?.mensaje || '';
+      const errorCode = error.response?.data?.codigo || '';
+      
+      // NUNCA redirigir desde la página de inicio (/)
+      if (window.location.pathname === '/') {
+        console.log('🏠 Página de inicio - No redirigir por errores de autenticación');
+        return Promise.reject(error);
+      }
+      
+      // Solo cerrar sesión para errores de autenticación en rutas protegidas
+      if ((errorCode.includes('AUTH_101') || errorCode.includes('AUTH_102') || 
+          errorMessage.includes('Token') || errorMessage.includes('token')) &&
+          (window.location.pathname.startsWith('/dashboard') || 
+           window.location.pathname.startsWith('/admin') ||
+           window.location.pathname.startsWith('/psicologo') ||
+           window.location.pathname.startsWith('/paciente'))) {
+        console.log('🔒 Token inválido o expirado, cerrando sesión...');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      } else {
+        console.log('🚫 Error de permisos, no cerrando sesión:', errorMessage);
+      }
     }
     return Promise.reject(error);
   }

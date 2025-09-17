@@ -75,11 +75,15 @@ module.exports = {
       rolesToInsert.push({
         id: 4,
         nombre: 'recepcionista',
-        descripcion: 'Personal de recepción con acceso limitado',
+        descripcion: 'Personal de recepción con acceso a gestión de agenda, pacientes y pagos',
         permisos: JSON.stringify({
-          pacientes: ['leer'],
-          sesiones: ['crear', 'leer', 'actualizar'],
-          agenda: ['leer', 'actualizar']
+          pacientes: ['crear', 'leer', 'actualizar'],
+          citas: ['crear', 'leer', 'actualizar', 'eliminar'],
+          pagos: ['crear', 'leer', 'actualizar'],
+          agenda: ['leer', 'actualizar'],
+          mensajes: ['crear', 'leer'],
+          reportes: ['leer'],
+          dashboard: ['leer']
         }),
         activo: true,
         created_at: new Date(),
