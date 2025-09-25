@@ -3,15 +3,24 @@ import { Psicologo } from '../servicios/admin.service';
 import { adminService } from '../servicios/admin.service';
 import { authService } from '../servicios/auth.service';
 import TablaPsicologos from '../componentes/TablaPsicologos';
+import TablaRecepcionistas from '../componentes/TablaRecepcionistas';
+import TablaPacientes from '../componentes/TablaPacientes';
 import ModalCrearPsicologo from '../componentes/ModalCrearPsicologo';
+import ModalCrearRecepcionista from '../componentes/ModalCrearRecepcionista';
+import ModalCrearPaciente from '../componentes/ModalCrearPaciente';
 import ModalEditarPsicologo from '../componentes/ModalEditarPsicologo';
 import Logo from '../componentes/Logo';
 
 const PanelAdmin: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'psicologos' | 'pacientes' | 'recepcionistas'>('psicologos');
   const [psicologos, setPsicologos] = useState<Psicologo[]>([]);
+  const [recepcionistas, setRecepcionistas] = useState<any[]>([]);
+  const [pacientes, setPacientes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCrearModal, setShowCrearModal] = useState(false);
+  const [showCrearRecepcionistaModal, setShowCrearRecepcionistaModal] = useState(false);
+  const [showCrearPacienteModal, setShowCrearPacienteModal] = useState(false);
   const [showEditarModal, setShowEditarModal] = useState(false);
   const [psicologoSeleccionado, setPsicologoSeleccionado] = useState<Psicologo | null>(null);
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -49,8 +58,14 @@ const PanelAdmin: React.FC = () => {
   const user = authService.getCurrentUser();
 
   useEffect(() => {
-    cargarPsicologos();
-  }, []);
+    if (activeTab === 'psicologos') {
+      cargarPsicologos();
+    } else if (activeTab === 'recepcionistas') {
+      cargarRecepcionistas();
+    } else if (activeTab === 'pacientes') {
+      cargarPacientes();
+    }
+  }, [activeTab]);
 
   // Debug para el modal de cambiar contraseña
   useEffect(() => {
@@ -96,12 +111,62 @@ const PanelAdmin: React.FC = () => {
     }
   };
 
+  const cargarRecepcionistas = async () => {
+    try {
+      setLoading(true);
+      const data = await adminService.obtenerRecepcionistas();
+      setRecepcionistas(data);
+    } catch (error: any) {
+      console.error('❌ Error al cargar recepcionistas:', error);
+      setError(error.message || 'Error al cargar recepcionistas');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const cargarPacientes = async () => {
+    try {
+      setLoading(true);
+      const data = await adminService.obtenerTodosPacientes();
+      setPacientes(data);
+    } catch (error: any) {
+      console.error('❌ Error al cargar pacientes:', error);
+      setError(error.message || 'Error al cargar pacientes');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCrearPsicologo = async (data: any, avatar?: File | null) => {
     try {
       await adminService.crearPsicologo(data, avatar || undefined);
       setShowCrearModal(false);
       cargarPsicologos();
       mostrarNotificacion('Psicólogo creado exitosamente', 'success');
+    } catch (error: any) {
+      setError(error.message);
+      mostrarNotificacion(error.message, 'error');
+    }
+  };
+
+  const handleCrearRecepcionista = async (data: any, avatar?: File | null) => {
+    try {
+      await adminService.crearRecepcionista(data, avatar || undefined);
+      setShowCrearRecepcionistaModal(false);
+      cargarRecepcionistas();
+      mostrarNotificacion('Recepcionista creado exitosamente', 'success');
+    } catch (error: any) {
+      setError(error.message);
+      mostrarNotificacion(error.message, 'error');
+    }
+  };
+
+  const handleCrearPaciente = async (data: any, avatar?: File | null) => {
+    try {
+      await adminService.crearPaciente(data);
+      setShowCrearPacienteModal(false);
+      cargarPacientes();
+      mostrarNotificacion('Paciente creado exitosamente', 'success');
     } catch (error: any) {
       setError(error.message);
       mostrarNotificacion(error.message, 'error');
@@ -321,6 +386,88 @@ const PanelAdmin: React.FC = () => {
     setShowEditarModal(true);
   };
 
+  // Funciones para recepcionistas
+  const handleEditarRecepcionista = async (recepcionista: any) => {
+    try {
+      await adminService.actualizarRecepcionista(recepcionista.id, recepcionista);
+      cargarRecepcionistas();
+      mostrarNotificacion('Recepcionista actualizado exitosamente', 'success');
+    } catch (error: any) {
+      mostrarNotificacion(error.message, 'error');
+    }
+  };
+
+  const handleDesactivarRecepcionista = async (id: string) => {
+    try {
+      await adminService.desactivarRecepcionista(id);
+      cargarRecepcionistas();
+      mostrarNotificacion('Recepcionista desactivado exitosamente', 'success');
+    } catch (error: any) {
+      mostrarNotificacion(error.message, 'error');
+    }
+  };
+
+  const handleReactivarRecepcionista = async (id: string) => {
+    try {
+      await adminService.activarRecepcionista(id);
+      cargarRecepcionistas();
+      mostrarNotificacion('Recepcionista reactivado exitosamente', 'success');
+    } catch (error: any) {
+      mostrarNotificacion(error.message, 'error');
+    }
+  };
+
+  const handleEliminarRecepcionista = async (id: string) => {
+    try {
+      await adminService.eliminarRecepcionista(id);
+      cargarRecepcionistas();
+      mostrarNotificacion('Recepcionista eliminado exitosamente', 'success');
+    } catch (error: any) {
+      mostrarNotificacion(error.message, 'error');
+    }
+  };
+
+  // Funciones para pacientes
+  const handleEditarPaciente = async (paciente: any) => {
+    try {
+      await adminService.actualizarPaciente(paciente.id, paciente);
+      cargarPacientes();
+      mostrarNotificacion('Paciente actualizado exitosamente', 'success');
+    } catch (error: any) {
+      mostrarNotificacion(error.message, 'error');
+    }
+  };
+
+  const handleDesactivarPaciente = async (id: string) => {
+    try {
+      await adminService.desactivarPaciente(id);
+      cargarPacientes();
+      mostrarNotificacion('Paciente desactivado exitosamente', 'success');
+    } catch (error: any) {
+      mostrarNotificacion(error.message, 'error');
+    }
+  };
+
+  const handleReactivarPaciente = async (id: string) => {
+    try {
+      await adminService.activarPaciente(id);
+      cargarPacientes();
+      mostrarNotificacion('Paciente reactivado exitosamente', 'success');
+    } catch (error: any) {
+      mostrarNotificacion(error.message, 'error');
+    }
+  };
+
+  const handleEliminarPaciente = async (id: string) => {
+    try {
+      await adminService.eliminarPaciente(id);
+      cargarPacientes();
+      mostrarNotificacion('Paciente eliminado exitosamente', 'success');
+    } catch (error: any) {
+      mostrarNotificacion(error.message, 'error');
+    }
+  };
+
   if (!user) {
     return <div>Cargando...</div>;
   }
@@ -372,20 +519,82 @@ const PanelAdmin: React.FC = () => {
         <div className="px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-xl font-bold text-gray-900 tracking-widest uppercase">Gestión de Psicólogos</h2>
+              <h2 className="text-xl font-bold text-gray-900 tracking-widest uppercase">Panel de Administración</h2>
               <p className="mt-1 text-xs font-semibold text-gray-600 tracking-widest uppercase">
-                Administra las cuentas de psicólogos del sistema
+                Gestiona todos los usuarios del sistema
               </p>
             </div>
-            <button
-              onClick={() => setShowCrearModal(true)}
-              className="bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 text-amber-800 px-4 py-2 rounded-md text-sm font-medium flex items-center transition-all duration-200 hover-bounce shadow-sm hover:shadow-md animate-bounce-in"
-            >
-              <svg className="w-4 h-4 mr-2 hover-rotate" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              Nuevo Psicólogo
-            </button>
+            {activeTab === 'psicologos' && (
+              <button
+                onClick={() => setShowCrearModal(true)}
+                className="bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 text-amber-800 px-4 py-2 rounded-md text-sm font-medium flex items-center transition-all duration-200 hover-bounce shadow-sm hover:shadow-md animate-bounce-in"
+              >
+                <svg className="w-4 h-4 mr-2 hover-rotate" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Nuevo Psicólogo
+              </button>
+            )}
+            {activeTab === 'recepcionistas' && (
+              <button
+                onClick={() => setShowCrearRecepcionistaModal(true)}
+                className="bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 text-amber-800 px-4 py-2 rounded-md text-sm font-medium flex items-center transition-all duration-200 hover-bounce shadow-sm hover:shadow-md animate-bounce-in"
+              >
+                <svg className="w-4 h-4 mr-2 hover-rotate" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Nuevo Recepcionista
+              </button>
+            )}
+            {activeTab === 'pacientes' && (
+              <button
+                onClick={() => setShowCrearPacienteModal(true)}
+                className="bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 text-amber-800 px-4 py-2 rounded-md text-sm font-medium flex items-center transition-all duration-200 hover-bounce shadow-sm hover:shadow-md animate-bounce-in"
+              >
+                <svg className="w-4 h-4 mr-2 hover-rotate" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Nuevo Paciente
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Navigation Tabs */}
+        <div className="px-4 sm:px-6 lg:px-8">
+          <div className="border-b border-gray-200">
+            <nav className="-mb-px flex space-x-8">
+              <button
+                onClick={() => setActiveTab('psicologos')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === 'psicologos'
+                    ? 'border-amber-500 text-amber-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                👨‍⚕️ Psicólogos
+              </button>
+              <button
+                onClick={() => setActiveTab('pacientes')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === 'pacientes'
+                    ? 'border-amber-500 text-amber-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                👥 Pacientes
+              </button>
+              <button
+                onClick={() => setActiveTab('recepcionistas')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === 'recepcionistas'
+                    ? 'border-amber-500 text-amber-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                👤 Recepcionistas
+              </button>
+            </nav>
           </div>
         </div>
 
@@ -398,21 +607,53 @@ const PanelAdmin: React.FC = () => {
 
         {/* Content */}
         <div className="px-4 sm:px-6 lg:px-8 py-6">
-          {loading ? (
-            <div className="flex justify-center items-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600"></div>
-              <span className="ml-2 text-amber-600 text-sm tracking-wide">Cargando psicólogos...</span>
-            </div>
+          {activeTab === 'psicologos' ? (
+            loading ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600"></div>
+                <span className="ml-2 text-amber-600 text-sm tracking-wide">Cargando psicólogos...</span>
+              </div>
+            ) : (
+              <TablaPsicologos
+                psicologos={psicologos}
+                onEditar={abrirModalEditar}
+                onDesactivar={handleDesactivarPsicologo}
+                onReactivar={handleReactivarPsicologo}
+                onEliminar={handleEliminarPsicologo}
+                onEliminarCita={handleEliminarCita}
+                onReasignarPaciente={handleReasignarPaciente}
+              />
+            )
+          ) : activeTab === 'recepcionistas' ? (
+            loading ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600"></div>
+                <span className="ml-2 text-amber-600 text-sm tracking-wide">Cargando recepcionistas...</span>
+              </div>
+            ) : (
+              <TablaRecepcionistas
+                recepcionistas={recepcionistas}
+                onEditar={handleEditarRecepcionista}
+                onDesactivar={handleDesactivarRecepcionista}
+                onReactivar={handleReactivarRecepcionista}
+                onEliminar={handleEliminarRecepcionista}
+              />
+            )
           ) : (
-            <TablaPsicologos
-              psicologos={psicologos}
-              onEditar={abrirModalEditar}
-              onDesactivar={handleDesactivarPsicologo}
-              onReactivar={handleReactivarPsicologo}
-              onEliminar={handleEliminarPsicologo}
-              onEliminarCita={handleEliminarCita}
-              onReasignarPaciente={handleReasignarPaciente}
-            />
+            loading ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600"></div>
+                <span className="ml-2 text-amber-600 text-sm tracking-wide">Cargando pacientes...</span>
+              </div>
+            ) : (
+              <TablaPacientes
+                pacientes={pacientes}
+                onEditar={handleEditarPaciente}
+                onDesactivar={handleDesactivarPaciente}
+                onReactivar={handleReactivarPaciente}
+                onEliminar={handleEliminarPaciente}
+              />
+            )
           )}
         </div>
       </main>
@@ -422,6 +663,22 @@ const PanelAdmin: React.FC = () => {
         <ModalCrearPsicologo
           onClose={() => setShowCrearModal(false)}
           onSubmit={handleCrearPsicologo}
+        />
+      )}
+
+      {showCrearRecepcionistaModal && (
+        <ModalCrearRecepcionista
+          isOpen={showCrearRecepcionistaModal}
+          onClose={() => setShowCrearRecepcionistaModal(false)}
+          onCrear={handleCrearRecepcionista}
+        />
+      )}
+
+      {showCrearPacienteModal && (
+        <ModalCrearPaciente
+          isOpen={showCrearPacienteModal}
+          onClose={() => setShowCrearPacienteModal(false)}
+          onCrear={handleCrearPaciente}
         />
       )}
 

@@ -24,6 +24,8 @@ const TablaPsicologos: React.FC<TablaPsicologosProps> = ({
 }) => {
   const [selectedPsicologo, setSelectedPsicologo] = useState<Psicologo | null>(null);
   const [showDetalles, setShowDetalles] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterEstado, setFilterEstado] = useState('todos');
 
   const formatearFecha = (fecha: string) => {
     return new Date(fecha).toLocaleDateString('es-CL');
@@ -49,6 +51,22 @@ const TablaPsicologos: React.FC<TablaPsicologosProps> = ({
     return especialidad.substring(0, maxLength) + '...';
   };
 
+  // Filtrar psicólogos
+  const psicologosFiltrados = psicologos.filter(psicologo => {
+    const matchesSearch = searchTerm === '' ||
+      psicologo.nombres.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      psicologo.apellidos.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      psicologo.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (psicologo.telefono && psicologo.telefono.includes(searchTerm)) ||
+      (psicologo.especialidad && psicologo.especialidad.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesEstado = filterEstado === 'todos' || 
+      (filterEstado === 'activo' && psicologo.activo) ||
+      (filterEstado === 'inactivo' && !psicologo.activo);
+    
+    return matchesSearch && matchesEstado;
+  });
+
   if (!psicologos || psicologos.length === 0) {
     return (
       <div className="text-center py-12">
@@ -64,7 +82,51 @@ const TablaPsicologos: React.FC<TablaPsicologosProps> = ({
   }
 
   return (
-    <>
+    <div className="space-y-4">
+      {/* Filtros */}
+      <div className="bg-white p-4 rounded-lg shadow">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Buscar
+            </label>
+            <input
+              type="text"
+              placeholder="Nombre, email, teléfono o especialidad..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Estado
+            </label>
+            <select
+              value={filterEstado}
+              onChange={(e) => setFilterEstado(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="todos">Todos los estados</option>
+              <option value="activo">Activo</option>
+              <option value="inactivo">Inactivo</option>
+            </select>
+          </div>
+          <div className="flex items-end">
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setFilterEstado('todos');
+              }}
+              className="w-full bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md transition-colors"
+            >
+              Limpiar Filtros
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabla */}
       <div className="bg-white shadow-sm overflow-hidden sm:rounded-lg border border-gray-100 w-full">
         <div className="w-full">
           <table className="w-full divide-y divide-gray-100">
@@ -97,7 +159,7 @@ const TablaPsicologos: React.FC<TablaPsicologosProps> = ({
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
-              {psicologos?.map((psicologo) => (
+              {psicologosFiltrados?.map((psicologo) => (
                 <tr key={psicologo.id} className="hover:bg-gray-25">
                   <td className="px-3 py-3">
                     <div className="flex items-center">
@@ -230,7 +292,7 @@ const TablaPsicologos: React.FC<TablaPsicologosProps> = ({
           onReasignarPaciente={onReasignarPaciente}
         />
       )}
-    </>
+    </div>
   );
 };
 
