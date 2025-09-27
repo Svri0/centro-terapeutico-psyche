@@ -109,13 +109,26 @@ pids
 
 # 📊 Uploads folder (if contains sensitive files)
 uploads/
-*.jpg
-*.jpeg
-*.png
-*.gif
+backend/uploads/
 *.pdf
 *.doc
 *.docx
+
+# 🖼️ Images - Ignore uploaded user images but allow frontend static images
+backend/uploads/**/*.jpg
+backend/uploads/**/*.jpeg
+backend/uploads/**/*.png
+backend/uploads/**/*.gif
+
+# ✅ Allow frontend public images
+!frontend/public/*.jpg
+!frontend/public/*.jpeg
+!frontend/public/*.png
+!frontend/public/*.gif
+!frontend/src/img/*.jpg
+!frontend/src/img/*.jpeg
+!frontend/src/img/*.png
+!frontend/src/img/*.gif
 
 # 🎮 Game save files
 *.save

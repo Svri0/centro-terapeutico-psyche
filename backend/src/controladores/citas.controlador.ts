@@ -26,28 +26,28 @@ export const obtenerCitasPsicologo = async (req: Request, res: Response) => {
 
     const [citas] = await sequelize.query(
       `SELECT 
-        c.id,
-        c.paciente_id,
+        s.id,
+        s.paciente_id,
         p.nombres as paciente_nombres,
         p.apellidos as paciente_apellidos,
         p.email as paciente_email,
         p.numero_ficha,
-        c.fecha,
-        c.hora_inicio,
-        c.hora_fin,
-        c.duracion_minutos,
-        c.estado,
-        c.tipo_sesion,
-        c.modalidad,
-        c.notas_paciente,
-        c.notas_psicologo,
-        c.recordatorio_enviado,
-        c.created_at,
-        c.updated_at
-       FROM citas c
-       INNER JOIN pacientes p ON c.paciente_id = p.id
-       WHERE c.psicologo_id = :psicologoId
-       ORDER BY c.fecha ASC, c.hora_inicio ASC`,
+        s.fecha_programada as fecha,
+        s.fecha_inicio as hora_inicio,
+        s.fecha_fin as hora_fin,
+        s.duracion_minutos,
+        s.estado,
+        s.tipo_sesion,
+        s.tipo_sesion as modalidad,
+        s.observaciones as notas_paciente,
+        s.notas_evolucion as notas_psicologo,
+        false as recordatorio_enviado,
+        s.created_at,
+        s.updated_at
+       FROM sesiones s
+       INNER JOIN pacientes p ON s.paciente_id = p.id
+       WHERE s.psicologo_id = :psicologoId
+       ORDER BY s.fecha_programada ASC, s.fecha_inicio ASC`,
       {
         replacements: { psicologoId }
       }
@@ -110,27 +110,27 @@ export const obtenerCitasPaciente = async (req: Request, res: Response) => {
     
     const [citas] = await sequelize.query(
       `SELECT 
-        c.id,
-        c.psicologo_id,
+        s.id,
+        s.psicologo_id,
         u.nombres as psicologo_nombres,
         u.apellidos as psicologo_apellidos,
         u.email as psicologo_email,
-        c.fecha,
-        c.hora_inicio,
-        c.hora_fin,
-        c.duracion_minutos,
-        c.estado,
-        c.tipo_sesion,
-        c.modalidad,
-        c.notas_paciente,
-        c.notas_psicologo,
-        c.recordatorio_enviado,
-        c.created_at,
-        c.updated_at
-       FROM citas c
-       LEFT JOIN usuarios u ON c.psicologo_id = u.id
-       WHERE c.paciente_id = :pacienteId
-       ORDER BY c.fecha ASC, c.hora_inicio ASC`,
+        s.fecha_programada as fecha,
+        s.fecha_inicio as hora_inicio,
+        s.fecha_fin as hora_fin,
+        s.duracion_minutos,
+        s.estado,
+        s.tipo_sesion,
+        s.tipo_sesion as modalidad,
+        s.observaciones as notas_paciente,
+        s.notas_evolucion as notas_psicologo,
+        false as recordatorio_enviado,
+        s.created_at,
+        s.updated_at
+       FROM sesiones s
+       LEFT JOIN usuarios u ON s.psicologo_id = u.id
+       WHERE s.paciente_id = :pacienteId
+       ORDER BY s.fecha_programada ASC, s.fecha_inicio ASC`,
       {
         replacements: { pacienteId }
       }
@@ -172,17 +172,17 @@ export const obtenerCita = async (req: Request, res: Response) => {
 
     const [citas] = await sequelize.query(
       `SELECT 
-        c.*,
+        s.*,
         p.nombres as paciente_nombres,
         p.apellidos as paciente_apellidos,
         p.email as paciente_email,
         u.nombres as psicologo_nombres,
         u.apellidos as psicologo_apellidos,
         u.email as psicologo_email
-       FROM citas c
-       INNER JOIN pacientes p ON c.paciente_id = p.id
-       INNER JOIN usuarios u ON c.psicologo_id = u.id
-       WHERE c.id = :id AND (c.paciente_id = :userId OR c.psicologo_id = :userId)`,
+       FROM sesiones s
+       INNER JOIN pacientes p ON s.paciente_id = p.id
+       INNER JOIN usuarios u ON s.psicologo_id = u.id
+       WHERE s.id = :id AND (s.paciente_id = :userId OR s.psicologo_id = :userId)`,
       {
         replacements: { id, userId }
       }
@@ -316,13 +316,13 @@ export const crearCita = async (req: Request, res: Response) => {
 
     // Verificar disponibilidad
     const [citasExistentes] = await sequelize.query(
-      `SELECT id FROM citas 
+      `SELECT id FROM sesiones 
        WHERE psicologo_id = :psicologoId 
-       AND fecha = :fecha 
+       AND DATE(fecha_programada) = :fecha 
        AND (
-         (hora_inicio <= :horaInicio AND hora_fin > :horaInicio) OR
-         (hora_inicio < :horaFin AND hora_fin >= :horaFin) OR
-         (hora_inicio >= :horaInicio AND hora_fin <= :horaFin)
+         (TIME(fecha_inicio) <= :horaInicio AND TIME(fecha_fin) > :horaInicio) OR
+         (TIME(fecha_inicio) < :horaFin AND TIME(fecha_fin) >= :horaFin) OR
+         (TIME(fecha_inicio) >= :horaInicio AND TIME(fecha_fin) <= :horaFin)
        )`,
       {
         replacements: { 
@@ -344,14 +344,14 @@ export const crearCita = async (req: Request, res: Response) => {
 
     // Crear la cita
     const [resultado] = await sequelize.query(
-      `INSERT INTO citas (
-        id, paciente_id, psicologo_id, fecha, hora_inicio, hora_fin,
-        duracion_minutos, tipo_sesion, modalidad, notas_paciente,
-        estado, recordatorio_enviado, created_at, updated_at
+      `INSERT INTO sesiones (
+        id, paciente_id, psicologo_id, fecha_programada, fecha_inicio, fecha_fin,
+        duracion_minutos, tipo_sesion, observaciones,
+        estado, created_at, updated_at
       ) VALUES (
         gen_random_uuid(), :pacienteId, :psicologoId, :fecha, :horaInicio, :horaFin,
-        :duracionMinutos, :tipoSesion, :modalidad, :notasPaciente,
-        'programada', false, NOW(), NOW()
+        :duracionMinutos, :tipoSesion, :notasPaciente,
+        'programada', NOW(), NOW()
       ) RETURNING id`,
       {
         replacements: {
@@ -382,7 +382,7 @@ export const crearCita = async (req: Request, res: Response) => {
           p.email as paciente_email,
           u.nombres as psicologo_nombres,
           u.apellidos as psicologo_apellidos
-         FROM citas c
+         FROM sesiones s
          INNER JOIN pacientes p ON c.paciente_id = p.id
          INNER JOIN usuarios u ON c.psicologo_id = u.id
          WHERE c.id = :citaId`,
@@ -452,7 +452,7 @@ export const actualizarCita = async (req: Request, res: Response) => {
 
     // Verificar que la cita existe y pertenece al usuario
     const [cita] = await sequelize.query(
-      `SELECT id FROM citas WHERE id = :id AND (paciente_id = :userId OR psicologo_id = :userId)`,
+      `SELECT id FROM sesiones WHERE id = :id AND (paciente_id = :userId OR psicologo_id = :userId)`,
       {
         replacements: { id, userId }
       }
@@ -468,8 +468,8 @@ export const actualizarCita = async (req: Request, res: Response) => {
 
     // Construir la consulta de actualización dinámicamente
     const camposActualizables = [
-      'fecha', 'hora_inicio', 'hora_fin', 'duracion_minutos',
-      'tipo_sesion', 'modalidad', 'notas_paciente', 'notas_psicologo'
+      'fecha_programada', 'fecha_inicio', 'fecha_fin', 'duracion_minutos',
+      'tipo_sesion', 'observaciones', 'notas_evolucion'
     ];
 
     const camposParaActualizar = camposActualizables.filter(campo => 
@@ -488,7 +488,7 @@ export const actualizarCita = async (req: Request, res: Response) => {
     const setClause = camposParaActualizar.map(campo => `${campo} = :${campo}`).join(', ');
     
     await sequelize.query(
-      `UPDATE citas SET ${setClause}, updated_at = NOW() WHERE id = :id`,
+      `UPDATE sesiones SET ${setClause}, updated_at = NOW() WHERE id = :id`,
       {
         replacements: { ...datosActualizacion, id }
       }
@@ -530,7 +530,7 @@ export const actualizarEstadoCita = async (req: Request, res: Response) => {
 
     // Verificar que la cita existe y pertenece al usuario
     const [cita] = await sequelize.query(
-      `SELECT id FROM citas WHERE id = :id AND (paciente_id = :userId OR psicologo_id = :userId)`,
+      `SELECT id FROM sesiones WHERE id = :id AND (paciente_id = :userId OR psicologo_id = :userId)`,
       {
         replacements: { id, userId }
       }
@@ -564,7 +564,7 @@ export const actualizarEstadoCita = async (req: Request, res: Response) => {
     console.log('✅ Estado válido, actualizando cita...');
     
     await sequelize.query(
-      `UPDATE citas SET estado = :estado, updated_at = NOW() WHERE id = :id`,
+      `UPDATE sesiones SET estado = :estado, updated_at = NOW() WHERE id = :id`,
       {
         replacements: { estado, id }
       }
@@ -623,10 +623,10 @@ export const cancelarCita = async (req: Request, res: Response) => {
         u.nombres as psicologo_nombres,
         u.apellidos as psicologo_apellidos,
         u.email as psicologo_email
-       FROM citas c
-       INNER JOIN pacientes p ON c.paciente_id = p.id
-       INNER JOIN usuarios u ON c.psicologo_id = u.id
-       WHERE c.id = :id AND (p.usuario_id = :userId OR c.psicologo_id = :userId)`,
+       FROM sesiones s
+       INNER JOIN pacientes p ON s.paciente_id = p.id
+       INNER JOIN usuarios u ON s.psicologo_id = u.id
+       WHERE s.id = :id AND (p.usuario_id = :userId OR s.psicologo_id = :userId)`,
       {
         replacements: { id, userId }
       }
@@ -646,7 +646,7 @@ export const cancelarCita = async (req: Request, res: Response) => {
 
     // Actualizar estado de la cita a cancelada
     await sequelize.query(
-      `UPDATE citas SET estado = 'cancelada', updated_at = NOW() WHERE id = :id`,
+      `UPDATE sesiones SET estado = 'cancelada', updated_at = NOW() WHERE id = :id`,
       {
         replacements: { id }
       }
@@ -782,8 +782,8 @@ export const obtenerEstadisticasCitas = async (req: Request, res: Response) => {
         COUNT(CASE WHEN estado = 'completada' THEN 1 END) as citas_completadas,
         COUNT(CASE WHEN estado = 'cancelada' THEN 1 END) as citas_canceladas,
         COUNT(CASE WHEN estado = 'no_show' THEN 1 END) as citas_no_show,
-        COUNT(CASE WHEN fecha = CURRENT_DATE THEN 1 END) as citas_hoy
-       FROM citas 
+        COUNT(CASE WHEN DATE(fecha_programada) = CURRENT_DATE THEN 1 END) as citas_hoy
+       FROM sesiones 
        WHERE psicologo_id = :psicologoId`,
       {
         replacements: { psicologoId }

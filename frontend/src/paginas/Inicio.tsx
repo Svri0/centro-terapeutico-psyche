@@ -599,7 +599,7 @@ const Inicio: React.FC = () => {
             <div className="text-center sm:col-span-2 lg:col-span-1">
               <div className="w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 rounded-full overflow-hidden mx-auto mb-4 lg:mb-6 shadow-lg">
                 <img 
-                  src="/psicologa 2.png" 
+                  src="/psicologa2.png" 
                   alt="Dra. Patricia Herrera" 
                   className="w-full h-full object-cover"
                 />

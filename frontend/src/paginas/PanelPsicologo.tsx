@@ -14,15 +14,14 @@ import Notificacion from '../componentes/Notificacion';
 
 import { PacienteCreado } from '../servicios/pacientes.service';
 import { actualizarPerfilPsicologo, subirImagenReal } from '../servicios/usuarios.service';
-import Logo from '../componentes/Logo';
-import { getAvatarById, AVATARS_ANIMALES } from '../assets/avatars/default-avatars';
+import { AVATARS_ANIMALES } from '../assets/avatars/default-avatars';
 
 interface Sesion {
   id: string;
   paciente: string;
   fecha: string;
   hora: string;
-  estado: 'programada' | 'en_curso' | 'completada' | 'cancelada';
+  estado: 'programada' | 'en_curso' | 'completada' | 'cancelada' | 'confirmada' | 'en_progreso' | 'no_show';
   notas?: string;
 }
 
@@ -68,7 +67,6 @@ const PanelPsicologo: React.FC = () => {
 
 
   // Frase motivadora elegante
-  const fraseMotivadora = "Transformando vidas a través de la salud mental";
 
   // Función para mostrar notificaciones
   const mostrarNotificacion = (mensaje: string, tipo: 'exito' | 'error' | 'advertencia' | 'info') => {
@@ -110,7 +108,7 @@ const PanelPsicologo: React.FC = () => {
       
       // Si el usuario tiene un avatar_url, verificar si es uno de los avatares predefinidos
       if (user.avatar_url) {
-        const avatar = AVATARS_ANIMALES.find(av => av.url === user.avatar_url);
+        const avatar = AVATARS_ANIMALES.find((av: any) => av.url === user.avatar_url);
         if (avatar) {
           setSelectedAvatarId(avatar.id);
         }
@@ -377,7 +375,7 @@ const PanelPsicologo: React.FC = () => {
             {/* Logo y título - Izquierda */}
             <div className="flex items-center">
               <div className="flex-shrink-0 mr-4">
-                <img src="/src/img/psyche.svg" alt="de psyche" className="h-20 w-auto" />
+                <img src="/psyche.svg" alt="de psyche" className="h-20 w-auto" />
               </div>
               <div>
                 <h1 className="text-lg font-light text-gray-800 tracking-widest uppercase">
