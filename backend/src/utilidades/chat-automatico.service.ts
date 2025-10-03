@@ -1,4 +1,4 @@
-import { Mensaje, Paciente, Usuario } from '../modelos';
+import { MensajeChat, Paciente, Usuario } from '../modelos';
 import { log } from './logger';
 
 // Variable global para el servidor io (se establecerá desde servidor.ts)
@@ -44,14 +44,12 @@ export class ChatAutomaticoService {
       const mensajeContenido = `🚫 **CITA CANCELADA**\n\nLa cita programada para el **${fecha} a las ${hora}** ha sido cancelada por el paciente.\n\nSi tienes alguna pregunta, contacta directamente con el paciente.`;
 
       // Guardar mensaje en la base de datos
-      const mensaje = await Mensaje.create({
+      const mensaje = await MensajeChat.create({
         remitente_id: paciente.usuario_id, // El mensaje aparece como enviado por el paciente
         destinatario_id: psicologoId,
         contenido: mensajeContenido,
-        tipo_mensaje: 'notificacion',
-        prioridad: 'alta',
-        leido: false,
-        archivos_adjuntos: []
+        tipo: 'paciente',
+        leido: false
       });
 
       log.info(`✅ Mensaje de cancelación guardado en BD: ${mensaje.id}`);

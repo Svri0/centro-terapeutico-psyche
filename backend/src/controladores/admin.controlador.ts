@@ -7,7 +7,7 @@ import sequelize from '../configuracion/database';
 import { QueryTypes } from 'sequelize';
 import { ManejadorRespuestas } from '../utilidades/respuestas';
 import { log } from '../utilidades/logger';
-// import { crearDisponibilidadPorDefecto } from './disponibilidad.controlador';
+// import { crearDisponibilidadPorDefecto } from './disponibilidadMensual.controlador';
 import AuditoriaService from '../utilidades/auditoria.service';
 import { enviarEmailBienvenidaPsicologo } from '../utilidades/email.service';
 
@@ -741,14 +741,6 @@ export const eliminarPsicologo = async (req: Request, res: Response) => {
         }
       ) as [any[], unknown];
 
-      const [citas] = await sequelize.query(
-        'SELECT COUNT(*) as total FROM citas WHERE psicologo_id = :id',
-        {
-          replacements: { id },
-          transaction
-        }
-      ) as [any[], unknown];
-
       const [pacientes] = await sequelize.query(
         'SELECT COUNT(*) as total FROM pacientes WHERE psicologo_id = :id',
         {
@@ -758,7 +750,6 @@ export const eliminarPsicologo = async (req: Request, res: Response) => {
       ) as [any[], unknown];
 
       totalSesiones = Array.isArray(sesiones) && sesiones.length > 0 ? (sesiones[0] as any).total : 0;
-      totalCitas = Array.isArray(citas) && citas.length > 0 ? (citas[0] as any).total : 0;
       totalPacientes = Array.isArray(pacientes) && pacientes.length > 0 ? (pacientes[0] as any).total : 0;
 
     } catch (countError: any) {
@@ -766,7 +757,7 @@ export const eliminarPsicologo = async (req: Request, res: Response) => {
       // Continuar con la eliminación
     }
 
-    if (totalSesiones > 0 || totalCitas > 0 || totalPacientes > 0) {
+    if (totalSesiones > 0 || totalPacientes > 0) {
       await transaction.rollback();
       
       // Log de intento de eliminación fallido
@@ -781,7 +772,6 @@ export const eliminarPsicologo = async (req: Request, res: Response) => {
           'Registros relacionados encontrados',
           {
             total_sesiones: totalSesiones,
-            total_citas: totalCitas,
             total_pacientes: totalPacientes
           }
         );
@@ -789,11 +779,10 @@ export const eliminarPsicologo = async (req: Request, res: Response) => {
       
       return ManejadorRespuestas.conflicto(
         res,
-        `No se puede eliminar al psicólogo ${psicologoData.nombres} ${psicologoData.apellidos} porque tiene registros relacionados: ${totalSesiones} sesión(es), ${totalCitas} cita(s), ${totalPacientes} paciente(s). Considere desactivar la cuenta en lugar de eliminarla.`,
+        `No se puede eliminar al psicólogo ${psicologoData.nombres} ${psicologoData.apellidos} porque tiene registros relacionados: ${totalSesiones} sesión(es), ${totalPacientes} paciente(s). Considere desactivar la cuenta en lugar de eliminarla.`,
         { 
           psicologo_id: id,
           total_sesiones: totalSesiones,
-          total_citas: totalCitas,
           total_pacientes: totalPacientes,
           nombres: psicologoData.nombres,
           apellidos: psicologoData.apellidos
@@ -805,7 +794,7 @@ export const eliminarPsicologo = async (req: Request, res: Response) => {
     // Eliminar registros relacionados de forma segura
     const deleteQueries = [
       { query: 'DELETE FROM logs_auditoria WHERE usuario_id = :id', name: 'logs_auditoria' },
-      { query: 'DELETE FROM disponibilidad_psicologos WHERE psicologo_id = :id', name: 'disponibilidad_psicologos' },
+      { query: 'DELETE FROM disponibilidad_mensual WHERE psicologo_id = :id', name: 'disponibilidad_mensual' },
       { query: 'DELETE FROM tareas WHERE psicologo_id = :id', name: 'tareas' },
       { query: 'DELETE FROM mensajes WHERE remitente_id = :id OR destinatario_id = :id', name: 'mensajes' }
     ];
@@ -845,7 +834,6 @@ export const eliminarPsicologo = async (req: Request, res: Response) => {
         req,
         {
           total_sesiones: totalSesiones,
-          total_citas: totalCitas,
           total_pacientes: totalPacientes
         }
       );
@@ -1459,7 +1447,7 @@ export const obtenerPacientesPsicologo = async (req: Request, res: Response) => 
 };
 
 // Obtener citas de un psicólogo
-export const obtenerCitasPsicologo = async (req: Request, res: Response) => {
+export const obtenerSesionesPsicologo = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
@@ -1482,8 +1470,8 @@ export const obtenerCitasPsicologo = async (req: Request, res: Response) => {
       );
     }
 
-    // Obtener citas del psicólogo con información del paciente
-    const [citas] = await sequelize.query(
+    // Obtener sesiones del psicólogo con información del paciente
+    const [sesiones] = await sequelize.query(
       `SELECT 
         c.id,
         c.paciente_id,
@@ -1498,7 +1486,7 @@ export const obtenerCitasPsicologo = async (req: Request, res: Response) => {
         c.modalidad,
         c.created_at,
         c.updated_at
-       FROM citas c
+       FROM sesiones c
        INNER JOIN pacientes p ON c.paciente_id = p.id
        WHERE c.psicologo_id = :id
        AND c.estado IN ('programada', 'confirmada', 'en_progreso')
@@ -1510,23 +1498,23 @@ export const obtenerCitasPsicologo = async (req: Request, res: Response) => {
 
     return ManejadorRespuestas.exito(
       res,
-      'Citas del psicólogo obtenidas exitosamente',
-      citas,
+      'Sesiones del psicólogo obtenidas exitosamente',
+      sesiones,
       'ADMIN_035'
     );
 
   } catch (error) {
-    log.error('Error en obtenerCitasPsicologo:', error);
+    log.error('Error en obtenerSesionesPsicologo:', error);
     return ManejadorRespuestas.errorInterno(
       res,
-      'Error al obtener las citas del psicólogo',
+      'Error al obtener las sesiones del psicólogo',
       'ADMIN_036'
     );
   }
 };
 
-// Eliminar cita específica
-export const eliminarCita = async (req: Request, res: Response) => {
+// Eliminar sesión específica
+export const eliminarSesion = async (req: Request, res: Response) => {
   const transaction = await sequelize.transaction();
   
   try {
@@ -1556,7 +1544,7 @@ export const eliminarCita = async (req: Request, res: Response) => {
         p.apellidos as paciente_apellidos,
         u_psicologo.nombres as psicologo_nombres,
         u_psicologo.apellidos as psicologo_apellidos
-       FROM citas c
+       FROM sesiones c
        INNER JOIN pacientes p ON c.paciente_id = p.id
        INNER JOIN usuarios u_psicologo ON c.psicologo_id = u_psicologo.id
        WHERE c.id = :id`,
@@ -1570,27 +1558,27 @@ export const eliminarCita = async (req: Request, res: Response) => {
       await transaction.rollback();
       return ManejadorRespuestas.noEncontrado(
         res,
-        'Cita no encontrada',
+        'Sesión no encontrada',
         'ADMIN_038'
       );
     }
 
-    const citaData = cita[0] as any;
+    const sesionData = cita[0] as any;
 
-    // Verificar que la cita no esté completada o cancelada
-    if (citaData.estado === 'completada' || citaData.estado === 'cancelada') {
+    // Verificar que la sesión no esté completada o cancelada
+    if (sesionData.estado === 'completada' || sesionData.estado === 'cancelada') {
       await transaction.rollback();
       return ManejadorRespuestas.conflicto(
         res,
-        'No se puede eliminar una cita que ya está completada o cancelada',
-        { estado: citaData.estado },
+        'No se puede eliminar una sesión que ya está completada o cancelada',
+        { estado: sesionData.estado },
         'ADMIN_039'
       );
     }
 
-    // Eliminar la cita
+    // Eliminar la sesión
     await sequelize.query(
-      'DELETE FROM citas WHERE id = :id',
+      'DELETE FROM sesiones WHERE id = :id',
       {
         replacements: { id },
         transaction
@@ -1602,9 +1590,9 @@ export const eliminarCita = async (req: Request, res: Response) => {
     // Log de auditoría
     const usuarioId = (req as any).usuario?.id;
     if (usuarioId && typeof usuarioId === 'string') {
-      await AuditoriaService.logEliminacionCita(
+      await AuditoriaService.logEliminacionSesion(
         id,
-        citaData,
+        sesionData,
         usuarioId,
         req
       );
@@ -1612,13 +1600,13 @@ export const eliminarCita = async (req: Request, res: Response) => {
 
     return ManejadorRespuestas.exito(
       res,
-      'Cita eliminada exitosamente',
+      'Sesión eliminada exitosamente',
       {
         id,
-        paciente: `${citaData.paciente_nombres} ${citaData.paciente_apellidos}`,
-        psicologo: `${citaData.psicologo_nombres} ${citaData.psicologo_apellidos}`,
-        fecha: citaData.fecha,
-        hora: citaData.hora_inicio
+        paciente: `${sesionData.paciente_nombres} ${sesionData.paciente_apellidos}`,
+        psicologo: `${sesionData.psicologo_nombres} ${sesionData.psicologo_apellidos}`,
+        fecha: sesionData.fecha,
+        hora: sesionData.hora_inicio
       },
       'ADMIN_040'
     );
@@ -1738,9 +1726,9 @@ export const reasignarPaciente = async (req: Request, res: Response) => {
       }
     ) as [any[], unknown];
 
-    // Actualizar las citas futuras del paciente para que sean con el nuevo psicólogo
+    // Actualizar las sesiones futuras del paciente para que sean con el nuevo psicólogo
     await sequelize.query(
-      `UPDATE citas 
+      `UPDATE sesiones 
        SET psicologo_id = :nuevoPsicologoId, updated_at = NOW() 
        WHERE paciente_id = :pacienteId 
        AND estado IN ('programada', 'confirmada')`,

@@ -3,8 +3,7 @@ import autenticacionRoutes from './autenticacion.routes';
 import usuariosRoutes from './usuarios.routes';
 import pacientesRoutes from './pacientes.routes';
 import tareasRoutes from './tareas.routes';
-import citasRoutes from './citas.routes';
-import disponibilidadRoutes from './disponibilidad.routes';
+import sesionesRoutes from './sesiones.routes';
 import disponibilidadMensualRoutes from './disponibilidadMensual.routes';
 import serviciosRoutes from './servicios.routes';
 import adminRoutes from './admin.routes';
@@ -25,11 +24,8 @@ router.use('/pacientes', pacientesRoutes);
 // Rutas de tareas
 router.use('/tareas', tareasRoutes);
 
-// Rutas de citas
-router.use('/citas', citasRoutes);
-
-// Rutas de disponibilidad (semanal - legacy)
-router.use('/disponibilidad', disponibilidadRoutes);
+// Rutas de sesiones
+router.use('/sesiones', sesionesRoutes);
 
 // Rutas de disponibilidad mensual
 router.use('/disponibilidad-mensual', disponibilidadMensualRoutes);

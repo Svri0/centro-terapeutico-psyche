@@ -124,39 +124,39 @@ const PanelPsicologo: React.FC = () => {
       // Importar el servicio de citas dinámicamente para evitar dependencias circulares
       const { citasService } = await import('../servicios/citas.service');
       
-      // Obtener citas del psicólogo
-      const citasData = await citasService.obtenerCitasPsicologo(user.id);
+      // Obtener sesiones del psicólogo
+      const sesionesData = await citasService.obtenerCitasPsicologo(user.id);
       
       // Obtener fecha de hoy
       const hoy = new Date().toISOString().split('T')[0];
       
-      // Filtrar citas de hoy
-      const citasHoy = citasData.filter(cita => cita.fecha === hoy);
+      // Filtrar sesiones de hoy
+      const sesionesHoy = sesionesData.filter(sesion => sesion.fecha === hoy);
       
-      // Filtrar citas realizadas (completadas o en progreso)
-      const citasRealizadas = citasData.filter(cita => 
-        cita.estado === 'completada' || cita.estado === 'en_progreso'
+      // Filtrar sesiones realizadas (completadas o en progreso)
+      const sesionesRealizadas = sesionesData.filter(sesion => 
+        sesion.estado === 'completada' || sesion.estado === 'en_progreso'
       );
       
-      setSesionesHoy(citasHoy.map(cita => ({
-        id: cita.id,
-        paciente: `${cita.paciente_nombres} ${cita.paciente_apellidos}`,
-        fecha: cita.fecha,
-        hora: cita.hora_inicio,
-        estado: cita.estado,
-        notas: cita.notas_psicologo
+      setSesionesHoy(sesionesHoy.map(sesion => ({
+        id: sesion.id,
+        paciente: `${sesion.paciente_nombres} ${sesion.paciente_apellidos}`,
+        fecha: sesion.fecha,
+        hora: sesion.hora_inicio,
+        estado: sesion.estado,
+        notas: sesion.notas_psicologo
       })));
       
-      setSesionesRealizadas(citasRealizadas.map(cita => ({
-        id: cita.id,
-        paciente: `${cita.paciente_nombres} ${cita.paciente_apellidos}`,
-        fecha: cita.fecha,
-        hora: cita.hora_inicio,
-        estado: cita.estado,
-        notas: cita.notas_psicologo
+      setSesionesRealizadas(sesionesRealizadas.map(sesion => ({
+        id: sesion.id,
+        paciente: `${sesion.paciente_nombres} ${sesion.paciente_apellidos}`,
+        fecha: sesion.fecha,
+        hora: sesion.hora_inicio,
+        estado: sesion.estado,
+        notas: sesion.notas_psicologo
       })));
       
-      setTotalSesiones(citasData.length);
+      setTotalSesiones(sesionesData.length);
     } catch (error) {
       console.error('Error al cargar datos:', error);
       setSesionesHoy([]);

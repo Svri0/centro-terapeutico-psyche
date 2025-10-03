@@ -50,14 +50,6 @@ const io = new SocketIOServer(httpServer, {
 // Inicializar servicio de WebSocket para chat
 const chatWebSocketService = new ChatWebSocketService(io);
 
-// Configurar Limpiador Automático de Citas Canceladas
-console.log('🧹 Configurando Limpiador Automático de Citas...');
-import('./utilidades/limpiador-citas.service').then(({ LimpiadorCitasService }) => {
-  LimpiadorCitasService.iniciar();
-  console.log('🧹 Limpiador Automático de Citas configurado - CONFIRMADO');
-}).catch(error => {
-  console.error('❌ Error al configurar Limpiador de Citas:', error);
-});
 
 // Middleware
 app.use(helmet());

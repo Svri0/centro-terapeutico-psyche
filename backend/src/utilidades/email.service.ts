@@ -152,7 +152,7 @@ export const enviarEmailBienvenidaPsicologo = async (
         <div style="background-color: #ecfdf5; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0;">
           <h4 style="color: #065f46; margin-top: 0;">💡 Funcionalidades Disponibles</h4>
           <ul style="color: #065f46; line-height: 1.6; word-wrap: break-word; overflow-wrap: break-word;">
-            <li>Gestión de pacientes y citas</li>
+            <li>Gestión de pacientes y sesiones</li>
             <li>Registro de sesiones terapéuticas</li>
             <li>Sistema de tareas y seguimiento</li>
             <li>Comunicación con pacientes</li>
@@ -263,13 +263,13 @@ export const enviarEmailConfirmacionCita = async (
         </div>
         
         <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
-          <h3 style="color: #92400e; margin-top: 0; font-size: 18px;">⚠️ ¿No solicitaste esta cita?</h3>
+          <h3 style="color: #92400e; margin-top: 0; font-size: 18px;">⚠️ ¿No solicitaste esta sesión?</h3>
           <p style="color: #92400e; margin: 10px 0; line-height: 1.6;">
-            Si no solicitaste esta cita o necesitas cancelarla, puedes hacerlo desde tu perfil en el sistema.
+            Si no solicitaste esta sesión o necesitas cancelarla, puedes hacerlo desde tu perfil en el sistema.
           </p>
           <div style="margin-top: 15px;">
             <a href="${process.env.FRONTEND_URL}/perfil-paciente" style="display: inline-block; background-color: #f59e0b; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 500; transition: background-color 0.3s;">
-              🚫 Cancelar Cita
+              🚫 Cancelar Sesión
             </a>
           </div>
         </div>
@@ -277,7 +277,7 @@ export const enviarEmailConfirmacionCita = async (
         <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
           <h3 style="color: #1e40af; margin-top: 0; font-size: 18px;">📱 Acceso desde tu Dispositivo</h3>
           <p style="color: #1e40af; margin: 10px 0; line-height: 1.6;">
-            Puedes acceder a tu perfil y gestionar tus citas desde cualquier dispositivo ingresando a:
+            Puedes acceder a tu perfil y gestionar tus sesiones desde cualquier dispositivo ingresando a:
           </p>
           <div style="margin-top: 15px;">
             <a href="${process.env.FRONTEND_URL}/login" style="display: inline-block; background-color: #3b82f6; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 500; transition: background-color 0.3s;">
@@ -369,7 +369,7 @@ export const enviarEmailCancelacionCitaPsicologo = async (
             
             <div style="text-align: center; margin-top: 30px;">
               <p style="color: #7f8c8d; margin: 0; font-size: 14px;">
-                Este es un mensaje automático del sistema de gestión de citas.
+                Este es un mensaje automático del sistema de gestión de sesiones.
               </p>
               <p style="color: #7f8c8d; margin: 5px 0 0 0; font-size: 14px;">
                 Si tienes alguna pregunta, contacta al administrador del sistema.
