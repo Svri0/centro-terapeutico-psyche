@@ -5,6 +5,7 @@ import CalendarioPaciente from '../componentes/CalendarioPaciente';
 import TestHerramientaDibujo from '../componentes/TestHerramientaDibujo';
 import AvatarSelector from '../componentes/AvatarSelector';
 import ImageUpload from '../componentes/ImageUpload';
+import ChatPaciente from '../componentes/ChatPaciente';
 import { authService } from '../servicios/auth.service';
 import { actualizarPerfilPaciente, subirImagenReal } from '../servicios/usuarios.service';
 import { AVATARS_ANIMALES } from '../assets/avatars/default-avatars';
@@ -13,7 +14,7 @@ const PanelPaciente: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'citas' | 'tareas' | 'calendario' | 'test-dibujo' | 'perfil'>('citas');
+  const [activeTab, setActiveTab] = useState<'citas' | 'tareas' | 'calendario' | 'test-dibujo' | 'chat' | 'perfil'>('citas');
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -421,6 +422,7 @@ const PanelPaciente: React.FC = () => {
                   {activeTab === 'tareas' && 'Mis Tareas'}
                   {activeTab === 'calendario' && 'Agendar Cita'}
                   {activeTab === 'test-dibujo' && 'Test de Dibujo'}
+                  {activeTab === 'chat' && 'Chat'}
                   {activeTab === 'perfil' && 'Mi Perfil'}
                 </h2>
                 <p className="mt-1 text-xs font-semibold text-gray-600 tracking-widest uppercase truncate">
@@ -428,6 +430,7 @@ const PanelPaciente: React.FC = () => {
                   {activeTab === 'tareas' && 'Tareas asignadas por tu psicólogo'}
                   {activeTab === 'calendario' && 'Programa tu próxima sesión terapéutica'}
                   {activeTab === 'test-dibujo' && 'Herramienta terapéutica para expresión artística'}
+                  {activeTab === 'chat' && 'Comunícate con tu psicólogo en tiempo real'}
                   {activeTab === 'perfil' && 'Gestiona tu información personal'}
                 </p>
               </div>
@@ -479,6 +482,16 @@ const PanelPaciente: React.FC = () => {
                   Test Dibujo
                 </button>
                 <button
+                  onClick={() => setActiveTab('chat')}
+                  className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
+                    activeTab === 'chat'
+                      ? 'border-amber-500 text-amber-600'
+                      : 'border-transparent text-gray-500 hover:text-amber-600 hover:border-amber-300'
+                  }`}
+                >
+                  💬 Chat
+                </button>
+                <button
                   onClick={() => setActiveTab('perfil')}
                   className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
                     activeTab === 'perfil'
@@ -518,6 +531,11 @@ const PanelPaciente: React.FC = () => {
               </div>
             )}
 
+            {activeTab === 'chat' && (
+              <div className="bg-white rounded-lg shadow-sm border-2 border-gray-200 p-6">
+                <ChatPaciente pacienteId={userData?.id || ''} />
+              </div>
+            )}
 
             {activeTab === 'perfil' && (
               <div className="bg-white rounded-lg shadow-sm border-2 border-gray-200 p-6">
