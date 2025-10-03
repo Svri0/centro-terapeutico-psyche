@@ -9,6 +9,7 @@ import PanelPsicologo from './paginas/PanelPsicologo';
 import PanelPaciente from './paginas/PanelPaciente';
 import PanelRecepcionista from './paginas/PanelRecepcionista';
 import PerfilPaciente from './componentes/PerfilPaciente';
+import TestImages from './paginas/TestImages';
 import { authService } from './servicios/auth.service';
 
 function App() {
@@ -20,6 +21,9 @@ function App() {
         
         {/* Ruta de login */}
         <Route path="/login" element={<LoginNuevo />} />
+        
+        {/* Ruta de prueba para imágenes */}
+        <Route path="/test-images" element={<TestImages />} />
         
         {/* Rutas protegidas */}
         <Route path="/dashboard/*" element={<ProtectedRoutes />} />

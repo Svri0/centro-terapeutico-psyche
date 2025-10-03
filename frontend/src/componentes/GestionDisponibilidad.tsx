@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import disponibilidadService, { Disponibilidad } from '../servicios/disponibilidad.service';
+import disponibilidadMensualService, { DisponibilidadMensual } from '../servicios/disponibilidadMensual.service';
 import ModalFeriados from './ModalFeriados';
 
 interface GestionDisponibilidadProps {
@@ -7,11 +7,11 @@ interface GestionDisponibilidadProps {
 }
 
 const GestionDisponibilidad: React.FC<GestionDisponibilidadProps> = ({ psicologoId }) => {
-  const [disponibilidad, setDisponibilidad] = useState<Disponibilidad[]>([]);
+  const [disponibilidad, setDisponibilidad] = useState<DisponibilidadMensual[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modoEdicion, setModoEdicion] = useState(false);
-  const [disponibilidadTemporal, setDisponibilidadTemporal] = useState<Disponibilidad[]>([]);
+  const [disponibilidadTemporal, setDisponibilidadTemporal] = useState<DisponibilidadMensual[]>([]);
   const [modalFeriadosAbierto, setModalFeriadosAbierto] = useState(false);
 
   const diasSemana = [
@@ -43,7 +43,7 @@ const GestionDisponibilidad: React.FC<GestionDisponibilidadProps> = ({ psicologo
       
       console.log('🔍 Debug - cargarDisponibilidad - psicologoId:', psicologoId);
       
-      const disponibilidadData = await disponibilidadService.obtenerDisponibilidad(psicologoId);
+      const disponibilidadData = await disponibilidadMensualService.obtenerDisponibilidad(psicologoId);
       console.log('🔍 Debug - cargarDisponibilidad - data:', disponibilidadData);
       
       // Asegurar que disponibilidadData sea un array
@@ -90,7 +90,7 @@ const GestionDisponibilidad: React.FC<GestionDisponibilidadProps> = ({ psicologo
       console.log('🔍 Debug - psicologoId:', psicologoId);
       console.log('🔍 Debug - disponibilidadTemporal:', disponibilidadTemporal);
       
-      await disponibilidadService.actualizarDisponibilidadMultiple(psicologoId, disponibilidadTemporal);
+      await disponibilidadMensualService.actualizarDisponibilidadMultiple(psicologoId, disponibilidadTemporal);
       
       setDisponibilidad([...disponibilidadTemporal]);
       setModoEdicion(false);

@@ -9,8 +9,10 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import path from 'path';
 import { createServer } from 'http';
+import { Server as SocketIOServer } from 'socket.io';
 import { MENSAJES_GENERALES } from './utilidades/mensajes';
 import { ManejadorRespuestas } from './utilidades/respuestas';
+import { ChatWebSocketService } from './servicios/chat-websocket.service';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -21,14 +23,33 @@ const PUERTO = process.env.PORT || 3002;
 // Crear servidor HTTP
 const httpServer = createServer(app);
 
-// Configurar Limpiador Automático de Citas Canceladas
-console.log('🧹 Configurando Limpiador Automático de Citas...');
-import('./utilidades/limpiador-citas.service').then(({ LimpiadorCitasService }) => {
-  LimpiadorCitasService.iniciar();
-  console.log('🧹 Limpiador Automático de Citas configurado - CONFIRMADO');
-}).catch(error => {
-  console.error('❌ Error al configurar Limpiador de Citas:', error);
+// Configurar Socket.IO
+const io = new SocketIOServer(httpServer, {
+  cors: {
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:3002',
+      'http://localhost:3003',
+      'http://localhost:3004',
+      'http://localhost:3005',
+      'http://localhost:5173',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:3001',
+      'http://127.0.0.1:3002',
+      'http://127.0.0.1:3003',
+      'http://127.0.0.1:3004',
+      'http://127.0.0.1:3005',
+      'http://127.0.0.1:5173'
+    ],
+    methods: ['GET', 'POST'],
+    credentials: true
+  }
 });
+
+// Inicializar servicio de WebSocket para chat
+const chatWebSocketService = new ChatWebSocketService(io);
+
 
 // Middleware
 app.use(helmet());
@@ -610,7 +631,8 @@ const iniciarServidor = async () => {
         console.log(`🌐 Dashboard bonito: http://localhost:${PUERTO}/dashboard`);
         console.log(`📊 Salud (JSON): http://localhost:${PUERTO}/salud`);
         console.log(`🔗 API Base: http://localhost:${PUERTO}/api/v1`);
-        console.log(`🔌 WebSocket: ws://localhost:${PUERTO}`);
+        console.log(`🔌 WebSocket Chat: ws://localhost:${PUERTO}`);
+        console.log(`💬 Chat API: http://localhost:${PUERTO}/api/v1/chat`);
         console.log(`📄 Info (JSON): http://localhost:${PUERTO}/`);
         console.log(`⏰ Iniciado: ${new Date().toLocaleString('es-CL')}`);
         console.log('═══════════════════════════════════════════════════════\n');
@@ -634,7 +656,8 @@ const iniciarServidor = async () => {
               console.log(`🌐 Dashboard bonito: http://localhost:${puertoAlternativo}/dashboard`);
               console.log(`📊 Salud (JSON): http://localhost:${puertoAlternativo}/salud`);
               console.log(`🔗 API Base: http://localhost:${puertoAlternativo}/api/v1`);
-              console.log(`🔌 WebSocket: ws://localhost:${puertoAlternativo}`);
+              console.log(`🔌 WebSocket Chat: ws://localhost:${puertoAlternativo}`);
+              console.log(`💬 Chat API: http://localhost:${puertoAlternativo}/api/v1/chat`);
               console.log(`📄 Info (JSON): http://localhost:${puertoAlternativo}/`);
               console.log(`⚠️  Nota: Puerto original ${PUERTO} estaba ocupado`);
               console.log(`⏰ Iniciado: ${new Date().toLocaleString('es-CL')}`);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { citasService } from '../servicios/citas.service';
-import disponibilidadService from '../servicios/disponibilidad.service';
+import disponibilidadMensualService from '../servicios/disponibilidadMensual.service';
 import { pacientesService, PsicologoAsignado } from '../servicios/pacientes.service';
 import Modal from './Modal';
 
@@ -54,7 +54,7 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
       
       // Obtener disponibilidad real del psicólogo
       try {
-        const disponibilidadData = await disponibilidadService.obtenerDisponibilidadPaciente(psicologoAsignado.id);
+        const disponibilidadData = await disponibilidadMensualService.obtenerDisponibilidadPaciente(psicologoAsignado.id);
         setDisponibilidad(disponibilidadData);
       } catch (err) {
         console.warn('No se pudo cargar disponibilidad real, usando datos simulados');

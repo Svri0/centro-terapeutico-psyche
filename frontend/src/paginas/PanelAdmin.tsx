@@ -10,9 +10,10 @@ import ModalCrearRecepcionista from '../componentes/ModalCrearRecepcionista';
 import ModalCrearPaciente from '../componentes/ModalCrearPaciente';
 import ModalEditarPsicologo from '../componentes/ModalEditarPsicologo';
 import Logo from '../componentes/Logo';
+import ChatAdmin from '../componentes/ChatAdmin';
 
 const PanelAdmin: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'psicologos' | 'pacientes' | 'recepcionistas'>('psicologos');
+  const [activeTab, setActiveTab] = useState<'psicologos' | 'pacientes' | 'recepcionistas' | 'chat'>('psicologos');
   const [psicologos, setPsicologos] = useState<Psicologo[]>([]);
   const [recepcionistas, setRecepcionistas] = useState<any[]>([]);
   const [pacientes, setPacientes] = useState<any[]>([]);
@@ -480,7 +481,7 @@ const PanelAdmin: React.FC = () => {
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
               <div className="flex-shrink-0 mr-4">
-                <img src="/src/img/psyche.svg" alt="de psyche" className="h-20 w-auto" />
+                <img src="/psyche.svg" alt="de psyche" className="h-20 w-auto" />
               </div>
               <div>
                 <h1 className="text-lg font-light text-gray-800 tracking-widest uppercase">
@@ -519,9 +520,13 @@ const PanelAdmin: React.FC = () => {
         <div className="px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-xl font-bold text-gray-900 tracking-widest uppercase">Panel de Administración</h2>
+              <h2 className="text-xl font-bold text-gray-900 tracking-widest uppercase">
+                {activeTab === 'chat' && 'Chat'}
+                {activeTab !== 'chat' && 'Panel de Administración'}
+              </h2>
               <p className="mt-1 text-xs font-semibold text-gray-600 tracking-widest uppercase">
-                Gestiona todos los usuarios del sistema
+                {activeTab === 'chat' && 'Comunícate con tus trabajadores'}
+                {activeTab !== 'chat' && 'Gestiona todos los usuarios del sistema'}
               </p>
             </div>
             {activeTab === 'psicologos' && (
@@ -594,6 +599,16 @@ const PanelAdmin: React.FC = () => {
               >
                 👤 Recepcionistas
               </button>
+              <button
+                onClick={() => setActiveTab('chat')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === 'chat'
+                    ? 'border-amber-500 text-amber-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                💬 Chat
+              </button>
             </nav>
           </div>
         </div>
@@ -639,6 +654,10 @@ const PanelAdmin: React.FC = () => {
                 onEliminar={handleEliminarRecepcionista}
               />
             )
+          ) : activeTab === 'chat' ? (
+            <div className="space-y-6">
+              <ChatAdmin adminId={user?.id || ''} />
+            </div>
           ) : (
             loading ? (
               <div className="flex justify-center items-center py-12">

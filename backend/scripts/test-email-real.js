@@ -38,6 +38,7 @@ async function testEmailReal() {
       console.log('\n🎉 ¡El sistema funciona correctamente!');
       console.log('💡 Los emails se envían DESDE dentrodepsyche@gmail.com');
       console.log('   HACIA el email del psicólogo que se registra.');
+      
     } else {
       console.log('❌ Error al enviar el email de bienvenida');
     }
