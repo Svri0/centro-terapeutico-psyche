@@ -5,6 +5,7 @@ import { authService } from '../servicios/auth.service';
 import TablaPsicologos from '../componentes/TablaPsicologos';
 import TablaRecepcionistas from '../componentes/TablaRecepcionistas';
 import TablaPacientes from '../componentes/TablaPacientes';
+import TablaAuditoria from '../componentes/TablaAuditoria';
 import ModalCrearPsicologo from '../componentes/ModalCrearPsicologo';
 import ModalCrearRecepcionista from '../componentes/ModalCrearRecepcionista';
 import ModalCrearPaciente from '../componentes/ModalCrearPaciente';
@@ -13,7 +14,7 @@ import Logo from '../componentes/Logo';
 import ChatAdmin from '../componentes/ChatAdmin';
 
 const PanelAdmin: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'psicologos' | 'pacientes' | 'recepcionistas' | 'chat'>('psicologos');
+  const [activeTab, setActiveTab] = useState<'psicologos' | 'pacientes' | 'recepcionistas' | 'chat' | 'auditoria'>('psicologos');
   const [psicologos, setPsicologos] = useState<Psicologo[]>([]);
   const [recepcionistas, setRecepcionistas] = useState<any[]>([]);
   const [pacientes, setPacientes] = useState<any[]>([]);
@@ -609,6 +610,16 @@ const PanelAdmin: React.FC = () => {
               >
                 💬 Chat
               </button>
+              <button
+                onClick={() => setActiveTab('auditoria')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === 'auditoria'
+                    ? 'border-amber-500 text-amber-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                📊 Registro de Accesos
+              </button>
             </nav>
           </div>
         </div>
@@ -658,6 +669,8 @@ const PanelAdmin: React.FC = () => {
             <div className="space-y-6">
               <ChatAdmin adminId={user?.id || ''} />
             </div>
+          ) : activeTab === 'auditoria' ? (
+            <TablaAuditoria />
           ) : (
             loading ? (
               <div className="flex justify-center items-center py-12">

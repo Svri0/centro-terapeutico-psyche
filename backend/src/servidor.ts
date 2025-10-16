@@ -516,6 +516,10 @@ app.get('/', (_req, res) => {
   );
 });
 
+// Ruta de health check (sin prefijo de API)
+import healthRoutes from './rutas/health.routes';
+app.use('/health', healthRoutes);
+
 // Rutas de la API
 import rutas from './rutas';
 app.use('/api/v1', rutas);

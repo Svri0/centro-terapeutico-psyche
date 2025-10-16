@@ -7,6 +7,7 @@ import sequelize from '../configuracion/database';
 import { log } from '../utilidades/logger';
 import { MENSAJES_AUTH } from '../utilidades/mensajes';
 import { ManejadorRespuestas } from '../utilidades/respuestas';
+import { AuditoriaService } from '../utilidades/auditoria.service';
 
 // Controlador para iniciar sesión
 export const iniciarSesion = async (req: Request, res: Response) => {
@@ -106,6 +107,19 @@ export const iniciarSesion = async (req: Request, res: Response) => {
     // Log de login exitoso
     log.info(`Login exitoso para usuario: ${usuario.nombres} ${usuario.apellidos} (${usuario.rol_nombre})`);
 
+    // Registrar log de auditoría para login exitoso
+    await AuditoriaService.crearLog({
+      usuario_id: usuario.id,
+      accion: 'LOGIN',
+      metadatos: {
+        email: usuario.email,
+        rol: usuario.rol_nombre,
+        nombres: usuario.nombres,
+        apellidos: usuario.apellidos
+      },
+      req
+    });
+
     const respuesta = {
       usuario: {
         id: usuario.id,
@@ -193,8 +207,27 @@ export const registrar = async (req: Request, res: Response) => {
 };
 
 // Controlador para cerrar sesión
-export const cerrarSesion = async (_req: Request, res: Response) => {
+export const cerrarSesion = async (req: Request, res: Response) => {
   try {
+    // Obtener información del usuario autenticado si está disponible
+    const usuario = (req as any).usuario;
+    
+    if (usuario) {
+      // Registrar log de auditoría para logout
+      await AuditoriaService.crearLog({
+        usuario_id: usuario.id,
+        accion: 'LOGOUT',
+        metadatos: {
+          email: usuario.email,
+          nombres: usuario.nombres,
+          apellidos: usuario.apellidos
+        },
+        req
+      });
+      
+      log.info(`Logout exitoso para usuario: ${usuario.nombres} ${usuario.apellidos}`);
+    }
+    
     // En una implementación real, aquí invalidarías el token
     // Por ahora, solo retornamos éxito
     return ManejadorRespuestas.exito(
