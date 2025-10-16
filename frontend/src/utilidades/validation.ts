@@ -2,7 +2,7 @@
 
 // Patrones de validación
 export const PATTERNS = {
-  email: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+  email: /^[a-zA-Z0-9._%+-ñáéíóúüÑÁÉÍÓÚÜ]+@[a-zA-Z0-9.-]+\.(com|cl)$/,
   password: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
   phone: /^[\+]?[0-9\s\-\(\)]{8,20}$/,
   name: /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/,

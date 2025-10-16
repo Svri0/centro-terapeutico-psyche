@@ -72,12 +72,45 @@ const RegistroPaciente: React.FC = () => {
     }
   };
 
+  // Función para formatear RUT automáticamente
+  const formatRUT = (rut: string): string => {
+    // Solo permitir números
+    const soloNumeros = rut.replace(/[^0-9]/g, '');
+    
+    if (soloNumeros.length === 0) return '';
+    
+    // Si tiene más de 9 dígitos (8 + DV), tomar solo los primeros 9
+    const numero = soloNumeros.slice(0, 9);
+    
+    // Formatear según la longitud
+    if (numero.length <= 2) {
+      return numero;
+    } else if (numero.length <= 5) {
+      return `${numero.slice(0, 2)}.${numero.slice(2)}`;
+    } else if (numero.length <= 8) {
+      return `${numero.slice(0, 2)}.${numero.slice(2, 5)}.${numero.slice(5)}`;
+    } else {
+      // 9 dígitos: formato completo XX.XXX.XXX-X
+      return `${numero.slice(0, 2)}.${numero.slice(2, 5)}.${numero.slice(5, 8)}-${numero.slice(8)}`;
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    // Formatear RUT automáticamente
+    if (name === 'rut') {
+      const rutFormateado = formatRUT(value);
+      setFormData(prev => ({
+        ...prev,
+        [name]: rutFormateado
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handleArrayInputChange = (field: string, value: string) => {
@@ -327,6 +360,7 @@ const RegistroPaciente: React.FC = () => {
                         value={formData.rut}
                         onChange={handleInputChange}
                         className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="12345678K (escribe tú el dígito verificador)"
                       />
                     </div>
                     <div>
