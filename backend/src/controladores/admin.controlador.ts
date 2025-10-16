@@ -1013,18 +1013,54 @@ export const crearPaciente = async (req: Request, res: Response) => {
 
     const usuario = usuarioCreado[0];
 
-    // Generar número de ficha
-    const numeroFicha = `P${String(usuario.id).padStart(6, '0')}`;
+    // Generar número de ficha usando un contador
+    const [ultimoPaciente] = await sequelize.query(`
+      SELECT numero_ficha FROM pacientes 
+      WHERE numero_ficha LIKE 'P%' 
+      ORDER BY numero_ficha DESC 
+      LIMIT 1
+    `) as [any[], unknown];
+
+    let numeroFicha;
+    if (Array.isArray(ultimoPaciente) && ultimoPaciente.length > 0) {
+      const ultimoNumero = ultimoPaciente[0].numero_ficha.match(/P(\d+)/);
+      if (ultimoNumero) {
+        const siguienteNumero = parseInt(ultimoNumero[1]) + 1;
+        numeroFicha = `P${String(siguienteNumero).padStart(6, '0')}`;
+      } else {
+        numeroFicha = 'P000001';
+      }
+    } else {
+      numeroFicha = 'P000001';
+    }
+
+    // Obtener el primer psicólogo disponible para asignar al paciente
+    const [psicologoDisponible] = await sequelize.query(`
+      SELECT u.id FROM usuarios u
+      INNER JOIN roles r ON u.rol_id = r.id
+      WHERE r.nombre = 'psicologo' AND u.activo = true
+      LIMIT 1
+    `) as [any[], unknown];
+
+    if (!Array.isArray(psicologoDisponible) || psicologoDisponible.length === 0) {
+      return ManejadorRespuestas.errorInterno(
+        res,
+        'No hay psicólogos disponibles en el sistema',
+        'ADMIN_034'
+      );
+    }
+
+    const psicologoId = psicologoDisponible[0].id;
 
     // Crear paciente
     const [pacienteCreado] = await sequelize.query(`
       INSERT INTO pacientes (
-        usuario_id, numero_ficha, rut, direccion, 
+        usuario_id, psicologo_id, numero_ficha, rut, direccion, 
         contacto_emergencia_nombre, contacto_emergencia_telefono, contacto_emergencia_relacion,
         observaciones, estado, fecha_ingreso, created_at, updated_at
       )
       VALUES (
-        :usuario_id, :numero_ficha, :rut, :direccion,
+        :usuario_id, :psicologo_id, :numero_ficha, :rut, :direccion,
         :contacto_emergencia_nombre, :contacto_emergencia_telefono, :contacto_emergencia_relacion,
         :observaciones, 'activo', NOW(), NOW(), NOW()
       )
@@ -1033,6 +1069,7 @@ export const crearPaciente = async (req: Request, res: Response) => {
     `, {
       replacements: {
         usuario_id: usuario.id,
+        psicologo_id: psicologoId,
         numero_ficha: numeroFicha,
         rut,
         direccion,
