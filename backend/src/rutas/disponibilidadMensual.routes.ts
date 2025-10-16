@@ -12,8 +12,8 @@ import { verificarToken, verificarRol } from '../middleware/auth.middleware';
 
 const router = Router();
 
-// Rutas para psicólogos
-router.get('/psicologo/:psicologoId', verificarToken, verificarRol(['psicologo', 'admin']), obtenerDisponibilidadMensual);
+// Rutas para psicólogos y pacientes
+router.get('/psicologo/:psicologoId', verificarToken, verificarRol(['psicologo', 'admin', 'paciente']), obtenerDisponibilidadMensual);
 router.post('/', verificarToken, verificarRol(['psicologo', 'admin']), crearDisponibilidadMensual);
 router.put('/:id', verificarToken, verificarRol(['psicologo', 'admin']), actualizarDisponibilidadMensual);
 router.put('/psicologo/:psicologoId', verificarToken, verificarRol(['psicologo', 'admin']), actualizarDisponibilidadMensualMultiple);
@@ -23,6 +23,6 @@ router.delete('/:id', verificarToken, verificarRol(['psicologo', 'admin']), elim
 router.post('/psicologo/:psicologoId/recurrente', verificarToken, verificarRol(['psicologo', 'admin']), generarDisponibilidadRecurrente);
 
 // Ruta para verificar disponibilidad (pueden usar pacientes y psicólogos)
-router.get('/verificar/:psicologoId', verificarToken, verificarDisponibilidadFecha);
+router.get('/verificar/:psicologoId', verificarToken, verificarRol(['psicologo', 'admin', 'paciente']), verificarDisponibilidadFecha);
 
 export default router;
