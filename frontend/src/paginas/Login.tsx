@@ -98,17 +98,8 @@ const Login: React.FC = () => {
       // Limpiar error si el login es exitoso
       clearError();
       
-      // Redirigir según el rol del usuario
-      const usuario = response.data.usuario;
-      if (usuario.rol_id === 1) {
-        window.location.href = '/admin';
-      } else if (usuario.rol_id === 2) {
-        window.location.href = '/psicologo';
-      } else if (usuario.rol_id === 3) {
-        window.location.href = '/paciente';
-      } else {
-        window.location.href = '/admin';
-      }
+      // Redirigir al dashboard
+      window.location.href = '/dashboard';
     } catch (error: any) {
       const errorMessage = error.message || 'Error de autenticación';
       setError(errorMessage);
@@ -140,7 +131,7 @@ const Login: React.FC = () => {
             {/* Logo oficial "de psyche" */}
                          <div className="mx-auto mb-6">
                                                <div className="flex justify-center mb-1">
-                  <img src="/src/img/psyche.svg" alt="de psyche" className="h-32 w-auto" />
+                  <img src="/psyche.svg" alt="de psyche" className="h-32 w-auto" />
                 </div>
                 <div className="text-sm text-amber-600 tracking-wider uppercase mt-1">
                   Centro Terapéutico

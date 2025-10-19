@@ -12,7 +12,7 @@ import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import { MENSAJES_GENERALES } from './utilidades/mensajes';
 import { ManejadorRespuestas } from './utilidades/respuestas';
-import chatController from './controladores/chat.controlador';
+import { ChatWebSocketService } from './servicios/chat-websocket.service';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -20,8 +20,10 @@ dotenv.config();
 const app = express();
 const PUERTO = process.env.PORT || 3002;
 
-// Crear servidor HTTP para Socket.io
+// Crear servidor HTTP
 const httpServer = createServer(app);
+
+// Configurar Socket.IO
 const io = new SocketIOServer(httpServer, {
   cors: {
     origin: [
@@ -40,37 +42,14 @@ const io = new SocketIOServer(httpServer, {
       'http://127.0.0.1:3005',
       'http://127.0.0.1:5173'
     ],
+    methods: ['GET', 'POST'],
     credentials: true
   }
 });
 
-// CONFIGURAR IO DESPUÉS DE CREAR EL SERVIDOR - SOLUCIÓN DEFINITIVA
-console.log('🔌 Configurando ChatController con WebSocket...');
-console.log('🔌 Servidor - chatController disponible:', !!chatController);
-console.log('🔌 Servidor - chatController.io ANTES:', chatController.isIoConfigured());
+// Inicializar servicio de WebSocket para chat
+const chatWebSocketService = new ChatWebSocketService(io);
 
-chatController.setIo(io);
-
-console.log('🔌 Servidor - chatController.io DESPUÉS:', chatController.isIoConfigured());
-console.log('🔌 ChatController configurado con WebSocket - CONFIRMADO');
-
-// Configurar ChatAutomaticoService con WebSocket
-console.log('🔌 Configurando ChatAutomaticoService con WebSocket...');
-import('./utilidades/chat-automatico.service').then(({ ChatAutomaticoService }) => {
-  ChatAutomaticoService.setIo(io);
-  console.log('🔌 ChatAutomaticoService configurado con WebSocket - CONFIRMADO');
-}).catch(error => {
-  console.error('❌ Error al configurar ChatAutomaticoService:', error);
-});
-
-// Configurar Limpiador Automático de Citas Canceladas
-console.log('🧹 Configurando Limpiador Automático de Citas...');
-import('./utilidades/limpiador-citas.service').then(({ LimpiadorCitasService }) => {
-  LimpiadorCitasService.iniciar();
-  console.log('🧹 Limpiador Automático de Citas configurado - CONFIRMADO');
-}).catch(error => {
-  console.error('❌ Error al configurar Limpiador de Citas:', error);
-});
 
 // Middleware
 app.use(helmet());
@@ -537,6 +516,10 @@ app.get('/', (_req, res) => {
   );
 });
 
+// Ruta de health check (sin prefijo de API)
+import healthRoutes from './rutas/health.routes';
+app.use('/health', healthRoutes);
+
 // Rutas de la API
 import rutas from './rutas';
 app.use('/api/v1', rutas);
@@ -652,12 +635,12 @@ const iniciarServidor = async () => {
         console.log(`🌐 Dashboard bonito: http://localhost:${PUERTO}/dashboard`);
         console.log(`📊 Salud (JSON): http://localhost:${PUERTO}/salud`);
         console.log(`🔗 API Base: http://localhost:${PUERTO}/api/v1`);
-        console.log(`🔌 WebSocket: ws://localhost:${PUERTO}`);
+        console.log(`🔌 WebSocket Chat: ws://localhost:${PUERTO}`);
+        console.log(`💬 Chat API: http://localhost:${PUERTO}/api/v1/chat`);
         console.log(`📄 Info (JSON): http://localhost:${PUERTO}/`);
         console.log(`⏰ Iniciado: ${new Date().toLocaleString('es-CL')}`);
         console.log('═══════════════════════════════════════════════════════\n');
         
-        configurarEventosServidor(servidor);
       })
       .on('error', async (err: any) => {
         if (err.code === 'EADDRINUSE') {
@@ -677,13 +660,13 @@ const iniciarServidor = async () => {
               console.log(`🌐 Dashboard bonito: http://localhost:${puertoAlternativo}/dashboard`);
               console.log(`📊 Salud (JSON): http://localhost:${puertoAlternativo}/salud`);
               console.log(`🔗 API Base: http://localhost:${puertoAlternativo}/api/v1`);
-              console.log(`🔌 WebSocket: ws://localhost:${puertoAlternativo}`);
+              console.log(`🔌 WebSocket Chat: ws://localhost:${puertoAlternativo}`);
+              console.log(`💬 Chat API: http://localhost:${puertoAlternativo}/api/v1/chat`);
               console.log(`📄 Info (JSON): http://localhost:${puertoAlternativo}/`);
               console.log(`⚠️  Nota: Puerto original ${PUERTO} estaba ocupado`);
               console.log(`⏰ Iniciado: ${new Date().toLocaleString('es-CL')}`);
               console.log('═══════════════════════════════════════════════════════\n');
 
-              configurarEventosServidor(servidorAlternativo);
             });
           } catch (error) {
             console.log('\n💥 ═══════════════════════════════════════════════════════');
@@ -707,6 +690,7 @@ const iniciarServidor = async () => {
         }
       });
 
+    // Configurar eventos del servidor
     configurarEventosServidor(servidor);
   } catch (error) {
     console.log('\n💥 ═══════════════════════════════════════════════════════');
@@ -720,42 +704,7 @@ const iniciarServidor = async () => {
 
 // Configurar eventos del servidor
 const configurarEventosServidor = (servidor: any) => {
-  // Configurar Socket.io
-  io.on('connection', (socket) => {
-    console.log('🔌 Usuario conectado:', socket.id);
-    
-    // Unir usuario a sala personal
-    socket.on('join-user', (userId: string) => {
-      socket.join(`user_${userId}`);
-      console.log(`👤 Usuario ${userId} unido a sala user_${userId}`);
-    });
-    
-    // Unir a sala de chat
-    socket.on('join-chat', (chatId: string) => {
-      socket.join(`chat_${chatId}`);
-      console.log(`💬 Usuario unido al chat: ${chatId}`);
-    });
-    
-    // Manejar mensajes de chat
-    socket.on('send-message', (data) => {
-      const { chatId, message, senderId } = data;
-      
-      // Emitir mensaje a todos en el chat
-      io.to(`chat_${chatId}`).emit('new-message', {
-        chatId,
-        message,
-        senderId,
-        timestamp: new Date().toISOString()
-      });
-      
-      console.log(`📨 Mensaje enviado en chat ${chatId}:`, message);
-    });
-    
-    // Desconexión
-    socket.on('disconnect', () => {
-      console.log('🔌 Usuario desconectado:', socket.id);
-    });
-  });
+  console.log('✅ Eventos del servidor configurados correctamente');
 
   // Cierre graceful con mensajes personalizados
   process.on('SIGTERM', () => {

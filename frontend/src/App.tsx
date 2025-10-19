@@ -1,68 +1,93 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
-import Login from './paginas/Login';
+import Inicio from './paginas/Inicio';
+import LoginNuevo from './paginas/LoginNuevo';
+import PanelPrincipal from './paginas/PanelPrincipal';
 import PanelAdmin from './paginas/PanelAdmin';
 import PanelPsicologo from './paginas/PanelPsicologo';
 import PanelPaciente from './paginas/PanelPaciente';
+import PanelRecepcionista from './paginas/PanelRecepcionista';
 import PerfilPaciente from './componentes/PerfilPaciente';
+import TestImages from './paginas/TestImages';
+import Pagina404 from './paginas/Pagina404';
+import PaginaSistemaCaido from './paginas/PaginaSistemaCaido';
+import PaginaSinConexion from './paginas/PaginaSinConexion';
+import PaginaSinPermisos from './paginas/PaginaSinPermisos';
+import PanelAdminProtegido from './componentes/PanelAdminProtegido';
+import PanelPsicologoProtegido from './componentes/PanelPsicologoProtegido';
 import { authService } from './servicios/auth.service';
+import { useErrorHandler } from './hooks/useErrorHandler';
 
 function App() {
-  const isAuthenticated = authService.isAuthenticated();
-  const isAdmin = authService.isAdmin();
-  const isPsicologo = authService.isPsicologo();
-  const isPaciente = authService.isPaciente();
-
-  // Debug del usuario
-  authService.debugUser();
-
-  console.log('🔍 App.tsx - isAuthenticated:', isAuthenticated);
-  console.log('🔍 App.tsx - isAdmin:', isAdmin);
-  console.log('🔍 App.tsx - isPsicologo:', isPsicologo);
-  console.log('🔍 App.tsx - isPaciente:', isPaciente);
-  console.log('🔍 App.tsx - User:', authService.getUser());
-
-  // Si no está autenticado, mostrar login
-  if (!isAuthenticated) {
-    return <Login />;
-  }
+  // Manejar errores globales
+  useErrorHandler();
 
   return (
     <Router>
       <Routes>
-        {/* Ruta para el perfil del paciente */}
-        <Route 
-          path="/perfil-paciente" 
-          element={
-            isPaciente ? <PerfilPaciente /> : <Navigate to="/" replace />
-          } 
-        />
-        
-        {/* Ruta principal */}
-        <Route 
-          path="/" 
-          element={
-            isAdmin ? <PanelAdmin /> :
-            isPsicologo ? <PanelPsicologo /> :
-            isPaciente ? <PanelPaciente /> :
-            <Navigate to="/login" replace />
-          } 
-        />
+        {/* Ruta principal - Página de inicio PÚBLICA */}
+        <Route path="/" element={<Inicio />} />
         
         {/* Ruta de login */}
-        <Route 
-          path="/login" 
-          element={<Login />} 
-        />
+        <Route path="/login" element={<LoginNuevo />} />
         
-        {/* Ruta por defecto */}
-        <Route 
-          path="*" 
-          element={<Navigate to="/" replace />} 
-        />
+        {/* Ruta de prueba para imágenes */}
+        <Route path="/test-images" element={<TestImages />} />
+        
+        {/* Rutas de error */}
+        <Route path="/error/404" element={<Pagina404 />} />
+        <Route path="/error/sistema-caido" element={<PaginaSistemaCaido />} />
+        <Route path="/error/sin-conexion" element={<PaginaSinConexion />} />
+        <Route path="/error/sin-permisos" element={<PaginaSinPermisos />} />
+        
+        {/* Rutas protegidas */}
+        <Route path="/dashboard/*" element={<ProtectedRoutes />} />
+        
+        {/* Rutas específicas de admin */}
+        <Route path="/admin/*" element={<PanelAdminProtegido />} />
+        
+        {/* Rutas específicas de psicólogo */}
+        <Route path="/psicologo/*" element={<PanelPsicologoProtegido />} />
+        
+        {/* Ruta por defecto - Página 404 */}
+        <Route path="*" element={<Pagina404 />} />
       </Routes>
     </Router>
+  );
+}
+
+// Componente para rutas protegidas
+function ProtectedRoutes() {
+  const isAuthenticated = authService.isAuthenticated();
+  const isAdmin = authService.isAdmin();
+  const isPsicologo = authService.isPsicologo();
+  const isPaciente = authService.isPaciente();
+  const isRecepcionista = authService.isRecepcionista();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return (
+    <Routes>
+      <Route 
+        path="/" 
+        element={
+          isAdmin ? <PanelAdmin /> :
+          isPsicologo ? <PanelPsicologo /> :
+          isPaciente ? <PanelPaciente /> :
+          isRecepcionista ? <PanelRecepcionista /> :
+          <PanelPrincipal />
+        } 
+      />
+      <Route 
+        path="/perfil-paciente" 
+        element={
+          isPaciente ? <PerfilPaciente /> : <Navigate to="/dashboard" replace />
+        } 
+      />
+    </Routes>
   );
 }
 

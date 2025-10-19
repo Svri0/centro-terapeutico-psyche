@@ -70,7 +70,7 @@ class CitasService {
   // Obtener citas del psicólogo autenticado
   async obtenerCitasPsicologo(psicologoId: string): Promise<Cita[]> {
     try {
-      const response = await api.get('/citas/psicologo');
+      const response = await api.get('/sesiones/psicologo');
       return response.data.data || [];
     } catch (error: any) {
       console.error('Error al obtener citas del psicólogo:', error);
@@ -81,8 +81,8 @@ class CitasService {
   // Obtener citas del paciente autenticado
   async obtenerCitasPaciente(): Promise<any> {
     try {
-      console.log('🔍 Servicio - Haciendo petición a /citas/paciente');
-      const response = await api.get('/citas/paciente');
+      console.log('🔍 Servicio - Haciendo petición a /sesiones/paciente');
+      const response = await api.get('/sesiones/paciente');
       console.log('🔍 Servicio - Respuesta completa:', response);
       console.log('🔍 Servicio - response.data:', response.data);
       console.log('🔍 Servicio - response.data.data:', response.data.data);
@@ -98,7 +98,7 @@ class CitasService {
   // Obtener una cita específica
   async obtenerCita(citaId: string): Promise<Cita> {
     try {
-      const response = await api.get(`/citas/${citaId}`);
+      const response = await api.get(`/sesiones/${citaId}`);
       return response.data.data;
     } catch (error: any) {
       console.error('Error al obtener cita:', error);
@@ -111,7 +111,7 @@ class CitasService {
     try {
       console.log('🔍 Enviando datos de cita:', citaData);
       console.log('🔍 URL de la API:', api.defaults.baseURL);
-      const response = await api.post('/citas', citaData);
+      const response = await api.post('/sesiones', citaData);
       console.log('✅ Respuesta exitosa:', response.data);
       return response.data.data;
     } catch (error: any) {
@@ -130,7 +130,7 @@ class CitasService {
   // Actualizar una cita
   async actualizarCita(citaId: string, citaData: ActualizarCitaData): Promise<Cita> {
     try {
-      const response = await api.put(`/citas/${citaId}`, citaData);
+      const response = await api.put(`/sesiones/${citaId}`, citaData);
       return response.data.data;
     } catch (error: any) {
       console.error('Error al actualizar cita:', error);
@@ -141,7 +141,7 @@ class CitasService {
   // Actualizar estado de una cita
   async actualizarEstadoCita(citaId: string, nuevoEstado: string): Promise<Cita> {
     try {
-      const response = await api.patch(`/citas/${citaId}/estado`, { estado: nuevoEstado });
+      const response = await api.patch(`/sesiones/${citaId}/estado`, { estado: nuevoEstado });
       return response.data.data;
     } catch (error: any) {
       console.error('Error al actualizar estado de cita:', error);
@@ -152,7 +152,7 @@ class CitasService {
   // Cancelar una cita
   async cancelarCita(citaId: string): Promise<void> {
     try {
-      await api.delete(`/citas/${citaId}`);
+      await api.delete(`/sesiones/${citaId}`);
     } catch (error: any) {
       console.error('Error al cancelar cita:', error);
       throw new Error(error.response?.data?.message || 'Error al cancelar la cita');
@@ -162,7 +162,7 @@ class CitasService {
   // Obtener disponibilidad del psicólogo
   async obtenerDisponibilidad(psicologoId: string, fecha: string): Promise<any[]> {
     try {
-      const response = await api.get(`/citas/psicologos/${psicologoId}/disponibilidad`, {
+      const response = await api.get(`/disponibilidad-mensual/psicologos/${psicologoId}/disponibilidad`, {
         params: { fecha }
       });
       return response.data.data || [];
@@ -175,7 +175,7 @@ class CitasService {
   // Obtener estadísticas de citas del psicólogo
   async obtenerEstadisticas(psicologoId: string): Promise<any> {
     try {
-      const response = await api.get('/citas/psicologos/estadisticas-citas');
+      const response = await api.get('/sesiones/psicologos/estadisticas-sesiones');
       return response.data.data;
     } catch (error: any) {
       console.error('Error al obtener estadísticas:', error);

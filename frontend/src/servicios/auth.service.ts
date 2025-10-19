@@ -163,7 +163,12 @@ class AuthService {
 
   isPaciente(): boolean {
     const user = this.getCurrentUser();
-    return user?.rol_id === 3 || user?.rol === 'paciente';
+    return user?.rol_id === 4 || user?.rol === 'paciente';
+  }
+
+  isRecepcionista(): boolean {
+    const user = this.getCurrentUser();
+    return user?.rol_id === 3 || user?.rol === 'recepcionista';
   }
 }
 

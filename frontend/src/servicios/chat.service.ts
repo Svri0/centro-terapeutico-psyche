@@ -1,94 +1,149 @@
-import { api } from './api';
+import axios from 'axios';
 
-export interface Mensaje {
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002';
+
+export interface MensajeChat {
   id: string;
   contenido: string;
-  emisor_id: string;
-  receptor_id: string;
-  emisor_nombre: string;
-  emisor_rol: string;
-  timestamp: string;
+  remitente_id: string;
+  destinatario_id: string;
+  tipo: 'psicologo' | 'paciente' | 'admin';
   leido: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
-export interface Conversacion {
+export interface PacienteChat {
   id: string;
-  participante_id: string;
-  participante_nombre: string;
-  participante_rol: string;
+  nombres: string;
+  apellidos: string;
+  avatar_url?: string;
   ultimo_mensaje?: string;
-  timestamp_ultimo?: string;
-  no_leidos: number;
+  ultimo_mensaje_timestamp?: string;
+  mensajes_no_leidos: number;
 }
 
-export interface NuevoMensaje {
-  contenido: string;
-  receptor_id: string;
-}
-
-export interface NuevaConversacion {
-  participante_id: string;
-  participante_nombre: string;
-  participante_rol: string;
+export interface EstadisticasChat {
+  mensajes_enviados: number;
+  mensajes_recibidos: number;
+  mensajes_no_leidos: number;
+  pacientes_activos: number;
+  total_mensajes: number;
 }
 
 class ChatService {
-  // Obtener todas las conversaciones del usuario actual
-  async obtenerConversaciones(filtroRol: string = 'todos') {
-    const params = filtroRol !== 'todos' ? `?rol=${filtroRol}` : '';
-    return api.get(`/chat/conversaciones${params}`);
+  private getAuthHeaders() {
+    const token = localStorage.getItem('token');
+    return {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
   }
 
-  // Obtener mensajes de una conversación específica
-  async obtenerMensajes(conversacionId: string) {
-    return api.get(`/chat/conversaciones/${conversacionId}/mensajes`);
+  // Obtener pacientes del psicólogo para el chat
+  async obtenerPacientes(): Promise<PacienteChat[]> {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/v1/chat/pacientes`, {
+        headers: this.getAuthHeaders()
+      });
+      return response.data.data;
+    } catch (error) {
+      console.error('Error al obtener pacientes del chat:', error);
+      throw error;
+    }
   }
 
-  // Enviar un nuevo mensaje
-  async enviarMensaje(mensaje: NuevoMensaje) {
-    return api.post('/chat/mensajes', mensaje);
+  // Obtener personal (otros psicólogos y administrador) para el chat
+  async obtenerPersonal(): Promise<PacienteChat[]> {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/v1/chat/personal`, {
+        headers: this.getAuthHeaders()
+      });
+      return response.data.data;
+    } catch (error) {
+      console.error('Error al obtener personal del chat:', error);
+      throw error;
+    }
   }
 
-  // Iniciar una nueva conversación
-  async iniciarConversacion(conversacion: NuevaConversacion) {
-    return api.post('/chat/conversaciones', conversacion);
+  // Obtener trabajadores (psicólogos y recepcionistas) para el chat del administrador
+  async obtenerTrabajadores(): Promise<PacienteChat[]> {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/v1/chat/trabajadores`, {
+        headers: this.getAuthHeaders()
+      });
+      return response.data.data;
+    } catch (error) {
+      console.error('Error al obtener trabajadores del chat:', error);
+      throw error;
+    }
+  }
+
+  // Obtener psicólogo asignado para el paciente
+  async obtenerPsicologoAsignado(): Promise<PacienteChat> {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/v1/chat/psicologo-asignado`, {
+        headers: this.getAuthHeaders()
+      });
+      return response.data.data;
+    } catch (error) {
+      console.error('Error al obtener psicólogo asignado:', error);
+      throw error;
+    }
+  }
+
+  // Obtener mensajes entre psicólogo y paciente
+  async obtenerMensajes(pacienteId: string): Promise<MensajeChat[]> {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/v1/chat/mensajes/${pacienteId}`, {
+        headers: this.getAuthHeaders()
+      });
+      return response.data.data;
+    } catch (error) {
+      console.error('Error al obtener mensajes:', error);
+      throw error;
+    }
+  }
+
+  // Enviar mensaje
+  async enviarMensaje(pacienteId: string, contenido: string): Promise<MensajeChat> {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/v1/chat/enviar`, {
+        pacienteId,
+        contenido
+      }, {
+        headers: this.getAuthHeaders()
+      });
+      return response.data.data;
+    } catch (error) {
+      console.error('Error al enviar mensaje:', error);
+      throw error;
+    }
   }
 
   // Marcar mensajes como leídos
-  async marcarComoLeidos(conversacionId: string) {
-    return api.put(`/chat/conversaciones/${conversacionId}/leer`);
+  async marcarComoLeidos(pacienteId: string): Promise<void> {
+    try {
+      await axios.put(`${API_BASE_URL}/api/v1/chat/leidos/${pacienteId}`, {}, {
+        headers: this.getAuthHeaders()
+      });
+    } catch (error) {
+      console.error('Error al marcar mensajes como leídos:', error);
+      throw error;
+    }
   }
 
   // Obtener estadísticas del chat
-  async obtenerEstadisticas() {
-    return api.get('/chat/estadisticas');
-  }
-
-  // Obtener información del psicólogo asignado para pacientes
-  async obtenerPsicologoAsignado() {
-    return api.get('/chat/psicologo-asignado');
-  }
-
-  // Buscar usuarios para iniciar conversación
-  async buscarUsuarios(query: string, rol?: string) {
-    const params = new URLSearchParams({ q: query });
-    if (rol) params.append('rol', rol);
-    return api.get(`/chat/usuarios/buscar?${params}`);
-  }
-
-  // Obtener conversaciones no leídas
-  async obtenerNoLeidas() {
-    return api.get('/chat/conversaciones/no-leidas');
-  }
-
-  // Eliminar conversación
-  async eliminarConversacion(conversacionId: string) {
-    return api.delete(`/chat/conversaciones/${conversacionId}`);
-  }
-
-  // Archivar conversación
-  async archivarConversacion(conversacionId: string) {
-    return api.put(`/chat/conversaciones/${conversacionId}/archivar`);
+  async obtenerEstadisticas(): Promise<EstadisticasChat> {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/v1/chat/estadisticas`, {
+        headers: this.getAuthHeaders()
+      });
+      return response.data.data;
+    } catch (error) {
+      console.error('Error al obtener estadísticas del chat:', error);
+      throw error;
+    }
   }
 }
 

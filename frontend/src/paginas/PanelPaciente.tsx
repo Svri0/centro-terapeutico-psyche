@@ -3,9 +3,9 @@ import MisTareas from '../componentes/MisTareas';
 import MisCitas from '../componentes/MisCitas';
 import CalendarioPaciente from '../componentes/CalendarioPaciente';
 import TestHerramientaDibujo from '../componentes/TestHerramientaDibujo';
-import ChatPaciente from '../componentes/ChatPaciente';
 import AvatarSelector from '../componentes/AvatarSelector';
 import ImageUpload from '../componentes/ImageUpload';
+import ChatPaciente from '../componentes/ChatPaciente';
 import { authService } from '../servicios/auth.service';
 import { actualizarPerfilPaciente, subirImagenReal } from '../servicios/usuarios.service';
 import { AVATARS_ANIMALES } from '../assets/avatars/default-avatars';
@@ -13,8 +13,6 @@ import { AVATARS_ANIMALES } from '../assets/avatars/default-avatars';
 const PanelPaciente: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState<any>(null);
-  const [psicologoAsignado, setPsicologoAsignado] = useState<any>(null);
-  const [psicologoLoading, setPsicologoLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'citas' | 'tareas' | 'calendario' | 'test-dibujo' | 'chat' | 'perfil'>('citas');
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -62,7 +60,6 @@ const PanelPaciente: React.FC = () => {
     console.log('🔍 userData establecido:', user);
     cargarDatosPaciente();
     cargarPerfil();
-    cargarPsicologoAsignado();
   }, []);
 
   const cargarDatosPaciente = async () => {
@@ -82,37 +79,6 @@ const PanelPaciente: React.FC = () => {
     }
   };
 
-  const cargarPsicologoAsignado = async () => {
-    try {
-      setPsicologoLoading(true);
-      console.log('🔍 PanelPaciente - Cargando psicólogo asignado...');
-      
-      // Importar el servicio de chat dinámicamente para evitar dependencias circulares
-      const { chatService } = await import('../servicios/chat.service');
-      
-      const response = await chatService.obtenerPsicologoAsignado();
-      
-      if (response.data && response.data.success && response.data.data) {
-        const psicologoData = response.data.data;
-        setPsicologoAsignado(psicologoData);
-        console.log('🔍 PanelPaciente - Psicólogo asignado cargado:', psicologoData);
-      } else {
-        console.error('🔍 PanelPaciente - Error: No se pudo obtener información del psicólogo');
-        setPsicologoAsignado(null);
-      }
-    } catch (error: any) {
-      console.error('🔍 PanelPaciente - Error al cargar psicólogo asignado:', error);
-      
-      if (error.response?.status === 404) {
-        console.log('🔍 PanelPaciente - Usuario no es un paciente o no tiene psicólogo asignado');
-        setPsicologoAsignado(null);
-      } else {
-        setPsicologoAsignado(null);
-      }
-    } finally {
-      setPsicologoLoading(false);
-    }
-  };
 
   const cargarPerfil = () => {
     if (userData) {
@@ -395,7 +361,7 @@ const PanelPaciente: React.FC = () => {
             {/* Logo y título - Izquierda */}
             <div className="flex items-center">
               <div className="flex-shrink-0 mr-4">
-                <img src="/src/img/psyche.svg" alt="de psyche" className="h-20 w-auto" />
+                <img src="/psyche.svg" alt="de psyche" className="h-20 w-auto" />
               </div>
               <div>
                 <h1 className="text-lg font-light text-gray-800 tracking-widest uppercase">
@@ -464,7 +430,7 @@ const PanelPaciente: React.FC = () => {
                   {activeTab === 'tareas' && 'Tareas asignadas por tu psicólogo'}
                   {activeTab === 'calendario' && 'Programa tu próxima sesión terapéutica'}
                   {activeTab === 'test-dibujo' && 'Herramienta terapéutica para expresión artística'}
-                  {activeTab === 'chat' && 'Comunícate con tu psicólogo'}
+                  {activeTab === 'chat' && 'Comunícate con tu psicólogo en tiempo real'}
                   {activeTab === 'perfil' && 'Gestiona tu información personal'}
                 </p>
               </div>
@@ -523,7 +489,7 @@ const PanelPaciente: React.FC = () => {
                       : 'border-transparent text-gray-500 hover:text-amber-600 hover:border-amber-300'
                   }`}
                 >
-                  Chat
+                  💬 Chat
                 </button>
                 <button
                   onClick={() => setActiveTab('perfil')}
@@ -566,15 +532,8 @@ const PanelPaciente: React.FC = () => {
             )}
 
             {activeTab === 'chat' && (
-              <div className="bg-white rounded-lg shadow-sm border-2 border-gray-200">
-                {psicologoLoading ? (
-                  <div className="p-6 text-center text-gray-500">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500 mx-auto mb-4"></div>
-                    <p>Cargando información del psicólogo...</p>
-                  </div>
-                ) : (
-                  <ChatPaciente psicologoId={psicologoAsignado?.psicologo_id} />
-                )}
+              <div className="bg-white rounded-lg shadow-sm border-2 border-gray-200 p-6">
+                <ChatPaciente pacienteId={userData?.id || ''} />
               </div>
             )}
 

@@ -1,403 +1,295 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { io, Socket } from 'socket.io-client';
 import { authService } from '../servicios/auth.service';
-import { chatService } from '../servicios/chat.service';
-import { webSocketService } from '../servicios/websocket.service';
-import Notificacion from './Notificacion';
-
-interface Mensaje {
-  id: string;
-  contenido: string;
-  emisor_id: string;
-  receptor_id: string;
-  emisor_nombre: string;
-  emisor_rol: string;
-  timestamp: string;
-  leido: boolean;
-}
+import { chatService, MensajeChat, PacienteChat } from '../servicios/chat.service';
 
 interface ChatPacienteProps {
-  psicologoId?: string;
+  pacienteId: string;
 }
 
-const ChatPaciente: React.FC<ChatPacienteProps> = ({ psicologoId }) => {
-  const [mensajes, setMensajes] = useState<Mensaje[]>([]);
+const ChatPaciente: React.FC<ChatPacienteProps> = ({ pacienteId }) => {
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [psicologo, setPsicologo] = useState<PacienteChat | null>(null);
+  const [mensajes, setMensajes] = useState<MensajeChat[]>([]);
   const [nuevoMensaje, setNuevoMensaje] = useState('');
-  const [mensajeError, setMensajeError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [enviando, setEnviando] = useState(false);
-  const [psicologoInfo, setPsicologoInfo] = useState<any>(null);
-  
-  const [notificacion, setNotificacion] = useState({
-    visible: false,
-    mensaje: '',
-    tipo: 'info' as 'exito' | 'error' | 'advertencia' | 'info'
-  });
+  const [conectado, setConectado] = useState(false);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const mensajesEndRef = useRef<HTMLDivElement>(null);
 
-  const [wsConnected, setWsConnected] = useState(false);
-  const user = useMemo(() => authService.getUser(), []);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Función para mostrar notificaciones
-  const mostrarNotificacion = (mensaje: string, tipo: 'exito' | 'error' | 'advertencia' | 'info') => {
-    setNotificacion({
-      visible: true,
-      mensaje,
-      tipo
-    });
-  };
-
-  const cerrarNotificacion = () => {
-    setNotificacion(prev => ({ ...prev, visible: false }));
-  };
-
-  // Sincronización automática de mensajes cada 30 segundos
-  useEffect(() => {
-    if (psicologoInfo?.id && wsConnected) {
-      const intervalId = setInterval(() => {
-        console.log('🔍 Debug - ChatPaciente - Sincronización automática de mensajes...');
-        cargarMensajes(psicologoInfo.id);
-      }, 30000); // 30 segundos
-      
-      return () => clearInterval(intervalId);
-    }
-  }, [psicologoInfo?.id, wsConnected]);
-
-  // Cargar información del psicólogo
-  const cargarInfoPsicologo = async () => {
-    try {
-      setLoading(true);
-      
-      // Obtener información del psicólogo asignado desde la API
-      const response = await chatService.obtenerPsicologoAsignado();
-      
-      if (response.data && response.data.success && response.data.data) {
-        const psicologoData = response.data.data;
-        setPsicologoInfo({
-          id: psicologoData.psicologo_id,
-          nombre: psicologoData.psicologo_nombre,
-          avatar_url: psicologoData.psicologo_avatar,
-          email: psicologoData.psicologo_email
-        });
-        
-        // Cargar mensajes después de obtener la info del psicólogo
-        await cargarMensajes(psicologoData.psicologo_id);
-      } else {
-        console.error('Error: No se pudo obtener información del psicólogo');
-        mostrarNotificacion('No se pudo obtener información del psicólogo', 'error');
-      }
-    } catch (error: any) {
-      console.error('Error al cargar información del psicólogo:', error);
-      
-      if (error.response?.status === 404) {
-        mostrarNotificacion('No tienes un psicólogo asignado para chatear', 'advertencia');
-      } else {
-        mostrarNotificacion('Error al cargar información del psicólogo', 'error');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Cargar mensajes
-  const cargarMensajes = async (psicologoId: string) => {
-    if (!psicologoId) return;
-    
-    try {
-      setLoading(true);
-      console.log('🔍 Debug - ChatPaciente - Cargando mensajes para psicólogo:', psicologoId);
-      
-      // Obtener mensajes de la base de datos
-      const response = await chatService.obtenerMensajes(psicologoId);
-      console.log('🔍 Debug - ChatPaciente - Respuesta de mensajes:', response);
-      
-      let mensajesExtraidos: any[] = [];
-      
-      if (response.data && response.data.success && Array.isArray(response.data.data)) {
-        // Formato estándar: { success: true, data: [...] }
-        mensajesExtraidos = response.data.data;
-        console.log('🔍 Debug - ChatPaciente - Mensajes extraídos del formato estándar:', mensajesExtraidos.length);
-      } else if (Array.isArray(response.data)) {
-        // Formato directo: [...]
-        mensajesExtraidos = response.data;
-        console.log('🔍 Debug - ChatPaciente - Mensajes extraídos del formato directo:', mensajesExtraidos.length);
-      } else {
-        console.log('🔍 Debug - ChatPaciente - No se encontraron mensajes en la BD');
-        mensajesExtraidos = [];
-      }
-      
-      // FUSIONAR mensajes existentes con nuevos de la base de datos
-      setMensajes(prev => {
-        console.log('🔍 Debug - ChatPaciente - Mensajes previos antes de fusionar:', prev.length);
-        console.log('🔍 Debug - ChatPaciente - Mensajes nuevos de la BD:', mensajesExtraidos.length);
-        
-        // Crear un Map para evitar duplicados por ID
-        const mensajesMap = new Map();
-        
-        // Agregar mensajes existentes (WebSocket) primero
-        prev.forEach(msg => {
-          if (msg.id && !mensajesMap.has(msg.id)) {
-            mensajesMap.set(msg.id, msg);
-          }
-        });
-        
-        // Agregar mensajes nuevos de la base de datos
-        mensajesExtraidos.forEach(msg => {
-          if (msg.id && !mensajesMap.has(msg.id)) {
-            mensajesMap.set(msg.id, msg);
-          }
-        });
-        
-        // Convertir Map a array y ordenar por timestamp
-        const mensajesFusionados = Array.from(mensajesMap.values()).sort((a, b) => 
-          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-        );
-        
-        console.log('🔍 Debug - ChatPaciente - Mensajes fusionados totales:', mensajesFusionados.length);
-        return mensajesFusionados;
-      });
-      
-      console.log('🔍 Debug - ChatPaciente - Mensajes cargados y fusionados correctamente');
-    } catch (error: any) {
-      console.error('Error al cargar mensajes:', error);
-      // NO limpiar mensajes existentes si hay error
-      console.log('🔍 Debug - ChatPaciente - Error al cargar mensajes, manteniendo mensajes existentes');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Enviar mensaje
-  const enviarMensaje = async () => {
-    if (!nuevoMensaje.trim() || !psicologoId || !user) return;
-    
-    setMensajeError('');
-    try {
-      setEnviando(true);
-      
-      // SIEMPRE usar API (que incluye WebSocket automáticamente)
-      const mensajeData = {
-        contenido: nuevoMensaje.trim(),
-        receptor_id: psicologoId
-      };
-
-      console.log('🔍 ChatPaciente - Enviando mensaje via API:', mensajeData);
-      const response = await chatService.enviarMensaje(mensajeData);
-      console.log('🔍 ChatPaciente - Respuesta del backend:', response);
-      console.log('🔍 ChatPaciente - Mensaje recibido:', response.data.data);
-      
-      setMensajes(prev => [...prev, response.data.data]);
-      setNuevoMensaje('');
-      mostrarNotificacion('Mensaje enviado', 'exito');
-    } catch (error: any) {
-      console.error('Error al enviar mensaje:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Error al enviar mensaje';
-      setMensajeError(errorMessage);
-      mostrarNotificacion('Error al enviar mensaje', 'error');
-    } finally {
-      setEnviando(false);
-    }
+  const scrollToBottom = () => {
+    mensajesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
-    // Cargar información del psicólogo cuando el componente se monte
-    cargarInfoPsicologo();
-  }, []); // Solo ejecutar una vez al montar
-
-  useEffect(() => {
-    if (user) {
-      // Conectar WebSocket
-      console.log('🔍 ChatPaciente - Conectando WebSocket...');
-      webSocketService.connect();
-      
-      // Esperar un poco para que se conecte antes de unirse a la sala
-      setTimeout(() => {
-        console.log('🔍 ChatPaciente - Uniendo usuario a sala:', user.id);
-        webSocketService.joinUser(user.id);
-      }, 1000);
-      
-      // Escuchar eventos de WebSocket
-      webSocketService.onConnect(() => {
-        console.log('🔌 WebSocket conectado en ChatPaciente');
-        setWsConnected(true);
-      });
-      
-      webSocketService.onDisconnect(() => {
-        console.log('🔌 WebSocket desconectado en ChatPaciente');
-        setWsConnected(false);
-      });
-      
-      webSocketService.onNewMessage((data) => {
-        console.log('📨 Nuevo mensaje recibido via WebSocket:', data);
-        
-        // Agregar mensaje a la conversación
-        if (data.mensajeCompleto) {
-          setMensajes(prev => [...prev, data.mensajeCompleto]);
-        } else {
-          // Fallback si no viene mensajeCompleto
-          const nuevoMensaje = {
-            id: `ws_${Date.now()}`,
-            contenido: data.message,
-            emisor_id: data.senderId,
-            receptor_id: user?.id || '',
-            emisor_nombre: 'Psicólogo',
-            emisor_rol: 'psicologo',
-            timestamp: data.timestamp,
-            leido: false
-          };
-          setMensajes(prev => [...prev, nuevoMensaje]);
-        }
-      });
-    }
-    
-    // Cleanup: desconectar WebSocket cuando el componente se desmonte
-    return () => {
-      if (user) {
-        webSocketService.disconnect();
-      }
-    };
-  }, [user]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    scrollToBottom();
   }, [mensajes]);
 
-  const formatearTimestamp = (timestamp: string) => {
-    const fecha = new Date(timestamp);
-    const ahora = new Date();
-    const diffMs = ahora.getTime() - fecha.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
+  useEffect(() => {
+    const token = authService.getToken();
+    if (!token) {
+      setError('No hay token de autenticación');
+      setCargando(false);
+      return;
+    }
+
+    console.log('🔄 Iniciando conexión WebSocket para paciente...');
     
-    if (diffMins < 1) return 'Ahora';
-    if (diffMins < 60) return `Hace ${diffMins} min`;
-    if (diffMins < 1440) return `Hace ${Math.floor(diffMins / 60)}h`;
-    return fecha.toLocaleDateString();
+    const newSocket = io((import.meta as any).env.VITE_API_URL || 'http://localhost:3002', {
+      auth: {
+        token: token
+      }
+    });
+
+    setSocket(newSocket);
+
+    newSocket.on('connect', () => {
+      console.log('Conectado al chat como paciente');
+      setConectado(true);
+      setCargando(false);
+      console.log('🔐 Enviando token de autenticación:', token);
+      newSocket.emit('authenticate', { token });
+    });
+
+    newSocket.on('authenticated', (data: any) => {
+      console.log('✅ Autenticación exitosa:', data);
+    });
+
+    newSocket.on('authentication_error', (error: any) => {
+      console.error('❌ Error de autenticación:', error);
+      setError('Error de autenticación');
+      setCargando(false);
+    });
+
+    newSocket.on('disconnect', () => {
+      console.log('Desconectado del chat');
+      setConectado(false);
+    });
+
+    newSocket.on('error', (error: any) => {
+      console.error('Error en WebSocket:', error);
+      setError(error.message || 'Error de conexión');
+    });
+
+    newSocket.on('mensaje_recibido', (mensaje: MensajeChat) => {
+      console.log('📥 Mensaje recibido:', mensaje);
+      setMensajes(prev => {
+        // Evitar duplicados
+        const existe = prev.some(m => m.id === mensaje.id);
+        if (existe) return prev;
+        return [...prev, mensaje];
+      });
+    });
+
+    newSocket.on('mensaje_enviado', (mensaje: MensajeChat) => {
+      console.log('📤 Mensaje enviado:', mensaje);
+      setMensajes(prev => {
+        // Evitar duplicados
+        const existe = prev.some(m => m.id === mensaje.id);
+        if (existe) return prev;
+        return [...prev, mensaje];
+      });
+    });
+
+    newSocket.on('mensajes_cargados', (mensajesData: MensajeChat[]) => {
+      console.log('📨 Mensajes cargados:', mensajesData.length);
+      setMensajes(mensajesData);
+      
+      // Marcar mensajes como leídos
+      if (psicologo) {
+        newSocket.emit('marcar_como_leidos', { 
+          paciente_id: pacienteId, 
+          psicologo_id: psicologo.id 
+        });
+      }
+    });
+
+    // Cargar datos iniciales
+    cargarDatosIniciales();
+
+    return () => {
+      newSocket.disconnect();
+    };
+  }, [pacienteId]);
+
+  const cargarDatosIniciales = async () => {
+    try {
+      console.log('🔄 Cargando datos iniciales...');
+      
+      // Obtener información del psicólogo asignado
+      const psicologoData = await chatService.obtenerPsicologoAsignado();
+      setPsicologo(psicologoData);
+      
+      console.log('👨‍⚕️ Psicólogo asignado:', psicologoData);
+    } catch (error) {
+      console.error('Error al cargar datos iniciales:', error);
+      setError('Error al cargar los datos del chat');
+    }
   };
 
-  if (!psicologoId) {
+  const enviarMensaje = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!nuevoMensaje.trim() || !socket || !psicologo) {
+      return;
+    }
+
+    const mensajeData = {
+      contenido: nuevoMensaje.trim(),
+      remitente_id: pacienteId,
+      destinatario_id: psicologo.id,
+      tipo: 'paciente' as const
+    };
+
+    try {
+      socket.emit('enviar_mensaje', mensajeData);
+      setNuevoMensaje('');
+    } catch (error) {
+      console.error('Error al enviar mensaje:', error);
+      setError('Error al enviar el mensaje');
+    }
+  };
+
+  // Cargar mensajes cuando se selecciona el psicólogo
+  useEffect(() => {
+    if (psicologo && socket) {
+      console.log('🔍 Cargando mensajes para psicólogo:', psicologo.id);
+      setMensajes([]); // Limpiar mensajes anteriores
+      socket.emit('cargar_mensajes', { 
+        paciente_id: pacienteId, 
+        psicologo_id: psicologo.id 
+      });
+    }
+  }, [psicologo, socket, pacienteId]);
+
+  if (cargando) {
     return (
-      <div className="p-6 text-center text-gray-500">
-        <div className="text-6xl mb-4">💬</div>
-        <h3 className="text-lg font-semibold mb-2">Chat no disponible</h3>
-        <p>No tienes un psicólogo asignado para chatear.</p>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600 mx-auto mb-4"></div>
+          <p className="text-gray-500">Conectando al chat...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="text-red-500 text-4xl mb-4">⚠️</div>
+          <p className="text-red-600 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-amber-100 text-amber-800 rounded-md hover:bg-amber-200 transition-colors"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!psicologo) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="text-gray-400 text-4xl mb-4">👨‍⚕️</div>
+          <p className="text-gray-600 mb-2">No tienes un psicólogo asignado</p>
+          <p className="text-gray-500 text-sm">Contacta al administrador para que te asigne un psicólogo</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col bg-white rounded-lg shadow-sm border border-amber-100" style={{ height: '500px', maxHeight: '500px' }}>
-      {/* Header del Chat */}
-      <div className="px-4 py-3 border-b border-amber-200 bg-amber-50 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            {/* Avatar del psicólogo */}
-            {psicologoInfo?.avatar_url ? (
-              <img
-                src={psicologoInfo.avatar_url}
-                alt={`Avatar de ${psicologoInfo.nombre}`}
-                className="w-10 h-10 rounded-full object-cover border-2 border-amber-200"
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-amber-200 flex items-center justify-center border-2 border-amber-300">
-                <span className="text-amber-700 font-semibold text-sm">
-                  {(psicologoInfo?.nombre || 'P').charAt(0).toUpperCase()}
-                </span>
-              </div>
-            )}
-            
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">
-                {psicologoInfo?.nombre || 'Tu Psicólogo'}
-              </h3>
-              <div className="flex items-center space-x-2">
-                <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                <span className="text-xs text-gray-600">
-                  {wsConnected ? 'Conectado' : 'Desconectado'}
-                </span>
-              </div>
-            </div>
+    <div className="flex flex-col h-full bg-white rounded-lg border border-gray-200">
+      {/* Header del chat */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-amber-300">
+            <img
+              src={psicologo.avatar_url || 'https://api.dicebear.com/7.x/bottts/svg?seed=doctor&backgroundColor=ffdfbf&scale=80'}
+              alt={psicologo.nombres}
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <div>
+            <h3 className="font-semibold text-gray-900">
+              Dr. {psicologo.nombres} {psicologo.apellidos}
+            </h3>
+            <p className="text-sm text-gray-500">
+              {conectado ? '🟢 En línea' : '🔴 Desconectado'}
+            </p>
           </div>
         </div>
+        
+        {psicologo.mensajes_no_leidos > 0 && (
+          <div className="bg-red-500 text-white text-xs rounded-full px-2 py-1">
+            {psicologo.mensajes_no_leidos}
+          </div>
+        )}
       </div>
 
-      {/* Área de Mensajes - Scrollable con altura fija */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3" style={{ height: 'calc(500px - 140px)', maxHeight: 'calc(500px - 140px)' }}>
-        {loading ? (
-          <div className="text-center text-gray-500">Cargando mensajes...</div>
-        ) : mensajes.length === 0 ? (
-          <div className="text-center text-gray-500">
-            <div className="text-4xl mb-2">💬</div>
-            <p>Inicia una conversación con tu psicólogo</p>
+      {/* Área de mensajes */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ maxHeight: '400px' }}>
+        {mensajes.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="text-gray-400 text-4xl mb-4">💬</div>
+            <p className="text-gray-500">No hay mensajes aún</p>
+            <p className="text-gray-400 text-sm">Envía un mensaje para comenzar la conversación</p>
           </div>
         ) : (
           mensajes.map((mensaje) => (
             <div
               key={mensaje.id}
-              className={`flex ${mensaje.emisor_id === user?.id ? 'justify-end' : 'justify-start'}`}
+              className={`flex ${mensaje.remitente_id === pacienteId ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-xs lg:max-w-md px-3 py-2 rounded-lg ${
-                  mensaje.emisor_id === user?.id
-                    ? 'bg-amber-500 text-white'
+                className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                  mensaje.remitente_id === pacienteId
+                    ? 'bg-amber-100 text-amber-900'
                     : 'bg-gray-100 text-gray-900'
                 }`}
               >
                 <p className="text-sm">{mensaje.contenido}</p>
-                <p className={`text-xs mt-1 ${
-                  mensaje.emisor_id === user?.id ? 'text-amber-100' : 'text-gray-500'
-                }`}>
-                  {formatearTimestamp(mensaje.timestamp)}
-                  {mensaje.emisor_id !== user?.id && !mensaje.leido && (
-                    <span className="ml-2">●</span>
-                  )}
+                <p className="text-xs opacity-70 mt-1">
+                  {new Date(mensaje.created_at).toLocaleTimeString('es-CL', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
                 </p>
               </div>
             </div>
           ))
         )}
-        <div ref={messagesEndRef} />
+        <div ref={mensajesEndRef} />
       </div>
 
-      {/* Input para enviar mensaje - Fijo */}
-      <div className="px-4 py-3 border-t border-amber-200 bg-white flex-shrink-0">
+      {/* Input de mensaje */}
+      <form onSubmit={enviarMensaje} className="p-4 border-t border-gray-200">
         <div className="flex space-x-2">
           <input
             type="text"
             value={nuevoMensaje}
-            onChange={(e) => {
-              setNuevoMensaje(e.target.value);
-              if (mensajeError) setMensajeError('');
-            }}
-            onKeyPress={(e) => e.key === 'Enter' && enviarMensaje()}
+            onChange={(e) => setNuevoMensaje(e.target.value)}
             placeholder="Escribe tu mensaje..."
-            className="flex-1 px-3 py-2 border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-            disabled={enviando}
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500"
+            disabled={!conectado}
           />
           <button
-            onClick={enviarMensaje}
-            disabled={!nuevoMensaje.trim() || enviando}
-            className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            type="submit"
+            disabled={!nuevoMensaje.trim() || !conectado}
+            className="px-4 py-2 bg-amber-100 text-amber-800 rounded-md hover:bg-amber-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {enviando ? 'Enviando...' : 'Enviar'}
+            Enviar
           </button>
         </div>
         
-        {/* Mostrar error si existe */}
-        {mensajeError && (
-          <div className="mt-2 text-red-500 text-sm">
-            {mensajeError}
-          </div>
+        {!conectado && (
+          <p className="text-red-500 text-xs mt-2">⚠️ Sin conexión. Reintentando...</p>
         )}
-      </div>
-
-      {/* Notificación */}
-      {notificacion.visible && (
-        <Notificacion
-          visible={notificacion.visible}
-          mensaje={notificacion.mensaje}
-          tipo={notificacion.tipo}
-          onCerrar={cerrarNotificacion}
-        />
-      )}
+      </form>
     </div>
   );
 };
