@@ -69,6 +69,32 @@ export interface CrearRecepcionistaData {
   avatar_url?: string;
 }
 
+export interface LogAuditoria {
+  id: string;
+  usuario_id?: string;
+  accion: string;
+  tabla_afectada?: string;
+  registro_id?: string;
+  valores_anteriores?: any;
+  valores_nuevos?: any;
+  ip_address?: string;
+  user_agent?: string;
+  metadatos: any;
+  created_at: string;
+}
+
+export interface EstadisticasAuditoria {
+  estadisticas_por_accion: Array<{
+    accion: string;
+    total: number;
+  }>;
+  estadisticas_diarias: Array<{
+    fecha: string;
+    total: number;
+  }>;
+  total_acciones: number;
+}
+
 class AdminService {
   async obtenerPsicologos(): Promise<Psicologo[]> {
     try {
@@ -361,6 +387,47 @@ class AdminService {
       return response.data.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.mensaje || 'Error al desactivar paciente');
+    }
+  }
+
+  // Funciones para Auditoría
+  async obtenerLogsAuditoria(params?: {
+    limit?: number;
+    offset?: number;
+    accion?: string;
+    fecha_inicio?: string;
+    fecha_fin?: string;
+  }): Promise<{ logs: LogAuditoria[]; total: number }> {
+    try {
+      const response = await api.get('/admin/auditoria/logs', { params });
+      return {
+        logs: response.data?.data?.logs || [],
+        total: response.data?.data?.total || 0
+      };
+    } catch (error: any) {
+      console.error('Error al obtener logs de auditoría:', error);
+      return { logs: [], total: 0 };
+    }
+  }
+
+  async obtenerEstadisticasAuditoria(params?: {
+    fecha_inicio?: string;
+    fecha_fin?: string;
+  }): Promise<EstadisticasAuditoria> {
+    try {
+      const response = await api.get('/admin/auditoria/estadisticas', { params });
+      return response.data?.data || {
+        estadisticas_por_accion: [],
+        estadisticas_diarias: [],
+        total_acciones: 0
+      };
+    } catch (error: any) {
+      console.error('Error al obtener estadísticas de auditoría:', error);
+      return {
+        estadisticas_por_accion: [],
+        estadisticas_diarias: [],
+        total_acciones: 0
+      };
     }
   }
 }

@@ -42,7 +42,7 @@ const EstadisticasPsicologo: React.FC<EstadisticasPsicologoProps> = ({ psicologo
       setLoading(true);
       setError(null);
 
-      const citas = await citasService.obtenerCitasPsicologo(psicologoId);
+      const sesiones = await citasService.obtenerCitasPsicologo(psicologoId);
       
       const hoy = new Date().toISOString().split('T')[0];
       const inicioSemana = new Date();
@@ -54,16 +54,16 @@ const EstadisticasPsicologo: React.FC<EstadisticasPsicologoProps> = ({ psicologo
       const inicioMesStr = inicioMes.toISOString().split('T')[0];
 
       const estadisticasCalculadas: Estadisticas = {
-        totalCitas: citas.length,
-        citasHoy: citas.filter(c => c.fecha === hoy).length,
-        citasEstaSemana: citas.filter(c => c.fecha >= inicioSemanaStr).length,
-        citasEsteMes: citas.filter(c => c.fecha >= inicioMesStr).length,
-        pacientesActivos: new Set(citas.map(c => c.paciente_id)).size,
-        citasCompletadas: citas.filter(c => c.estado === 'completada').length,
-        citasCanceladas: citas.filter(c => c.estado === 'cancelada').length,
-        citasNoShow: citas.filter(c => c.estado === 'no_show').length,
-        promedioDuracion: citas.length > 0 
-          ? Math.round(citas.reduce((sum, c) => sum + c.duracion_minutos, 0) / citas.length)
+        totalCitas: sesiones.length,
+        citasHoy: sesiones.filter(s => s.fecha === hoy).length,
+        citasEstaSemana: sesiones.filter(s => s.fecha >= inicioSemanaStr).length,
+        citasEsteMes: sesiones.filter(s => s.fecha >= inicioMesStr).length,
+        pacientesActivos: new Set(sesiones.map(s => s.paciente_id)).size,
+        citasCompletadas: sesiones.filter(s => s.estado === 'completada').length,
+        citasCanceladas: sesiones.filter(s => s.estado === 'cancelada').length,
+        citasNoShow: sesiones.filter(s => s.estado === 'no_show').length,
+        promedioDuracion: sesiones.length > 0 
+          ? Math.round(sesiones.reduce((sum, s) => sum + s.duracion_minutos, 0) / sesiones.length)
           : 0
       };
 

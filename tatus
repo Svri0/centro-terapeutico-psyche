@@ -1,3 +1,139 @@
 [33m2303a5c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmig_login[m[33m, [m[1;31morigin/mig_login[m[33m, [m[1;31morigin/branch_verificacion_email[m[33m)[m toma de horarios paciente y dispo psicologo
 [33m2cd6bc9[m agregar pacientes
 [33m067e661[m migracion modelos a ts
+[33me470244[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmiguel_dev[m[33m, [m[1;31morigin/miguel_dev[m[33m)[m Merge pull request #5 from Svri0/integration_branch
+[33m3a89a4a[m[33m ([m[1;31morigin/integration_branch[m[33m, [m[1;31morigin/branch_de_pipe_ULTIMA[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mintegration_branch[m[33m)[m Merge pull request #4 from Svri0/gabo_dev
+[33m9ee1b37[m[33m ([m[1;31morigin/gabo_dev[m[33m)[m Actualización 09/16 Homepage
+backend/package.json
+backend/src/controladores/admin.controlador.ts
+backend/src/controladores/chat.controlador.ts
+backend/src/controladores/chatUnificado.controlador.ts
+backend/src/controladores/recepcionista-pacientes.controlador.ts
+backend/src/controladores/recepcionista.controlador.ts
+backend/src/middleware/auth.middleware.ts
+backend/src/middleware/recepcionista.middleware.ts
+backend/src/migrations/20240728000006-create-mensajes.js
+backend/src/modelos/Chat.ts
+backend/src/modelos/Mensaje.ts
+backend/src/modelos/index.ts
+backend/src/rutas/admin.routes.ts
+backend/src/rutas/chat.routes.ts
+backend/src/rutas/index.ts
+backend/src/rutas/recepcionista.routes.ts
+backend/src/seeders/20240728000001-roles-iniciales.js
+backend/src/servidor.ts
+backend/test-chat-frontend-exacto.js
+backend/test-psicologo-asignado.js
+frontend/index.html
+frontend/public/logo-de-psyche.svg
+frontend/public/psyche.svg
+frontend/src/App.tsx
+frontend/src/assets/logo-de-psyche.svg
+frontend/src/componentes/AgendaRecepcionista.tsx
+frontend/src/componentes/Chat.tsx
+frontend/src/componentes/ChatPaciente.tsx
+frontend/src/componentes/Chatbot.tsx
+frontend/src/componentes/ConfiguracionChat.tsx
+frontend/src/componentes/DashboardRecepcionista.tsx
+frontend/src/componentes/DetallesPaciente.tsx
+frontend/src/componentes/DetallesRecepcionista.tsx
+frontend/src/componentes/GestionPacientesRecepcionista.tsx
+frontend/src/componentes/GestionPagos.tsx
+frontend/src/componentes/GestionUsuariosAdmin.tsx
+frontend/src/componentes/ModalConfirmarDesactivar.tsx
+frontend/src/componentes/ModalCrearPaciente.tsx
+frontend/src/componentes/ModalCrearRecepcionista.tsx
+frontend/src/componentes/ModalEditarPaciente.tsx
+frontend/src/componentes/ModalEditarRecepcionista.tsx
+frontend/src/componentes/ReportesRecepcionista.tsx
+frontend/src/componentes/TablaPacientes.tsx
+frontend/src/componentes/TablaPsicologos.tsx
+frontend/src/componentes/TablaRecepcionistas.tsx
+frontend/src/index.css
+frontend/src/paginas/Inicio.tsx
+frontend/src/paginas/Login.tsx
+frontend/src/paginas/LoginNuevo.tsx
+frontend/src/paginas/PanelAdmin.tsx
+frontend/src/paginas/PanelPaciente.tsx
+frontend/src/paginas/PanelPrincipal.tsx
+frontend/src/paginas/PanelPsicologo.tsx
+frontend/src/paginas/PanelRecepcionista.tsx
+frontend/src/paginas/RegistroPaciente.tsx
+frontend/src/servicios/admin.service.ts
+frontend/src/servicios/api.ts
+frontend/src/servicios/auth.service.ts
+frontend/src/servicios/chat.service.ts
+frontend/src/servicios/chatConfig.service.ts
+frontend/src/servicios/recepcionista.service.ts
+frontend/src/servicios/websocket.service.ts
+frontend/src/utilidades/rutValidator.ts
+package-lock.json
+[33m1e1689c[m[33m ([m[1;31morigin/main[m[33m, [m[1;32mmain[m[33m)[m Merge pull request #3 from Svri0/miguel_dev
+[33m7bdfd32[m script update
+README.md
+README_ROMAN.md
+backend/scripts/crear-admin.js
+backend/scripts/crear-admin.ts
+backend/scripts/setup-rapido.js
+backend/scripts/setup-roman.js
+backend/scripts/verificar-admin-rapido.js
+backend/scripts/verificar-usuarios-admin.js
+backend/src/configuracion/database.ts
+backend/src/configuracion/sequelize-config.js
+backend/src/seeders/20240728000002-usuario-admin-inicial.js
+[33m4726e14[m fix script
+README.md
+README_ROMAN.md
+backend/scripts/crear-admin.js
+backend/scripts/verificar-admin-rapido.js
+[33m6e718a2[m readme personal
+README.md
+README_ROMAN.md
+backend/scripts/setup-roman.js
+backend/scripts/verificar-sistema-roman.js
+[33m9c3c0dc[m env configuraciones y nuevas instrucciones
+README.md
+backend/env.example
+backend/scripts/crear-admin.js
+backend/scripts/setup-env.js
+backend/scripts/setup-rapido.js
+backend/scripts/verificar-usuarios-admin.js
+[33mf8473e1[m cancelación de citas y aviso automatico
+SISTEMA_EMAILS_CITAS.md
+backend/scripts/test-citas-paciente.js
+backend/scripts/test-email-cita-simple.js
+backend/scripts/test-email-cita.js
+backend/scripts/test-email-real.js
+backend/scripts/test-limpiador-citas.js
+backend/scripts/verificar-citas-simple.js
+backend/scripts/verificar-citas-usuario.js
+backend/src/controladores/admin.controlador.ts
+backend/src/controladores/citas.controlador.ts
+backend/src/rutas/citas.routes.ts
+backend/src/servidor.ts
+backend/src/utilidades/chat-automatico.service.ts
+backend/src/utilidades/email.service.ts
+backend/src/utilidades/limpiador-citas.service.ts
+frontend/src/App.tsx
+frontend/src/componentes/MisCitas.tsx
+frontend/src/componentes/PerfilPaciente.tsx
+frontend/src/paginas/PanelPaciente.tsx
+frontend/src/servicios/citas.service.ts
+[33m424e65e[m ficha clínica y registros
+IMPLEMENTACION_FICHA_CLINICA.md
+backend/ejecutar-migraciones-nuevas.js
+backend/src/migrations/20241201000002-add-sbs-to-psicologos.js
+backend/src/migrations/20241201000003-add-antecedentes-medicos-to-pacientes.js
+backend/src/migrations/20241201000004-improve-sesiones-bitacora.js
+backend/src/modelos/Paciente.ts
+backend/src/modelos/Sesion.ts
+backend/src/modelos/Usuario.ts
+frontend/src/componentes/DetallesPsicologo.tsx
+frontend/src/componentes/FichaClinica.tsx
+frontend/src/componentes/GestionPacientes.tsx
+frontend/src/componentes/ModalCrearPsicologo.tsx
+frontend/src/componentes/ModalEditarPsicologo.tsx
+frontend/src/componentes/TablaPsicologos.tsx
+frontend/src/servicios/admin.service.ts
+frontend/src/servicios/pacientes.service.ts
+frontend/src/utilidades/calculoEdad.ts

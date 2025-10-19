@@ -92,7 +92,7 @@ const PanelRecepcionista: React.FC = () => {
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
               <div className="flex-shrink-0 mr-4">
-                <img src="/src/img/psyche.svg" alt="de psyche" className="h-20 w-auto" />
+                <img src="/psyche.svg" alt="de psyche" className="h-20 w-auto" />
               </div>
               <div>
                 <h1 className="text-lg font-light text-gray-800 tracking-widest uppercase">

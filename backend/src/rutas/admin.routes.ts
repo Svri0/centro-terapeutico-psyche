@@ -10,8 +10,8 @@ import {
   reactivarPsicologo,
   eliminarPsicologo,
   obtenerPacientesPsicologo,
-  obtenerCitasPsicologo,
-  eliminarCita,
+  obtenerSesionesPsicologo,
+  eliminarSesion,
   reasignarPaciente,
   obtenerPsicologosDisponibles,
   obtenerLogsAuditoria,
@@ -62,11 +62,11 @@ router.delete('/psicologos/:id', eliminarPsicologo);
 // GET /admin/psicologos/:id/pacientes - Obtener pacientes de un psicólogo
 router.get('/psicologos/:id/pacientes', obtenerPacientesPsicologo);
 
-// GET /admin/psicologos/:id/citas - Obtener citas de un psicólogo
-router.get('/psicologos/:id/citas', obtenerCitasPsicologo);
+// GET /admin/psicologos/:id/sesiones - Obtener sesiones de un psicólogo
+router.get('/psicologos/:id/sesiones', obtenerSesionesPsicologo);
 
-// DELETE /admin/citas/:id - Eliminar cita específica
-router.delete('/citas/:id', eliminarCita);
+// DELETE /admin/sesiones/:id - Eliminar sesión específica
+router.delete('/sesiones/:id', eliminarSesion);
 
 // POST /admin/pacientes/reasignar - Reasignar paciente a otro psicólogo
 router.post('/pacientes/reasignar', reasignarPaciente);

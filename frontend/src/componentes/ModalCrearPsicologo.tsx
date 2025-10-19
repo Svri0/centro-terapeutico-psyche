@@ -30,18 +30,164 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Funciones de validación
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[a-zA-Z0-9._%+-ñáéíóúüÑÁÉÍÓÚÜ]+@[a-zA-Z0-9.-]+\.(com|cl)$/;
+    return emailRegex.test(email);
+  };
+
+  const validatePhone = (phone: string): boolean => {
+    const phoneRegex = /^(\+56\s?)?[2-9]\d{8}$/;
+    return phoneRegex.test(phone.replace(/\s/g, ''));
+  };
+
+  // Función para formatear RUT automáticamente
+  const formatRUT = (rut: string): string => {
+    // Solo permitir números
+    const soloNumeros = rut.replace(/[^0-9]/g, '');
+    
+    if (soloNumeros.length === 0) return '';
+    
+    // Si tiene más de 9 dígitos (8 + DV), tomar solo los primeros 9
+    const numero = soloNumeros.slice(0, 9);
+    
+    // Formatear según la longitud
+    if (numero.length <= 2) {
+      return numero;
+    } else if (numero.length <= 5) {
+      return `${numero.slice(0, 2)}.${numero.slice(2)}`;
+    } else if (numero.length <= 8) {
+      return `${numero.slice(0, 2)}.${numero.slice(2, 5)}.${numero.slice(5)}`;
+    } else {
+      // 9 dígitos: formato completo XX.XXX.XXX-X
+      return `${numero.slice(0, 2)}.${numero.slice(2, 5)}.${numero.slice(5, 8)}-${numero.slice(8)}`;
+    }
+  };
+
+  const validateRUT = (rut: string): boolean => {
+    if (!rut) return true; // RUT es opcional
+    
+    // Limpiar el RUT (quitar puntos y espacios)
+    const rutLimpio = rut.replace(/[.\s]/g, '');
+    
+    // Verificar formato básico: números seguidos de guión y dígito verificador
+    const rutRegex = /^[0-9]+-[0-9kK]$/;
+    if (!rutRegex.test(rutLimpio)) {
+      return false;
+    }
+    
+    // Separar número y dígito verificador
+    const [numero, dv] = rutLimpio.split('-');
+    
+    // Verificar que el número tenga entre 7 y 8 dígitos
+    if (numero.length < 7 || numero.length > 8) {
+      return false;
+    }
+    
+    // Solo verificar que el DV sea un número o K
+    return /^[0-9kK]$/.test(dv);
+  };
+
+  const validateField = (field: string, value: string): string | undefined => {
+    switch (field) {
+      case 'email':
+        if (!value.trim()) {
+          return 'El email es requerido';
+        } else if (!validateEmail(value)) {
+          return 'Ingresa un email válido que termine en .com o .cl';
+        }
+        break;
+      case 'telefono':
+        if (!value.trim()) {
+          return 'El teléfono es requerido';
+        } else if (!validatePhone(value)) {
+          return 'Ingresa un número de teléfono válido (ej: +56 9 1234 5678)';
+        }
+        break;
+      case 'nombres':
+        if (!value.trim()) {
+          return 'Los nombres son obligatorios';
+        } else if (value.trim().length < 2) {
+          return 'Los nombres deben tener al menos 2 caracteres';
+        }
+        break;
+      case 'apellidos':
+        if (!value.trim()) {
+          return 'Los apellidos son obligatorios';
+        } else if (value.trim().length < 2) {
+          return 'Los apellidos deben tener al menos 2 caracteres';
+        }
+        break;
+      case 'password':
+        if (!value.trim()) {
+          return 'La contraseña es obligatoria';
+        } else if (value.length < 6) {
+          return 'La contraseña debe tener al menos 6 caracteres';
+        }
+        break;
+      case 'codigo_sbs':
+        if (!value.trim()) {
+          return 'El código SBS es obligatorio';
+        } else if (!/^\d{6,8}$/.test(value.trim())) {
+          return 'El código SBS debe tener entre 6 y 8 dígitos numéricos';
+        }
+        break;
+      case 'rut':
+        if (value && !validateRUT(value)) {
+          return 'Formato de RUT inválido (ej: 12.345.678-9)';
+        }
+        break;
+      case 'genero':
+        if (!value) {
+          return 'Selecciona un género';
+        }
+        break;
+      case 'especialidad':
+        if (!value.trim()) {
+          return 'La especialidad es obligatoria';
+        } else if (value.trim().length < 3) {
+          return 'La especialidad debe tener al menos 3 caracteres';
+        }
+        break;
+      case 'descripcion':
+        if (!value.trim()) {
+          return 'La descripción profesional es obligatoria';
+        } else if (value.trim().length < 10) {
+          return 'La descripción debe tener al menos 10 caracteres';
+        }
+        break;
+    }
+    return undefined;
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
     
-    // Limpiar error del campo cuando el usuario empiece a escribir
-    if (errors[name]) {
+    // Formatear RUT automáticamente
+    if (name === 'rut') {
+      const rutFormateado = formatRUT(value);
+      setFormData(prev => ({
+        ...prev,
+        [name]: rutFormateado
+      }));
+      
+      // Validar el campo en tiempo real
+      const error = validateField(name, rutFormateado);
       setErrors(prev => ({
         ...prev,
-        [name]: ''
+        [name]: error || ''
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+      
+      // Validar el campo en tiempo real
+      const error = validateField(name, value);
+      setErrors(prev => ({
+        ...prev,
+        [name]: error || ''
       }));
     }
   };
@@ -78,39 +224,18 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.nombres.trim()) {
-      newErrors.nombres = 'Los nombres son obligatorios';
-    }
-
-    if (!formData.apellidos.trim()) {
-      newErrors.apellidos = 'Los apellidos son obligatorios';
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.email = 'El email es obligatorio';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'El email no es válido';
-    }
-
-    if (!formData.password.trim()) {
-      newErrors.password = 'La contraseña es obligatoria';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'La contraseña debe tener al menos 6 caracteres';
-    }
-
-    // Validar código SBS
-    if (!formData.codigo_sbs.trim()) {
-      newErrors.codigo_sbs = 'El código SBS es obligatorio';
-    } else if (!/^\d{6,8}$/.test(formData.codigo_sbs.trim())) {
-      newErrors.codigo_sbs = 'El código SBS debe tener entre 6 y 8 dígitos numéricos';
-    }
-
-    if (formData.telefono && !/^\+?[\d\s\-()]+$/.test(formData.telefono)) {
-      newErrors.telefono = 'El teléfono no es válido';
-    }
+    // Validar todos los campos usando la función validateField
+    Object.keys(formData).forEach(field => {
+      const error = validateField(field, formData[field as keyof CrearPsicologoData]);
+      if (error) {
+        newErrors[field] = error;
+      }
+    });
 
     // Validar fecha de nacimiento
-    if (fechaNacimiento) {
+    if (!fechaNacimiento) {
+      newErrors.fecha_nacimiento = 'La fecha de nacimiento es obligatoria';
+    } else {
       const today = new Date();
       const minAge = 21;
       const maxAge = 80;
@@ -191,7 +316,7 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
                   value={formData.nombres}
                   onChange={handleChange}
                   className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm ${
-                    errors.nombres ? 'border-red-300' : 'border-gray-300'
+                    errors.nombres ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="Ingrese los nombres"
                 />
@@ -211,7 +336,7 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
                   value={formData.apellidos}
                   onChange={handleChange}
                   className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm ${
-                    errors.apellidos ? 'border-red-300' : 'border-gray-300'
+                    errors.apellidos ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="Ingrese los apellidos"
                 />
@@ -234,9 +359,9 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
                   value={formData.email}
                   onChange={handleChange}
                   className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm ${
-                    errors.email ? 'border-red-300' : 'border-gray-300'
+                    errors.email ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="ejemplo@correo.com"
+                  placeholder="ejemplo@gmail.com"
                 />
                 {errors.email && (
                   <p className="mt-1 text-sm text-red-600">{errors.email}</p>
@@ -246,7 +371,7 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
               {/* Teléfono */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Teléfono
+                  Teléfono *
                 </label>
                 <input
                   type="tel"
@@ -254,7 +379,7 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
                   value={formData.telefono}
                   onChange={handleChange}
                   className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm ${
-                    errors.telefono ? 'border-red-300' : 'border-gray-300'
+                    errors.telefono ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="+56 9 1234 5678"
                 />
@@ -298,7 +423,7 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
               {/* Fecha de Nacimiento */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Fecha de Nacimiento
+                  Fecha de Nacimiento *
                 </label>
                 <DatePickerPersonalizado
                   selected={fechaNacimiento}
@@ -314,13 +439,15 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
               {/* Género */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Género
+                  Género *
                 </label>
                 <select
                   name="genero"
                   value={formData.genero}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                  className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm ${
+                    errors.genero ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 >
                   <option value="">Seleccionar género</option>
                   <option value="masculino">Masculino</option>
@@ -329,6 +456,9 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
                   <option value="otro">Otro</option>
                   <option value="prefiero_no_decir">Prefiero no decir</option>
                 </select>
+                {errors.genero && (
+                  <p className="mt-1 text-sm text-red-600">{errors.genero}</p>
+                )}
               </div>
             </div>
 
@@ -355,16 +485,21 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
               {/* Especialidad */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Especialidad
+                  Especialidad *
                 </label>
                 <input
                   type="text"
                   name="especialidad"
                   value={formData.especialidad}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                  className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm ${
+                    errors.especialidad ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="Ej: Psicología Clínica, Terapia Cognitivo-Conductual, etc."
                 />
+                {errors.especialidad && (
+                  <p className="mt-1 text-sm text-red-600">{errors.especialidad}</p>
+                )}
               </div>
 
               {/* Código SBS */}
@@ -395,16 +530,21 @@ const ModalCrearPsicologo: React.FC<ModalCrearPsicologoProps> = ({ onClose, onSu
             {/* Descripción */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Descripción Profesional
+                Descripción Profesional *
               </label>
               <textarea
                 name="descripcion"
                 value={formData.descripcion}
                 onChange={handleChange}
                 rows={4}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm ${
+                  errors.descripcion ? 'border-red-500' : 'border-gray-300'
+                }`}
                 placeholder="Describe tu experiencia, enfoque terapéutico, y cómo puedes ayudar a tus pacientes..."
               />
+              {errors.descripcion && (
+                <p className="mt-1 text-sm text-red-600">{errors.descripcion}</p>
+              )}
             </div>
 
             {/* Botones */}

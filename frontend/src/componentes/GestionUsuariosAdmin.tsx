@@ -301,6 +301,29 @@ const GestionUsuariosAdmin: React.FC<GestionUsuariosAdminProps> = ({ tipoUsuario
     return true;
   });
 
+  // Función para formatear RUT automáticamente
+  const formatRUT = (rut: string): string => {
+    // Solo permitir números
+    const soloNumeros = rut.replace(/[^0-9]/g, '');
+    
+    if (soloNumeros.length === 0) return '';
+    
+    // Si tiene más de 9 dígitos (8 + DV), tomar solo los primeros 9
+    const numero = soloNumeros.slice(0, 9);
+    
+    // Formatear según la longitud
+    if (numero.length <= 2) {
+      return numero;
+    } else if (numero.length <= 5) {
+      return `${numero.slice(0, 2)}.${numero.slice(2)}`;
+    } else if (numero.length <= 8) {
+      return `${numero.slice(0, 2)}.${numero.slice(2, 5)}.${numero.slice(5)}`;
+    } else {
+      // 9 dígitos: formato completo XX.XXX.XXX-X
+      return `${numero.slice(0, 2)}.${numero.slice(2, 5)}.${numero.slice(5, 8)}-${numero.slice(8)}`;
+    }
+  };
+
   const estadisticas = {
     total: usuarios.length,
     activos: usuarios.filter(u => u.activo).length,
@@ -735,9 +758,12 @@ const GestionUsuariosAdmin: React.FC<GestionUsuariosAdminProps> = ({ tipoUsuario
                       <input
                         type="text"
                         value={formData.rut}
-                        onChange={(e) => setFormData({ ...formData, rut: e.target.value })}
+                        onChange={(e) => {
+                          const rutFormateado = formatRUT(e.target.value);
+                          setFormData({ ...formData, rut: rutFormateado });
+                        }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="12.345.678-9"
+                        placeholder="12345678K (escribe tú el dígito verificador)"
                       />
                     </div>
                     <div>
