@@ -29,10 +29,7 @@ api.interceptors.response.use(
     // Error de conexión (servidor caído)
     if (!error.response) {
       console.error('🚨 Error de conexión - Servidor no disponible');
-      // Solo redirigir si no estamos ya en una página de error
-      if (!window.location.pathname.includes('/error')) {
-        window.location.href = '/error/sistema-caido';
-      }
+      // NO redirigir automáticamente, dejar que el componente maneje el error
       return Promise.reject(error);
     }
 
@@ -43,18 +40,14 @@ api.interceptors.response.use(
     // Error 500 - Error interno del servidor
     if (status === 500) {
       console.error('🚨 Error interno del servidor');
-      if (!window.location.pathname.includes('/error')) {
-        window.location.href = '/error/sistema-caido';
-      }
+      // NO redirigir automáticamente, dejar que el componente maneje el error
       return Promise.reject(error);
     }
 
     // Error 503 - Servicio no disponible
     if (status === 503) {
       console.error('🚨 Servicio no disponible');
-      if (!window.location.pathname.includes('/error')) {
-        window.location.href = '/error/sistema-caido';
-      }
+      // NO redirigir automáticamente, dejar que el componente maneje el error
       return Promise.reject(error);
     }
 

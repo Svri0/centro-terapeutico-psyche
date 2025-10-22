@@ -21,6 +21,7 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
   const [vistaActual, setVistaActual] = useState<'calendario' | 'semana'>('calendario');
   const [semanaSeleccionada, setSemanaSeleccionada] = useState<Date | null>(null);
   const [mostrarPerfil, setMostrarPerfil] = useState(false);
+  const [pacienteRealId, setPacienteRealId] = useState<string>('');
   
   // Sistema de notificaciones
   const {
@@ -58,6 +59,15 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
       // Obtener psicólogo asignado al paciente desde la API
       const psicologoAsignado = await pacientesService.obtenerPsicologoAsignado();
       setPsicologo(psicologoAsignado);
+      
+      // Por ahora usar el ID del usuario directamente
+      // TODO: Implementar obtención del ID real del paciente cuando el endpoint esté funcionando
+      setPacienteRealId(pacienteId);
+      
+      // Cargar disponibilidad del psicólogo
+      if (psicologoAsignado?.id) {
+        await cargarDisponibilidadDelMes(psicologoAsignado.id);
+      }
     } catch (err: any) {
       console.error('Error al cargar datos:', err);
       setError(err.message || 'Error al cargar los datos');
@@ -66,18 +76,19 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
     }
   };
 
-  const cargarDisponibilidadDelMes = async () => {
-    if (!psicologo?.id) return;
+  const cargarDisponibilidadDelMes = async (psicologoId?: string) => {
+    const idPsicologo = psicologoId || psicologo?.id;
+    if (!idPsicologo) return;
     
     try {
       console.log('🔍 Cargando disponibilidad para:', {
-        psicologoId: psicologo.id,
+        psicologoId: idPsicologo,
         mes: mesActual.getMonth() + 1,
         año: mesActual.getFullYear()
       });
       
       const disponibilidadData = await disponibilidadMensualService.obtenerDisponibilidadPaciente(
-        psicologo.id, 
+        idPsicologo, 
         mesActual.getMonth() + 1, 
         mesActual.getFullYear()
       );
@@ -326,9 +337,15 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
         return;
       }
 
+      console.log('🔍 Frontend - Iniciando agendamiento de cita');
+      console.log('🔍 Frontend - Horario seleccionado:', horario);
+      console.log('🔍 Frontend - Día seleccionado:', diaSeleccionado);
+      console.log('🔍 Frontend - Psicólogo:', psicologo);
+      console.log('🔍 Frontend - Paciente ID:', pacienteRealId || pacienteId);
+      
       console.log('Agendando cita:', {
         psicologoId: psicologo.id,
-        pacienteId,
+        pacienteId: pacienteRealId || pacienteId,
         dia: diaSeleccionado.toLocaleDateString('es-ES', { 
           weekday: 'long', 
           year: 'numeric', 
@@ -343,17 +360,24 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
       const horaFin = new Date(horaInicio.getTime() + 60 * 60 * 1000); // +60 minutos
       const horaFinStr = horaFin.toTimeString().slice(0, 5);
       
-      // Crear la cita usando el servicio
-      await citasService.crearCita({
-        paciente_id: pacienteId,
+      const datosCita = {
+        paciente_id: pacienteRealId || pacienteId,
         fecha: diaSeleccionado.toISOString().split('T')[0],
         hora_inicio: horario,
         hora_fin: horaFinStr,
         duracion_minutos: 60,
-        tipo_sesion: 'individual',
-        modalidad: 'presencial',
+        tipo_sesion: 'presencial' as const,
+        modalidad: 'presencial' as const,
         notas_paciente: 'Cita agendada desde el calendario del paciente'
-      });
+      };
+
+      console.log('🔍 Frontend - Datos de cita preparados:', datosCita);
+      console.log('🔍 Frontend - Llamando a citasService.crearCita...');
+      
+      // Crear la cita usando el servicio
+      await citasService.crearCita(datosCita);
+      
+      console.log('✅ Frontend - Cita creada exitosamente');
       
       mostrarExito(
         'Cita Agendada',
@@ -365,7 +389,14 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
       setDiaSeleccionado(null);
       setSemanaSeleccionada(null);
     } catch (err: any) {
-      console.error('Error al agendar cita:', err);
+      console.error('❌ Frontend - Error al agendar cita:', err);
+      console.error('❌ Frontend - Stack trace:', err.stack);
+      console.error('❌ Frontend - Error completo:', {
+        message: err.message,
+        name: err.name,
+        response: err.response,
+        config: err.config
+      });
       
       // Manejar errores específicos del backend
       if (err.message && err.message.includes('ya existe')) {

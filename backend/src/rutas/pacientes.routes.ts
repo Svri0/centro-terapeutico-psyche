@@ -11,6 +11,7 @@ import {
   obtenerPsicologoAsignado,
   obtenerTodos
 } from '../controladores/pacientes.controlador';
+import { obtenerMiPaciente } from '../controladores/recepcionista-pacientes.controlador';
 import { authPsicologo, verificarRol, verificarToken } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -30,5 +31,8 @@ router.get('/:id/historial', authPsicologo, obtenerHistorial); // GET /api/v1/pa
 
 // Ruta para que el paciente obtenga información de su psicólogo asignado
 router.get('/mi-psicologo/psicologo-asignado', verificarToken, verificarRol(['paciente']), obtenerPsicologoAsignado); // GET /api/v1/pacientes/mi-psicologo/psicologo-asignado
+
+// Ruta para que el paciente obtenga su propia información
+router.get('/mi-paciente', verificarToken, verificarRol(['paciente']), obtenerMiPaciente); // GET /api/v1/pacientes/mi-paciente
 
 export default router;
