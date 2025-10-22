@@ -14,8 +14,8 @@ import { MENSAJES_GENERALES } from './utilidades/mensajes';
 import { ManejadorRespuestas } from './utilidades/respuestas';
 import { ChatWebSocketService } from './servicios/chat-websocket.service';
 
-// Cargar variables de entorno
-dotenv.config();
+// Cargar variables de entorno desde la raíz del proyecto
+dotenv.config({ path: path.join(__dirname, '..', '..', '.env') });
 
 const app = express();
 const PUERTO = process.env.PORT || 3002;

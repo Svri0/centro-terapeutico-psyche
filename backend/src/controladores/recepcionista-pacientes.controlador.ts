@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import sequelize from '../configuracion/database';
 import { ManejadorRespuestas } from '../utilidades/respuestas';
 import { log } from '../utilidades/logger';
+import { enviarEmailRegistroPaciente } from '../utilidades/email.service';
 
 // Crear paciente básico (para recepcionistas)
 export const crearPacienteBasico = async (req: Request, res: Response) => {
@@ -157,13 +158,30 @@ export const crearPacienteBasico = async (req: Request, res: Response) => {
 
     const paciente = pacienteCreado[0];
 
+    // Enviar email de bienvenida al paciente
+    const nombreCompleto = `${nombres} ${apellidos}`;
+    const emailEnviado = await enviarEmailRegistroPaciente(
+      email,
+      nombreCompleto,
+      email,
+      passwordTemporal,
+      usuario.token_activacion || ''
+    );
+
+    if (emailEnviado) {
+      log.info(`Email de bienvenida enviado exitosamente al paciente: ${email}`);
+    } else {
+      log.warn(`No se pudo enviar el email de bienvenida al paciente: ${email}`);
+    }
+
     return ManejadorRespuestas.creado(
       res,
-      'Paciente creado exitosamente. El psicólogo completará la información en la primera sesión.',
+      'Paciente creado exitosamente. Se ha enviado un email de bienvenida. El psicólogo completará la información en la primera sesión.',
       {
         ...usuario,
         ...paciente,
-        password_temporal: passwordTemporal
+        password_temporal: passwordTemporal,
+        email_enviado: emailEnviado
       },
       'REC_018'
     );

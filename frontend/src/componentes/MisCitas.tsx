@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Cita, citasService } from '../servicios/citas.service';
 import { obtenerEstadoTexto, obtenerEstadoColor } from '../utilidades/estados-citas';
 import { authService } from '../servicios/auth.service';
+import ModalReagendarCita from './ModalReagendarCita';
+import { useNotificaciones } from '../hooks/useNotificaciones';
 
 interface MisCitasProps {
   // No necesitamos props ya que el backend obtiene el paciente del token
@@ -11,6 +13,13 @@ const MisCitas: React.FC<MisCitasProps> = () => {
   const [citas, setCitas] = useState<Cita[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [citaReagendar, setCitaReagendar] = useState<Cita | null>(null);
+  const [mostrarModalReagendar, setMostrarModalReagendar] = useState(false);
+
+  const {
+    mostrarExito,
+    mostrarError
+  } = useNotificaciones();
 
   useEffect(() => {
     cargarCitas();
@@ -60,10 +69,42 @@ const MisCitas: React.FC<MisCitasProps> = () => {
     try {
       await citasService.cancelarCita(citaId);
       await cargarCitas(); // Recargar citas
-      alert('Cita cancelada exitosamente');
+      mostrarExito('Cita Cancelada', 'Tu cita ha sido cancelada exitosamente');
     } catch (err: any) {
-      alert('Error al cancelar la cita: ' + (err.response?.data?.mensaje || err.message));
+      mostrarError('Error al Cancelar', err.response?.data?.mensaje || err.message);
     }
+  };
+
+  const handleReagendarCita = (cita: Cita) => {
+    setCitaReagendar(cita);
+    setMostrarModalReagendar(true);
+  };
+
+  const handleConfirmarReagendar = async (nuevaFecha: string, nuevoHorario: string) => {
+    if (!citaReagendar) return;
+
+    try {
+      // Calcular hora de fin (asumiendo 60 minutos por defecto)
+      const horaInicio = new Date(`2000-01-01T${nuevoHorario}:00`);
+      const horaFin = new Date(horaInicio.getTime() + 60 * 60 * 1000); // +60 minutos
+      const horaFinStr = horaFin.toTimeString().slice(0, 5);
+
+      await citasService.actualizarCita(citaReagendar.id, {
+        fecha: nuevaFecha,
+        hora_inicio: nuevoHorario,
+        hora_fin: horaFinStr,
+        notas_paciente: `Cita reagendada desde ${citaReagendar.fecha} ${citaReagendar.hora_inicio}`
+      });
+
+      await cargarCitas(); // Recargar citas
+    } catch (err: any) {
+      throw new Error(err.response?.data?.mensaje || err.message);
+    }
+  };
+
+  const cerrarModalReagendar = () => {
+    setMostrarModalReagendar(false);
+    setCitaReagendar(null);
   };
 
   const formatearFecha = (fecha: string | undefined) => {
@@ -211,12 +252,20 @@ const MisCitas: React.FC<MisCitasProps> = () => {
 
               <div className="ml-4 flex flex-col gap-2">
                 {cita.estado === 'programada' && (
-                  <button
-                    onClick={() => handleCancelarCita(cita.id)}
-                    className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                  >
-                    🚫 Cancelar Cita
-                  </button>
+                  <>
+                    <button
+                      onClick={() => handleReagendarCita(cita)}
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      📅 Reagendar Cita
+                    </button>
+                    <button
+                      onClick={() => handleCancelarCita(cita.id)}
+                      className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      🚫 Cancelar Cita
+                    </button>
+                  </>
                 )}
                 
                 <div className="text-right">
@@ -234,12 +283,22 @@ const MisCitas: React.FC<MisCitasProps> = () => {
         <h4 className="font-semibold text-amber-800 mb-2">💡 Información Importante</h4>
         <ul className="text-sm text-amber-700 space-y-1">
           <li>• Las citas se pueden cancelar hasta 24 horas antes de la sesión</li>
+          <li>• Puedes reagendar tu cita usando el botón "Reagendar Cita"</li>
           <li>• Recibirás un email de confirmación cuando se programe tu cita</li>
-          <li>• Si necesitas reprogramar, contacta a tu psicólogo</li>
           <li>• Llega 10 minutos antes de tu hora programada</li>
           <li>• <strong>Las citas canceladas se eliminarán automáticamente después de 24 horas</strong></li>
         </ul>
       </div>
+
+      {/* Modal para reagendar cita */}
+      {citaReagendar && (
+        <ModalReagendarCita
+          cita={citaReagendar}
+          isOpen={mostrarModalReagendar}
+          onClose={cerrarModalReagendar}
+          onReagendar={handleConfirmarReagendar}
+        />
+      )}
     </div>
   );
 };

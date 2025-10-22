@@ -9,7 +9,7 @@ import { ManejadorRespuestas } from '../utilidades/respuestas';
 import { log } from '../utilidades/logger';
 // import { crearDisponibilidadPorDefecto } from './disponibilidadMensual.controlador';
 import AuditoriaService from '../utilidades/auditoria.service';
-import { enviarEmailBienvenidaPsicologo } from '../utilidades/email.service';
+import { enviarEmailBienvenidaPsicologo, enviarEmailRegistroPaciente } from '../utilidades/email.service';
 
 // Interfaz para crear psicólogo
 interface CrearPsicologoData {
@@ -1053,13 +1053,30 @@ export const crearPaciente = async (req: Request, res: Response) => {
 
     const paciente = pacienteCreado[0];
 
+    // Enviar email de bienvenida al paciente
+    const nombreCompleto = `${nombres} ${apellidos}`;
+    const emailEnviado = await enviarEmailRegistroPaciente(
+      email,
+      nombreCompleto,
+      email,
+      passwordTemporal,
+      usuario.token_activacion || ''
+    );
+
+    if (emailEnviado) {
+      log.info(`Email de bienvenida enviado exitosamente al paciente: ${email}`);
+    } else {
+      log.warn(`No se pudo enviar el email de bienvenida al paciente: ${email}`);
+    }
+
     return ManejadorRespuestas.creado(
       res,
-      'Paciente creado exitosamente',
+      'Paciente creado exitosamente. Se ha enviado un email de bienvenida.',
       {
         ...usuario,
         ...paciente,
-        password_temporal: passwordTemporal
+        password_temporal: passwordTemporal,
+        email_enviado: emailEnviado
       },
       'ADMIN_036'
     );

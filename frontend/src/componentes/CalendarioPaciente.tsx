@@ -3,31 +3,32 @@ import { citasService } from '../servicios/citas.service';
 import disponibilidadMensualService from '../servicios/disponibilidadMensual.service';
 import { pacientesService, PsicologoAsignado } from '../servicios/pacientes.service';
 import Modal from './Modal';
+import { useNotificaciones } from '../hooks/useNotificaciones';
+import ContenedorNotificaciones from './ContenedorNotificaciones';
 
 interface CalendarioPacienteProps {
   pacienteId: string;
 }
 
-interface Psicologo {
-  id: string;
-  nombres: string;
-  apellidos: string;
-  email: string;
-  especialidad: string;
-  avatar_url?: string;
-}
 
 const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) => {
   const [psicologo, setPsicologo] = useState<PsicologoAsignado | null>(null);
   const [disponibilidad, setDisponibilidad] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [mesActual, setMesActual] = useState(new Date(2025, 8, 1)); // Septiembre 2025
+  const [mesActual, setMesActual] = useState(new Date(2025, 9, 1)); // Octubre 2025
   const [diaSeleccionado, setDiaSeleccionado] = useState<Date | null>(null);
   const [vistaActual, setVistaActual] = useState<'calendario' | 'semana'>('calendario');
   const [semanaSeleccionada, setSemanaSeleccionada] = useState<Date | null>(null);
   const [mostrarPerfil, setMostrarPerfil] = useState(false);
-  const [usandoDatosSimulados, setUsandoDatosSimulados] = useState(false);
+  
+  // Sistema de notificaciones
+  const {
+    notificaciones,
+    mostrarExito,
+    mostrarError,
+    cerrarNotificacion
+  } = useNotificaciones();
 
   const diasSemana = [
     { id: 1, nombre: 'Lunes', abreviacion: 'LU' },
@@ -43,6 +44,12 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
     cargarDatos();
   }, [pacienteId]);
 
+  useEffect(() => {
+    if (psicologo?.id) {
+      cargarDisponibilidadDelMes();
+    }
+  }, [mesActual, psicologo?.id]);
+
   const cargarDatos = async () => {
     try {
       setLoading(true);
@@ -51,45 +58,6 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
       // Obtener psicólogo asignado al paciente desde la API
       const psicologoAsignado = await pacientesService.obtenerPsicologoAsignado();
       setPsicologo(psicologoAsignado);
-      
-      // Obtener disponibilidad real del psicólogo
-      try {
-        const disponibilidadData = await disponibilidadMensualService.obtenerDisponibilidadPaciente(psicologoAsignado.id);
-        setDisponibilidad(disponibilidadData);
-      } catch (err) {
-        console.warn('No se pudo cargar disponibilidad real, usando datos simulados');
-        // Generar disponibilidad simulada más completa para todo el mes
-        const mesActual = new Date(2025, 8, 1); // Septiembre 2025
-        const diasEnMes = new Date(2025, 9, 0).getDate(); // 30 días
-        
-        const diasDisponibles = [];
-        const horariosPorDia: Record<string, { inicio: string; fin: string }> = {};
-        
-        // Generar disponibilidad para todos los días laborables del mes (lunes a viernes)
-        for (let dia = 1; dia <= diasEnMes; dia++) {
-          const fecha = new Date(2025, 8, dia); // Mes 8 = Septiembre (0-indexed)
-          const diaSemana = fecha.getDay(); // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
-          
-          // Solo incluir días laborables (lunes a viernes)
-          // Convertir domingo de 0 a 7 para coincidir con el backend
-          const diaSemanaAjustado = diaSemana === 0 ? 7 : diaSemana;
-          
-          if (diaSemanaAjustado >= 1 && diaSemanaAjustado <= 5) {
-            const fechaString = fecha.toISOString().split('T')[0];
-            diasDisponibles.push(fechaString);
-            horariosPorDia[fechaString] = {
-              inicio: '09:00',
-              fin: '17:00'
-            };
-          }
-        }
-        
-        setDisponibilidad({
-          diasDisponibles,
-          horariosPorDia
-        });
-        setUsandoDatosSimulados(true);
-      }
     } catch (err: any) {
       console.error('Error al cargar datos:', err);
       setError(err.message || 'Error al cargar los datos');
@@ -98,21 +66,51 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
     }
   };
 
+  const cargarDisponibilidadDelMes = async () => {
+    if (!psicologo?.id) return;
+    
+    try {
+      console.log('🔍 Cargando disponibilidad para:', {
+        psicologoId: psicologo.id,
+        mes: mesActual.getMonth() + 1,
+        año: mesActual.getFullYear()
+      });
+      
+      const disponibilidadData = await disponibilidadMensualService.obtenerDisponibilidadPaciente(
+        psicologo.id, 
+        mesActual.getMonth() + 1, 
+        mesActual.getFullYear()
+      );
+      
+      console.log('✅ Disponibilidad cargada:', disponibilidadData);
+      setDisponibilidad(disponibilidadData);
+    } catch (err) {
+      console.error('❌ Error al cargar disponibilidad:', err);
+      // Si no hay disponibilidad configurada, mostrar datos vacíos
+      setDisponibilidad({
+        diasDisponibles: [],
+        horariosPorDia: {}
+      });
+    }
+  };
+
   // Función para verificar si un día está disponible usando datos reales
   const esDiaDisponible = (fecha: Date): boolean => {
-    if (!disponibilidad || !disponibilidad.diasDisponibles) {
-      console.warn('Disponibilidad no cargada o incompleta');
+    if (!disponibilidad || !disponibilidad.diasDisponibles || disponibilidad.diasDisponibles.length === 0) {
+      console.log('🔍 Debug - esDiaDisponible: No hay disponibilidad configurada');
       return false;
     }
     
-    const fechaString = fecha.toISOString().split('T')[0];
+    // Usar toLocaleDateString para evitar problemas de zona horaria
+    const año = fecha.getFullYear();
+    const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
+    const dia = fecha.getDate().toString().padStart(2, '0');
+    const fechaString = `${año}-${mes}-${dia}`;
+    
     const esDisponible = disponibilidad.diasDisponibles.includes(fechaString);
     
-    // Debug: mostrar qué fechas se están verificando
-    if (process.env.NODE_ENV === 'development') {
-      const diaSemana = fecha.getDay();
-      const diaSemanaAjustado = diaSemana === 0 ? 7 : diaSemana;
-      console.log(`Verificando fecha ${fechaString} (día ${diaSemanaAjustado}): ${esDisponible ? 'Disponible' : 'No disponible'}`);
+    if (esDisponible) {
+      console.log('🔍 Debug - esDiaDisponible: Día disponible encontrado:', fechaString);
     }
     
     return esDisponible;
@@ -120,22 +118,62 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
 
   // Generar horarios disponibles basados en la disponibilidad real
   const generarHorariosDisponibles = (fecha: Date): string[] => {
-    if (!disponibilidad) return [];
+    if (!disponibilidad) {
+      console.log('🔍 Debug - generarHorariosDisponibles: No hay disponibilidad');
+      return [];
+    }
     
-    const fechaString = fecha.toISOString().split('T')[0];
+    // Usar el mismo formato de fecha que en esDiaDisponible
+    const año = fecha.getFullYear();
+    const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
+    const dia = fecha.getDate().toString().padStart(2, '0');
+    const fechaString = `${año}-${mes}-${dia}`;
+    
+    console.log('🔍 Debug - generarHorariosDisponibles:', {
+      fechaString,
+      horariosPorDia: disponibilidad.horariosPorDia,
+      horarioDia: disponibilidad.horariosPorDia[fechaString]
+    });
+    
     const horarioDia = disponibilidad.horariosPorDia[fechaString];
     
-    if (!horarioDia) return [];
+    if (!horarioDia) {
+      console.log('🔍 Debug - generarHorariosDisponibles: No hay horario para esta fecha');
+      return [];
+    }
     
     const horarios = [];
     const [horaInicio] = horarioDia.inicio.split(':').map(Number);
     const [horaFin] = horarioDia.fin.split(':').map(Number);
     
+    console.log('🔍 Debug - generarHorariosDisponibles - Horario:', {
+      inicio: horarioDia.inicio,
+      fin: horarioDia.fin,
+      horaInicio,
+      horaFin
+    });
+    
     for (let hora = horaInicio; hora < horaFin; hora++) {
       horarios.push(`${hora.toString().padStart(2, '0')}:00`);
     }
     
+    console.log('🔍 Debug - generarHorariosDisponibles - Horarios generados:', horarios);
+    
     return horarios;
+  };
+
+  // Verificar si hay disponibilidad configurada
+  const tieneDisponibilidad = (): boolean => {
+    console.log('🔍 Debug - tieneDisponibilidad:', {
+      disponibilidad,
+      diasDisponibles: disponibilidad?.diasDisponibles,
+      length: disponibilidad?.diasDisponibles?.length
+    });
+    
+    const tiene = disponibilidad && disponibilidad.diasDisponibles && disponibilidad.diasDisponibles.length > 0;
+    console.log('🔍 Debug - tieneDisponibilidad resultado:', tiene);
+    
+    return tiene;
   };
 
   // Generar días del mes de forma simple y consistente
@@ -257,7 +295,34 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
   const handleAgendarCita = async (horario: string) => {
     try {
       if (!psicologo?.id || !diaSeleccionado) {
-        alert('Error: Faltan datos para agendar la cita');
+        mostrarError(
+          'Error al Agendar',
+          'Faltan datos para agendar la cita. Por favor, inténtalo nuevamente.'
+        );
+        return;
+      }
+
+      // Validar que el horario esté disponible
+      const horariosDisponibles = generarHorariosDisponibles(diaSeleccionado);
+      if (!horariosDisponibles.includes(horario)) {
+        mostrarError(
+          'Horario No Disponible',
+          'El horario seleccionado ya no está disponible. Por favor, selecciona otro horario.'
+        );
+        return;
+      }
+
+      // Validar que la fecha no sea en el pasado
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+      const fechaSeleccionada = new Date(diaSeleccionado);
+      fechaSeleccionada.setHours(0, 0, 0, 0);
+      
+      if (fechaSeleccionada < hoy) {
+        mostrarError(
+          'Fecha Inválida',
+          'No puedes agendar una cita en una fecha pasada. Por favor, selecciona una fecha futura.'
+        );
         return;
       }
 
@@ -290,7 +355,10 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
         notas_paciente: 'Cita agendada desde el calendario del paciente'
       });
       
-      alert('Cita agendada correctamente');
+      mostrarExito(
+        'Cita Agendada',
+        'Tu cita ha sido agendada correctamente. Recibirás una confirmación por email.'
+      );
       
       // Volver a la vista del calendario
       setVistaActual('calendario');
@@ -298,7 +366,24 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
       setSemanaSeleccionada(null);
     } catch (err: any) {
       console.error('Error al agendar cita:', err);
-      alert('Error al agendar la cita: ' + (err.message || 'Error desconocido'));
+      
+      // Manejar errores específicos del backend
+      if (err.message && err.message.includes('ya existe')) {
+        mostrarError(
+          'Cita Duplicada',
+          'Ya tienes una cita programada en esa fecha y hora. Por favor, selecciona otro horario.'
+        );
+      } else if (err.message && err.message.includes('no disponible')) {
+        mostrarError(
+          'Horario Ocupado',
+          'El horario seleccionado ya está ocupado. Por favor, elige otro horario disponible.'
+        );
+      } else {
+        mostrarError(
+          'Error al Agendar Cita',
+          err.message || 'No se pudo agendar la cita. Por favor, inténtalo nuevamente.'
+        );
+      }
     }
   };
 
@@ -332,7 +417,6 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
   // Vista del calendario mensual
   if (vistaActual === 'calendario') {
     const diasDelMes = obtenerDiasDelMes(mesActual);
-    const fechaActual = new Date();
 
     const perfilModal = (
       <div className={`fixed inset-0 z-50 overflow-y-auto ${mostrarPerfil ? 'block' : 'hidden'}`}>
@@ -497,10 +581,10 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
                     ›
                   </button>
                 </div>
-                {usandoDatosSimulados && (
-                  <div className="flex items-center space-x-2 text-amber-600 bg-amber-50 px-3 py-1 rounded-full text-sm">
+                {!tieneDisponibilidad() && (
+                  <div className="flex items-center space-x-2 text-red-600 bg-red-50 px-3 py-1 rounded-full text-sm">
                     <span>⚠️</span>
-                    <span>Datos simulados</span>
+                    <span>Sin disponibilidad</span>
                   </div>
                 )}
               </div>
@@ -545,21 +629,27 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
             </div>
           </div>
         </div>
-        {usandoDatosSimulados && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-            <div className="flex items-start space-x-3">
-              <div className="text-amber-600 text-lg">ℹ️</div>
-              <div className="text-amber-800">
-                <p className="font-medium">Información importante:</p>
-                <p className="text-sm mt-1">
-                  Estamos mostrando horarios simulados porque no se pudo cargar la disponibilidad real del psicólogo. 
-                  Los días laborables (lunes a viernes) están marcados como disponibles de 9:00 AM a 5:00 PM.
+        {!tieneDisponibilidad() && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <div className="flex flex-col items-center space-y-4">
+              <div className="text-red-600 text-4xl">📅</div>
+              <div className="text-red-800">
+                <p className="font-semibold text-lg">No hay días disponibles para agendar con este especialista</p>
+                <p className="text-sm mt-2">
+                  El psicólogo {psicologo?.nombres} {psicologo?.apellidos} no ha configurado su horario de disponibilidad aún.
+                  Por favor, contacta directamente con el especialista o la administración del centro.
                 </p>
               </div>
             </div>
           </div>
         )}
         {perfilModal}
+        
+        {/* Sistema de notificaciones */}
+        <ContenedorNotificaciones
+          notificaciones={notificaciones}
+          onCerrar={cerrarNotificacion}
+        />
       </div>
     );
   }
@@ -567,7 +657,6 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
   // Vista de la semana seleccionada
   if (vistaActual === 'semana' && semanaSeleccionada) {
     const diasDeLaSemana = obtenerDiasDeLaSemana(semanaSeleccionada);
-    const fechaActual = new Date();
 
     return (
       <div className="space-y-6">
@@ -614,9 +703,8 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
           {/* Días de la semana */}
           <div className="p-6">
             <div className="grid grid-cols-7 gap-4">
-              {diasDeLaSemana.map((fecha, index) => {
+              {diasDeLaSemana.map((fecha) => {
                 const esDisponible = esDiaDisponible(fecha);
-                const esHoy = fecha.toDateString() === fechaActual.toDateString();
                 const diaSemana = diasSemana.find(d => d.id === fecha.getDay());
                 const esSeleccionado = diaSeleccionado?.toDateString() === fecha.toDateString();
 
@@ -633,7 +721,6 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
                           ? 'hover:bg-purple-50 cursor-pointer' 
                           : 'cursor-not-allowed opacity-50'
                       }
-                      ${esHoy && !esSeleccionado ? 'ring-2 ring-blue-300 bg-blue-50' : ''}
                     `}
                   >
                     <div className={`text-sm font-medium ${esSeleccionado ? 'text-white' : 'text-gray-600'}`}>
@@ -642,9 +729,26 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
                     <div className={`text-lg font-semibold ${esSeleccionado ? 'text-white' : 'text-gray-900'}`}>
                       {fecha.getDate()}
                     </div>
-                    {esDisponible && !esSeleccionado && (
-                      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                    )}
+                    {esDisponible && !esSeleccionado && (() => {
+                      const año = fecha.getFullYear();
+                      const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
+                      const dia = fecha.getDate().toString().padStart(2, '0');
+                      const fechaString = `${año}-${mes}-${dia}`;
+                      const horarioDia = disponibilidad?.horariosPorDia[fechaString];
+                      
+                      return (
+                        <div className="flex flex-col items-center space-y-1">
+                          <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                          {horarioDia && (
+                            <div className="text-xs text-purple-600 font-medium text-center">
+                              <div>{horarioDia.inicio.split(':').slice(0, 2).join(':')}</div>
+                              <div>-</div>
+                              <div>{horarioDia.fin.split(':').slice(0, 2).join(':')}</div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </button>
                 );
               })}
@@ -659,9 +763,9 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
               Horarios disponibles - {formatearFechaCompleta(diaSeleccionado)}
             </h3>
             <div className="flex flex-wrap gap-3">
-              {generarHorariosDisponibles(diaSeleccionado).map((horario, index) => (
+              {generarHorariosDisponibles(diaSeleccionado).map((horario) => (
                 <button
-                  key={index}
+                  key={horario}
                   onClick={() => handleAgendarCita(horario)}
                   className="px-4 py-3 border border-purple-200 text-purple-700 rounded-lg hover:bg-purple-50 transition-colors text-sm font-medium"
                 >
@@ -728,6 +832,12 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
             </div>
           )}
         </Modal>
+        
+        {/* Sistema de notificaciones */}
+        <ContenedorNotificaciones
+          notificaciones={notificaciones}
+          onCerrar={cerrarNotificacion}
+        />
       </div>
     );
   }
