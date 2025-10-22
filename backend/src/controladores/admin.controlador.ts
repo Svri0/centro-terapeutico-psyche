@@ -2054,7 +2054,7 @@ export const obtenerRecepcionistas = async (_req: Request, res: Response) => {
         u.updated_at,
         u.ultimo_acceso
       FROM usuarios u
-      WHERE u.rol_id = 4
+      WHERE u.rol_id = 3
       ORDER BY u.created_at DESC
     `;
 
@@ -2137,7 +2137,7 @@ export const crearRecepcionista = async (req: Request, res: Response) => {
         fecha_nacimiento, genero, rol_id, activo, avatar_url, created_at, updated_at
       ) VALUES (
         :id, :nombres, :apellidos, :email, :password_hash, :telefono,
-        :fecha_nacimiento, :genero, 4, true, :avatar_url, NOW(), NOW()
+        :fecha_nacimiento, :genero, 3, true, :avatar_url, NOW(), NOW()
       )
     `;
 
@@ -2234,7 +2234,7 @@ export const actualizarRecepcionista = async (req: Request, res: Response) => {
 
     // Verificar si el recepcionista existe
     const recepcionistaExistente = await sequelize.query(
-      'SELECT id, email FROM usuarios WHERE id = :id AND rol_id = 4',
+      'SELECT id, email FROM usuarios WHERE id = :id AND rol_id = 3',
       {
         replacements: { id },
         type: QueryTypes.SELECT
@@ -2317,7 +2317,7 @@ export const actualizarRecepcionista = async (req: Request, res: Response) => {
     const updateQuery = `
       UPDATE usuarios 
       SET ${camposActualizar.join(', ')}
-      WHERE id = :id AND rol_id = 4
+      WHERE id = :id AND rol_id = 3
     `;
 
     await sequelize.query(updateQuery, {
@@ -2393,7 +2393,7 @@ export const desactivarRecepcionista = async (req: Request, res: Response) => {
 
     // Verificar si el recepcionista existe
     const recepcionistaExistente = await sequelize.query(
-      'SELECT id, nombres, apellidos, email FROM usuarios WHERE id = :id AND rol_id = 4',
+      'SELECT id, nombres, apellidos, email FROM usuarios WHERE id = :id AND rol_id = 3',
       {
         replacements: { id },
         type: QueryTypes.SELECT
@@ -2410,7 +2410,7 @@ export const desactivarRecepcionista = async (req: Request, res: Response) => {
 
     // Desactivar recepcionista
     await sequelize.query(
-      'UPDATE usuarios SET activo = false, updated_at = NOW() WHERE id = :id AND rol_id = 4',
+      'UPDATE usuarios SET activo = false, updated_at = NOW() WHERE id = :id AND rol_id = 3',
       {
         replacements: { id }
       }
@@ -2456,7 +2456,7 @@ export const activarRecepcionista = async (req: Request, res: Response) => {
 
     // Verificar si el recepcionista existe
     const recepcionistaExistente = await sequelize.query(
-      'SELECT id, nombres, apellidos, email FROM usuarios WHERE id = :id AND rol_id = 4',
+      'SELECT id, nombres, apellidos, email FROM usuarios WHERE id = :id AND rol_id = 3',
       {
         replacements: { id },
         type: QueryTypes.SELECT
@@ -2473,7 +2473,7 @@ export const activarRecepcionista = async (req: Request, res: Response) => {
 
     // Activar recepcionista
     await sequelize.query(
-      'UPDATE usuarios SET activo = true, updated_at = NOW() WHERE id = :id AND rol_id = 4',
+      'UPDATE usuarios SET activo = true, updated_at = NOW() WHERE id = :id AND rol_id = 3',
       {
         replacements: { id }
       }
@@ -2519,7 +2519,7 @@ export const eliminarRecepcionista = async (req: Request, res: Response) => {
 
     // Verificar si el recepcionista existe
     const recepcionistaExistente = await sequelize.query(
-      'SELECT id, nombres, apellidos, email FROM usuarios WHERE id = :id AND rol_id = 4',
+      'SELECT id, nombres, apellidos, email FROM usuarios WHERE id = :id AND rol_id = 3',
       {
         replacements: { id },
         type: QueryTypes.SELECT
@@ -2536,7 +2536,7 @@ export const eliminarRecepcionista = async (req: Request, res: Response) => {
 
     // Eliminar recepcionista (soft delete)
     await sequelize.query(
-      'UPDATE usuarios SET deleted_at = NOW(), updated_at = NOW() WHERE id = :id AND rol_id = 4',
+      'UPDATE usuarios SET deleted_at = NOW(), updated_at = NOW() WHERE id = :id AND rol_id = 3',
       {
         replacements: { id }
       }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { adminService } from '../servicios/admin.service';
 
 interface Usuario {
   id: string;
@@ -260,10 +261,28 @@ const GestionUsuariosAdmin: React.FC<GestionUsuariosAdminProps> = ({ tipoUsuario
     if (window.confirm('¿Estás seguro de que quieres eliminar este usuario? Esta acción no se puede deshacer.')) {
       try {
         setLoading(true);
-        // TODO: Implementar llamada al servicio para eliminar usuario
-        // await usuariosService.eliminar(usuarioId);
         
-        // Simular eliminación
+        // Encontrar el usuario para determinar su rol
+        const usuario = usuarios.find(u => u.id === usuarioId);
+        if (!usuario) {
+          throw new Error('Usuario no encontrado');
+        }
+        
+        // Eliminar según el rol del usuario
+        if (usuario.rol_id === 2) {
+          // Es psicólogo
+          await adminService.eliminarPsicologo(usuarioId);
+        } else if (usuario.rol_id === 3) {
+          // Es recepcionista
+          await adminService.eliminarRecepcionista(usuarioId);
+        } else if (usuario.rol_id === 4) {
+          // Es paciente
+          await adminService.eliminarPaciente(usuarioId);
+        } else {
+          throw new Error('Tipo de usuario no soportado para eliminación');
+        }
+        
+        // Actualizar la lista local
         setUsuarios(prev => prev.filter(u => u.id !== usuarioId));
         
         setSuccess('Usuario eliminado correctamente');

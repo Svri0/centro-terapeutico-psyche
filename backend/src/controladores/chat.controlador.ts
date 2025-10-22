@@ -450,6 +450,89 @@ export class ChatController {
     }
   }
 
+  // Obtener personal (administradores y psicólogos) para el chat del recepcionista
+  static async obtenerPersonalRecepcionistaChat(req: Request, res: Response) {
+    try {
+      const recepcionistaId = req.usuario?.id;
+      
+      if (!recepcionistaId) {
+        return ManejadorRespuestas.noAutorizado(
+          res,
+          'Usuario no autenticado',
+          'AUTH_001'
+        );
+      }
+
+      // Obtener administradores y psicólogos
+      const personal = await Usuario.findAll({
+        where: {
+          rol_id: {
+            [Op.in]: [1, 2] // 1: admin, 2: psicologo
+          },
+          activo: true
+        },
+        paranoid: true, // Esto excluye automáticamente los registros con deleted_at
+        attributes: ['id', 'nombres', 'apellidos', 'avatar_url']
+      });
+
+      // Obtener información de mensajes para cada persona
+      const personalConMensajes = await Promise.all(
+        personal.map(async (persona) => {
+          const ultimoMensaje = await MensajeChat.findOne({
+            where: {
+              [Op.or]: [
+                { remitente_id: recepcionistaId, destinatario_id: persona.id },
+                { remitente_id: persona.id, destinatario_id: recepcionistaId }
+              ]
+            },
+            order: [['created_at', 'DESC']],
+            attributes: ['contenido', 'created_at', 'tipo']
+          });
+
+          const mensajesNoLeidos = await MensajeChat.count({
+            where: {
+              remitente_id: persona.id,
+              destinatario_id: recepcionistaId,
+              leido: false
+            }
+          });
+
+          return {
+            id: persona.id,
+            nombres: persona.nombres,
+            apellidos: persona.apellidos,
+            avatar_url: persona.avatar_url,
+            ultimo_mensaje: ultimoMensaje?.contenido || null,
+            ultimo_mensaje_timestamp: ultimoMensaje?.created_at || null,
+            mensajes_no_leidos: mensajesNoLeidos
+          };
+        })
+      );
+
+      // Ordenar por último mensaje
+      personalConMensajes.sort((a, b) => {
+        if (!a.ultimo_mensaje_timestamp && !b.ultimo_mensaje_timestamp) return 0;
+        if (!a.ultimo_mensaje_timestamp) return 1;
+        if (!b.ultimo_mensaje_timestamp) return -1;
+        return new Date(b.ultimo_mensaje_timestamp).getTime() - new Date(a.ultimo_mensaje_timestamp).getTime();
+      });
+
+      return ManejadorRespuestas.exito(
+        res,
+        'Personal obtenido exitosamente',
+        personalConMensajes,
+        'CHAT_009'
+      );
+    } catch (error) {
+      console.error('Error al obtener personal para recepcionista:', error);
+      return ManejadorRespuestas.errorInterno(
+        res,
+        'Error al obtener personal',
+        'CHAT_010'
+      );
+    }
+  }
+
   // Obtener trabajadores (psicólogos y recepcionistas) para el chat del administrador
   static async obtenerTrabajadoresChat(req: Request, res: Response) {
     try {

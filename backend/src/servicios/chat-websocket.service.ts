@@ -68,7 +68,7 @@ export class ChatWebSocketService {
         contenido: string;
         remitente_id: string;
         destinatario_id: string;
-        tipo: 'psicologo' | 'paciente' | 'admin';
+        tipo: 'psicologo' | 'paciente' | 'admin' | 'recepcionista';
       }) => {
         try {
           if (!socket.userId) {
@@ -124,6 +124,8 @@ export class ChatWebSocketService {
         psicologo_id?: string;
         trabajador_id?: string;
         admin_id?: string;
+        recepcionista_id?: string;
+        persona_id?: string;
       }) => {
         try {
           console.log('🔍 EVENTO cargar_mensajes recibido:', data);
@@ -196,6 +198,23 @@ export class ChatWebSocketService {
               order: [['created_at', 'ASC']],
               limit: 100
             });
+          } else if (socket.userRole === 'recepcionista' && data.recepcionista_id && data.persona_id) {
+            // Chat del recepcionista con personal (admin o psicólogo)
+            if (data.recepcionista_id !== socket.userId) {
+              socket.emit('error', { message: 'No autorizado' });
+              return;
+            }
+
+            mensajes = await MensajeChat.findAll({
+              where: {
+                [Op.or]: [
+                  { remitente_id: data.recepcionista_id, destinatario_id: data.persona_id },
+                  { remitente_id: data.persona_id, destinatario_id: data.recepcionista_id }
+                ]
+              },
+              order: [['created_at', 'ASC']],
+              limit: 100
+            });
           } else {
             socket.emit('error', { message: 'Parámetros inválidos' });
             return;
@@ -215,6 +234,8 @@ export class ChatWebSocketService {
         psicologo_id?: string;
         trabajador_id?: string;
         admin_id?: string;
+        recepcionista_id?: string;
+        persona_id?: string;
       }) => {
         try {
           if (!socket.userId) {
@@ -253,6 +274,23 @@ export class ChatWebSocketService {
                 where: {
                   remitente_id: data.paciente_id,
                   destinatario_id: data.psicologo_id,
+                  leido: false
+                }
+              }
+            );
+          } else if (socket.userRole === 'recepcionista' && data.recepcionista_id && data.persona_id) {
+            if (data.recepcionista_id !== socket.userId) {
+              socket.emit('error', { message: 'No autorizado' });
+              return;
+            }
+
+            // Marcar mensajes de la persona como leídos por el recepcionista
+            await MensajeChat.update(
+              { leido: true },
+              {
+                where: {
+                  remitente_id: data.persona_id,
+                  destinatario_id: data.recepcionista_id,
                   leido: false
                 }
               }

@@ -19,6 +19,9 @@ router.get('/psicologo-asignado', ChatController.obtenerPsicologoAsignado);
 // Obtener trabajadores (psicólogos y recepcionistas) para el chat del administrador
 router.get('/trabajadores', ChatController.obtenerTrabajadoresChat);
 
+// Obtener personal (administradores y psicólogos) para el chat del recepcionista
+router.get('/personal-recepcionista', ChatController.obtenerPersonalRecepcionistaChat);
+
 // Obtener mensajes entre psicólogo y paciente
 router.get('/mensajes/:pacienteId', ChatController.obtenerMensajes);
 

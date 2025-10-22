@@ -179,7 +179,7 @@ const ChatPsicologo: React.FC<ChatPsicologoProps> = ({ psicologoId }) => {
   return (
     <div className="flex h-[600px] bg-white rounded-lg shadow-sm border border-amber-100 overflow-hidden">
       {/* Lista de pacientes */}
-      <div className="w-1/3 border-r border-amber-200 bg-gray-50">
+      <div className="w-1/3 border-r border-amber-200 bg-gray-50 flex flex-col">
         <div className="p-4 border-b border-amber-200 bg-white">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-semibold text-gray-900">Contactos</h3>
@@ -216,7 +216,7 @@ const ChatPsicologo: React.FC<ChatPsicologoProps> = ({ psicologoId }) => {
           </div>
         </div>
         
-        <div className="overflow-y-auto h-full">
+        <div className="flex-1 overflow-y-auto">
           {(() => {
             const listaActual = filtroActivo === 'pacientes' ? pacientes : personal;
             const tituloLista = filtroActivo === 'pacientes' ? 'pacientes' : 'personal';
@@ -317,7 +317,13 @@ const ChatPsicologo: React.FC<ChatPsicologoProps> = ({ psicologoId }) => {
             </div>
 
             {/* Mensajes */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div 
+              className="flex-1 overflow-y-auto p-4 space-y-4" 
+              style={{ 
+                maxHeight: '400px',
+                scrollBehavior: 'smooth'
+              }}
+            >
               {mensajes.length === 0 ? (
                 <div className="text-center text-gray-500 py-8">
                   <p>No hay mensajes aún</p>
