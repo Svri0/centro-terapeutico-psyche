@@ -358,7 +358,7 @@ const Inicio: React.FC = () => {
             <div className="relative lg:pt-16 animate-fade-in-right">
               <div className="shadow-2xl">
                 <img 
-                  src="/fotorecepcion.png" 
+                  src="/recepcion.png" 
                   alt="Recepción de Dentro de Psyché" 
                   className="w-full h-64 sm:h-80 lg:h-96 object-cover"
                 />
@@ -890,7 +890,7 @@ const Inicio: React.FC = () => {
                   <img src="/cruzblanca.png" alt="Cruz Blanca" className="h-12 sm:h-14 lg:h-16 w-auto opacity-70 hover:opacity-100 transition-opacity duration-300" />
                 </div>
                 <div className="flex justify-center">
-                  <img src="/banmedica.png" alt="Banmédica" className="h-12 sm:h-14 lg:h-16 w-auto opacity-70 hover:opacity-100 transition-opacity duration-300" />
+                  <img src="/banmedica-logo.png" alt="Banmédica" className="h-12 sm:h-14 lg:h-16 w-auto opacity-70 hover:opacity-100 transition-opacity duration-300" />
                 </div>
                 <div className="flex justify-center">
                   <img src="/consalud.png" alt="Consalud" className="h-12 sm:h-14 lg:h-16 w-auto opacity-70 hover:opacity-100 transition-opacity duration-300" />
@@ -902,7 +902,7 @@ const Inicio: React.FC = () => {
                   <img src="/vidatres.png" alt="Vida Tres" className="h-12 sm:h-14 lg:h-16 w-auto opacity-70 hover:opacity-100 transition-opacity duration-300" />
                 </div>
                 <div className="flex justify-center">
-                  <img src="/masvida.png" alt="Nueva Masvida" className="h-12 sm:h-14 lg:h-16 w-auto opacity-70 hover:opacity-100 transition-opacity duration-300" />
+                  <img src="/masvida.png" alt="Masvida" className="h-12 sm:h-14 lg:h-16 w-auto opacity-70 hover:opacity-100 transition-opacity duration-300" />
                 </div>
               </div>
               
@@ -915,7 +915,7 @@ const Inicio: React.FC = () => {
                   <img src="/cruzblanca.png" alt="Cruz Blanca" className="h-12 sm:h-14 lg:h-16 w-auto opacity-70 hover:opacity-100 transition-opacity duration-300" />
                 </div>
                 <div className="flex justify-center">
-                  <img src="/banmedica.png" alt="Banmédica" className="h-12 sm:h-14 lg:h-16 w-auto opacity-70 hover:opacity-100 transition-opacity duration-300" />
+                  <img src="/banmedica-logo.png" alt="Banmédica" className="h-12 sm:h-14 lg:h-16 w-auto opacity-70 hover:opacity-100 transition-opacity duration-300" />
                 </div>
                 <div className="flex justify-center">
                   <img src="/consalud.png" alt="Consalud" className="h-12 sm:h-14 lg:h-16 w-auto opacity-70 hover:opacity-100 transition-opacity duration-300" />
@@ -927,7 +927,7 @@ const Inicio: React.FC = () => {
                   <img src="/vidatres.png" alt="Vida Tres" className="h-12 sm:h-14 lg:h-16 w-auto opacity-70 hover:opacity-100 transition-opacity duration-300" />
                 </div>
                 <div className="flex justify-center">
-                  <img src="/masvida.png" alt="Nueva Masvida" className="h-12 sm:h-14 lg:h-16 w-auto opacity-70 hover:opacity-100 transition-opacity duration-300" />
+                  <img src="/masvida.png" alt="Masvida" className="h-12 sm:h-14 lg:h-16 w-auto opacity-70 hover:opacity-100 transition-opacity duration-300" />
                 </div>
               </div>
             </div>
@@ -970,11 +970,14 @@ const Inicio: React.FC = () => {
             {/* Artículo 1 */}
             <article className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden">
               <div className="h-72 bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
-                <img 
-                  src="/tecnicarelajacion.png" 
-                  alt="Técnicas de Relajación" 
-                  className="w-full h-full object-cover"
-                />
+                <div className="w-full h-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="text-2xl text-white">🧘‍♀️</span>
+                    </div>
+                    <p className="text-gray-600 font-medium">Técnicas de Relajación</p>
+                  </div>
+                </div>
               </div>
               <div className="p-6">
                 <div className="flex items-center mb-3">
@@ -992,11 +995,14 @@ const Inicio: React.FC = () => {
             {/* Artículo 2 */}
             <article className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden">
               <div className="h-72 bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
-                <img 
-                  src="/comunicacionfamilia.png" 
-                  alt="Comunicación Familiar" 
-                  className="w-full h-full object-cover"
-                />
+                <div className="w-full h-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="text-2xl text-white">👨‍👩‍👧‍👦</span>
+                    </div>
+                    <p className="text-gray-600 font-medium">Comunicación Familiar</p>
+                  </div>
+                </div>
               </div>
               <div className="p-6">
                 <div className="flex items-center mb-3">
@@ -1014,11 +1020,14 @@ const Inicio: React.FC = () => {
             {/* Artículo 3 */}
             <article className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden">
               <div className="h-72 bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
-                <img 
-                  src="/ansiedad.png" 
-                  alt="Señales de Ansiedad" 
-                  className="w-full h-full object-cover"
-                />
+                <div className="w-full h-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="text-2xl text-white">😰</span>
+                    </div>
+                    <p className="text-gray-600 font-medium">Señales de Ansiedad</p>
+                  </div>
+                </div>
               </div>
               <div className="p-6">
                 <div className="flex items-center mb-3">

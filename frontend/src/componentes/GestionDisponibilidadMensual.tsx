@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import disponibilidadMensualService, { DisponibilidadMensual } from '../servicios/disponibilidadMensual.service';
+import { useNotificaciones } from '../hooks/useNotificaciones';
+import ContenedorNotificaciones from './ContenedorNotificaciones';
+import '../styles/notificaciones.css';
 
 interface GestionDisponibilidadMensualProps {
   psicologoId: string;
@@ -13,6 +16,15 @@ const GestionDisponibilidadMensual: React.FC<GestionDisponibilidadMensualProps> 
   const [mesActual, setMesActual] = useState(new Date().getMonth() + 1);
   const [añoActual, setAñoActual] = useState(new Date().getFullYear());
   const [disponibilidadTemporal, setDisponibilidadTemporal] = useState<DisponibilidadMensual[]>([]);
+  const [horarioPredefinidoSeleccionado, setHorarioPredefinidoSeleccionado] = useState<number | null>(null);
+  
+  const {
+    notificaciones,
+    cerrarNotificacion,
+    mostrarExito,
+    mostrarError,
+    mostrarInfo
+  } = useNotificaciones();
 
   const horariosPredefinidos = [
     { nombre: 'Mañana', inicio: '08:00', fin: '12:00' },
@@ -49,11 +61,13 @@ const GestionDisponibilidadMensual: React.FC<GestionDisponibilidadMensualProps> 
   const iniciarEdicion = () => {
     setDisponibilidadTemporal([...disponibilidad]);
     setModoEdicion(true);
+    setHorarioPredefinidoSeleccionado(null);
   };
 
   const cancelarEdicion = () => {
     setDisponibilidadTemporal([...disponibilidad]);
     setModoEdicion(false);
+    setHorarioPredefinidoSeleccionado(null);
   };
 
   const guardarCambios = async () => {
@@ -67,11 +81,18 @@ const GestionDisponibilidadMensual: React.FC<GestionDisponibilidadMensualProps> 
       
       setDisponibilidad([...disponibilidadTemporal]);
       setModoEdicion(false);
+      setHorarioPredefinidoSeleccionado(null);
       
-      alert('Disponibilidad mensual actualizada correctamente');
+      mostrarExito(
+        'Disponibilidad Actualizada',
+        'Tu disponibilidad mensual ha sido guardada correctamente. Los pacientes podrán ver los horarios disponibles.'
+      );
     } catch (err: any) {
       console.error('Error al guardar disponibilidad mensual:', err);
-      alert(err.message || 'Error al actualizar la disponibilidad mensual');
+      mostrarError(
+        'Error al Guardar',
+        err.message || 'No se pudo actualizar la disponibilidad mensual. Por favor, inténtalo nuevamente.'
+      );
     } finally {
       setLoading(false);
     }
@@ -108,20 +129,27 @@ const GestionDisponibilidadMensual: React.FC<GestionDisponibilidadMensualProps> 
       );
 
       await cargarDisponibilidadMensual();
-      alert('Disponibilidad recurrente generada correctamente');
+      mostrarExito(
+        'Disponibilidad Generada',
+        'Se ha generado la disponibilidad recurrente para todo el mes. Los horarios están configurados automáticamente.'
+      );
     } catch (err: any) {
       console.error('Error al generar disponibilidad recurrente:', err);
-      alert(err.message || 'Error al generar disponibilidad recurrente');
+      mostrarError(
+        'Error al Generar',
+        err.message || 'No se pudo generar la disponibilidad recurrente. Por favor, inténtalo nuevamente.'
+      );
     }
   };
 
-  const aplicarHorarioPredefinido = (horario: any) => {
+  const aplicarHorarioPredefinido = (horario: any, index: number) => {
     const nuevaDisponibilidad = disponibilidadTemporal.map(disp => ({
       ...disp,
       hora_inicio: horario.inicio,
       hora_fin: horario.fin
     }));
     setDisponibilidadTemporal(nuevaDisponibilidad);
+    setHorarioPredefinidoSeleccionado(index);
   };
 
   const handleCambiarHorario = (fecha: string, campo: 'hora_inicio' | 'hora_fin', valor: string) => {
@@ -150,7 +178,10 @@ const GestionDisponibilidadMensual: React.FC<GestionDisponibilidadMensualProps> 
     console.log('🔍 Debug - handleToggleDia - Fecha corregida:', fechaObj.toDateString(), 'Día semana:', diaSemana, 'Es domingo:', diaSemana === 0);
     
     if (diaSemana === 0) {
-      alert('No se puede modificar la disponibilidad de los domingos');
+      mostrarInfo(
+        'Domingo No Laborable',
+        'Los domingos están configurados como días no laborables y no se pueden modificar.'
+      );
       return;
     }
 
@@ -394,15 +425,22 @@ const GestionDisponibilidadMensual: React.FC<GestionDisponibilidadMensualProps> 
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <h3 className="text-sm font-semibold text-blue-900 mb-3">Horarios Predefinidos</h3>
           <div className="flex flex-wrap gap-2">
-            {horariosPredefinidos.map((horario, index) => (
-              <button
-                key={index}
-                onClick={() => aplicarHorarioPredefinido(horario)}
-                className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
-              >
-                {horario.nombre} ({horario.inicio}-{horario.fin})
-              </button>
-            ))}
+            {horariosPredefinidos.map((horario, index) => {
+              const estaSeleccionado = horarioPredefinidoSeleccionado === index;
+              return (
+                <button
+                  key={index}
+                  onClick={() => aplicarHorarioPredefinido(horario, index)}
+                  className={`px-4 py-2 text-sm rounded-lg transition-colors font-medium ${
+                    estaSeleccionado
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                  }`}
+                >
+                  {horario.nombre} ({horario.inicio}-{horario.fin})
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
@@ -509,6 +547,12 @@ const GestionDisponibilidadMensual: React.FC<GestionDisponibilidadMensualProps> 
           <li>• Los pacientes solo verán los días marcados como "Activo"</li>
         </ul>
       </div>
+
+      {/* Contenedor de Notificaciones */}
+      <ContenedorNotificaciones
+        notificaciones={notificaciones}
+        onCerrar={cerrarNotificacion}
+      />
     </div>
   );
 };
