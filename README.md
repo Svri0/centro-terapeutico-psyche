@@ -44,6 +44,43 @@ Sistema completo de gestión para centro terapéutico con funcionalidades para p
 - Responsive design
 - Hot reload con Vite
 
+## 🚨 **CONFIGURACIÓN CRÍTICA - PUERTO 3002**
+
+### ⚠️ **IMPORTANTE PARA EL EQUIPO**
+**EL BACKEND DEBE CORRER SIEMPRE EN EL PUERTO 3002**
+
+```bash
+# ✅ CORRECTO - Puerto 3002
+cd backend
+npm run dev
+# Backend corriendo en: http://localhost:3002
+
+# ❌ INCORRECTO - Puerto alternativo
+# El backend NO debe usar puertos 3007, 3008, etc.
+```
+
+### 🔍 **Verificación Rápida**
+```bash
+# Verificar que funciona
+.\scripts\verificar-puerto-3002.ps1
+
+# O manualmente
+curl http://localhost:3002/salud
+```
+
+### 🛠️ **Si el Puerto 3002 Está Ocupado**
+```bash
+# Solución automática
+.\scripts\clean-ports.ps1
+
+# O matar procesos Node
+Get-Process | Where-Object {$_.ProcessName -eq "node"} | Stop-Process -Force
+```
+
+**📋 Documentación completa**: Ver `PUERTO_3002_OBLIGATORIO.md`
+
+---
+
 ## 🚀 **Instalación y Configuración**
 
 ### 📋 Requisitos Previos
