@@ -9,6 +9,7 @@ import serviciosRoutes from './servicios.routes';
 import adminRoutes from './admin.routes';
 import recepcionistaRoutes from './recepcionista.routes';
 import chatRoutes from './chat.rutas';
+import recordatoriosRoutes from './recordatorios.routes';
 
 const router = Router();
 
@@ -36,11 +37,13 @@ router.use('/servicios', serviciosRoutes);
 // Rutas de administración
 router.use('/admin', adminRoutes);
 
-
 // Rutas de recepcionista
 router.use('/recepcionista', recepcionistaRoutes);
 
 // Rutas de chat
 router.use('/chat', chatRoutes);
+
+// Rutas de recordatorios
+router.use('/recordatorios', recordatoriosRoutes);
 
 export default router; 

@@ -81,6 +81,50 @@ class AuthService {
     }
   }
 
+  // Método para cerrar sesión sin llamar al backend (útil para timeouts)
+  cerrarSesion(): void {
+    console.log('🚪 Cerrando sesión localmente');
+    localStorage.clear();
+    window.location.href = '/login';
+  }
+
+  // Método para verificar si la sesión ha expirado
+  isSessionExpired(): boolean {
+    const token = this.getToken();
+    if (!token) return true;
+
+    try {
+      // Decodificar el token para verificar el timestamp de actividad
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const now = Date.now();
+      const lastActivity = payload.lastActivity || 0;
+      const SESSION_TIMEOUT = 10 * 1000; // 10 segundos para pruebas
+
+      return (now - lastActivity) > SESSION_TIMEOUT;
+    } catch (error) {
+      console.error('Error al verificar sesión:', error);
+      return true;
+    }
+  }
+
+  // Método para obtener el tiempo restante de sesión
+  getSessionTimeRemaining(): number {
+    const token = this.getToken();
+    if (!token) return 0;
+
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const now = Date.now();
+      const lastActivity = payload.lastActivity || 0;
+      const SESSION_TIMEOUT = 10 * 1000; // 10 segundos para pruebas
+
+      return Math.max(0, SESSION_TIMEOUT - (now - lastActivity));
+    } catch (error) {
+      console.error('Error al obtener tiempo restante:', error);
+      return 0;
+    }
+  }
+
   async getProfile(): Promise<User> {
     try {
       const response = await api.get('/autenticacion/perfil');

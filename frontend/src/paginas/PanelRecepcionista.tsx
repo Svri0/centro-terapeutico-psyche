@@ -6,6 +6,7 @@ import GestionPacientesRecepcionista from '../componentes/GestionPacientesRecepc
 import GestionPagos from '../componentes/GestionPagos';
 import ReportesRecepcionista from '../componentes/ReportesRecepcionista';
 import Logo from '../componentes/Logo';
+import { useSessionTimeout } from '../hooks/useSessionTimeout';
 
 const PanelRecepcionista: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'agenda' | 'pacientes' | 'pagos' | 'reportes'>('dashboard');
@@ -19,6 +20,9 @@ const PanelRecepcionista: React.FC = () => {
   });
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [message, setMessage] = useState('');
+
+  // Hook para timeout de sesión (15 minutos)
+  useSessionTimeout(15); // 15 minutos
 
   useEffect(() => {
     const user = authService.getUser();

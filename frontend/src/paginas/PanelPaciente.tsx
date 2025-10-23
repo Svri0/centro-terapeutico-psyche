@@ -9,6 +9,7 @@ import ChatPaciente from '../componentes/ChatPaciente';
 import { authService } from '../servicios/auth.service';
 import { actualizarPerfilPaciente, subirImagenReal } from '../servicios/usuarios.service';
 import { AVATARS_ANIMALES } from '../assets/avatars/default-avatars';
+import { useSessionTimeout } from '../hooks/useSessionTimeout';
 
 const PanelPaciente: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -48,6 +49,9 @@ const PanelPaciente: React.FC = () => {
   const [useRealImage, setUseRealImage] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileMessage, setProfileMessage] = useState('');
+
+  // Hook para timeout de sesión (15 minutos)
+  useSessionTimeout(15); // 15 minutos
 
   useEffect(() => {
     const user = authService.getCurrentUser();
