@@ -9,6 +9,7 @@ import CitasPsicologo from '../componentes/CitasPsicologo';
 import EstadisticasPsicologo from '../componentes/EstadisticasPsicologo';
 import GestionDisponibilidadMensual from '../componentes/GestionDisponibilidadMensual';
 import ChatPsicologo from '../componentes/ChatPsicologo';
+import { GenerarAgendaPDF } from '../componentes/GenerarAgendaPDF';
 import { TIPOS_SERVICIOS, TipoServicio, obtenerCategorias } from '../utilidades/tipos-servicios';
 import { obtenerServicios, crearServicio, eliminarServicio, ServicioPsicologo } from '../servicios/servicios.service';
 import Notificacion from '../componentes/Notificacion';
@@ -38,7 +39,7 @@ const PanelPsicologo: React.FC = () => {
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'pacientes' | 'citas' | 'disponibilidad' | 'servicios' | 'tareas' | 'chat' | 'perfil'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'pacientes' | 'citas' | 'disponibilidad' | 'servicios' | 'tareas' | 'chat' | 'pdf' | 'perfil'>('dashboard');
   const [perfilData, setPerfilData] = useState({
     nombres: '',
     apellidos: '',
@@ -444,6 +445,7 @@ const PanelPsicologo: React.FC = () => {
                 {activeTab === 'servicios' && 'Mis Servicios'}
                 {activeTab === 'tareas' && 'Gestión de Tareas'}
                 {activeTab === 'chat' && 'Chat'}
+                {activeTab === 'pdf' && 'Generar PDF'}
                 {activeTab === 'perfil' && 'Mi Perfil'}
               </h2>
               <p className="mt-1 text-xs font-semibold text-gray-600 tracking-widest uppercase truncate">
@@ -454,6 +456,7 @@ const PanelPsicologo: React.FC = () => {
                 {activeTab === 'servicios' && 'Configura los servicios que ofreces a los pacientes'}
                 {activeTab === 'tareas' && 'Asigna y gestiona tareas para tus pacientes'}
                 {activeTab === 'chat' && 'Comunícate en tiempo real con tus pacientes'}
+                {activeTab === 'pdf' && 'Descarga tu agenda en formato PDF'}
                 {activeTab === 'perfil' && 'Actualiza tu información personal y profesional'}
               </p>
             </div>
@@ -536,6 +539,16 @@ const PanelPsicologo: React.FC = () => {
                 }`}
               >
                 Chat
+              </button>
+              <button
+                onClick={() => setActiveTab('pdf')}
+                className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
+                  activeTab === 'pdf'
+                    ? 'border-amber-500 text-amber-600'
+                    : 'border-transparent text-gray-500 hover:text-amber-600 hover:border-amber-300'
+                }`}
+              >
+                PDF
               </button>
               <button
                 onClick={() => setActiveTab('perfil')}
@@ -721,6 +734,12 @@ const PanelPsicologo: React.FC = () => {
         {activeTab === 'chat' && (
           <div className="space-y-6">
             <ChatPsicologo psicologoId={user?.id || ''} />
+          </div>
+        )}
+
+        {activeTab === 'pdf' && (
+          <div className="space-y-6">
+            <GenerarAgendaPDF psicologoId={user?.id || ''} />
           </div>
         )}
 
@@ -1063,6 +1082,7 @@ const PanelPsicologo: React.FC = () => {
 
       {/* Componente de Notificación */}
       <Notificacion
+        titulo={notificacion.tipo === 'exito' ? 'Éxito' : notificacion.tipo === 'error' ? 'Error' : notificacion.tipo === 'advertencia' ? 'Advertencia' : 'Información'}
         mensaje={notificacion.mensaje}
         tipo={notificacion.tipo}
         visible={notificacion.visible}
