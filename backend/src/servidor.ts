@@ -644,42 +644,17 @@ const iniciarServidor = async () => {
       })
       .on('error', async (err: any) => {
         if (err.code === 'EADDRINUSE') {
-          console.log(`\n❌ PUERTO ${PUERTO} OCUPADO`);
-          console.log('🔧 Intentando encontrar puerto alternativo...');
-
-          try {
-            const puertoAlternativo = await encontrarPuertoDisponible(Number(PUERTO) + 1);
-            console.log(`✅ Puerto alternativo encontrado: ${puertoAlternativo}`);
-
-            const servidorAlternativo = httpServer.listen(puertoAlternativo, () => {
-              console.log('\n🎉 ═══════════════════════════════════════════════════════');
-              console.log('✅ BACKEND FUNCIONANDO CORRECTAMENTE (PUERTO ALTERNATIVO)');
-              console.log(`🚀 Puerto ${puertoAlternativo} funcionando correctamente`);
-              console.log('🏥 Centro Terapéutico Psyche API - v1.0.0');
-              console.log('═══════════════════════════════════════════════════════');
-              console.log(`🌐 Dashboard bonito: http://localhost:${puertoAlternativo}/dashboard`);
-              console.log(`📊 Salud (JSON): http://localhost:${puertoAlternativo}/salud`);
-              console.log(`🔗 API Base: http://localhost:${puertoAlternativo}/api/v1`);
-              console.log(`🔌 WebSocket Chat: ws://localhost:${puertoAlternativo}`);
-              console.log(`💬 Chat API: http://localhost:${puertoAlternativo}/api/v1/chat`);
-              console.log(`📄 Info (JSON): http://localhost:${puertoAlternativo}/`);
-              console.log(`⚠️  Nota: Puerto original ${PUERTO} estaba ocupado`);
-              console.log(`⏰ Iniciado: ${new Date().toLocaleString('es-CL')}`);
-              console.log('═══════════════════════════════════════════════════════\n');
-
-            });
-          } catch (error) {
-            console.log('\n💥 ═══════════════════════════════════════════════════════');
-            console.log('❌ ERROR CRÍTICO: NO SE PUEDE INICIAR EL SERVIDOR');
-            console.log('🚨 No hay puertos disponibles en el rango 3002-3011');
-            console.log('═══════════════════════════════════════════════════════');
-            console.log('🛠️  SOLUCIONES SUGERIDAS:');
-            console.log(`   1. Ejecuta: npx kill-port ${PUERTO}`);
-            console.log('   2. Reinicia tu computadora');
-            console.log('   3. Cambia el puerto en el archivo .env');
-            console.log('═══════════════════════════════════════════════════════\n');
-            process.exit(1);
-          }
+          console.log('\n💥 ═══════════════════════════════════════════════════════');
+          console.log(`❌ PUERTO ${PUERTO} OCUPADO - OBLIGATORIO USAR ESTE PUERTO`);
+          console.log('═══════════════════════════════════════════════════════');
+          console.log('🛠️  SOLUCIONES INMEDIATAS:');
+          console.log(`   1. Ejecuta: .\\scripts\\clean-ports.ps1`);
+          console.log(`   2. Ejecuta: Get-Process | Where-Object {$_.ProcessName -eq "node"} | Stop-Process -Force`);
+          console.log(`   3. Reinicia tu computadora`);
+          console.log('═══════════════════════════════════════════════════════');
+          console.log('⚠️  El backend DEBE correr en puerto 3002 - NO se permiten alternativos');
+          console.log('═══════════════════════════════════════════════════════\n');
+          process.exit(1);
         } else {
           console.log('\n💥 ═══════════════════════════════════════════════════════');
           console.log('❌ ERROR CRÍTICO DEL SERVIDOR');
