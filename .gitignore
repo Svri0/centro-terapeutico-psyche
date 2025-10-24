@@ -107,13 +107,6 @@ pids
 *.key
 *.crt
 
-# 📊 Uploads folder (if contains sensitive files)
-uploads/
-backend/uploads/
-*.pdf
-*.doc
-*.docx
-
 # 🖼️ Images - Ignore uploaded user images but allow frontend static images
 backend/uploads/**/*.jpg
 backend/uploads/**/*.jpeg
@@ -194,8 +187,6 @@ $RECYCLE.BIN/
 config/local.json
 config/production.json
 
-# Generated documentation
-docs/api/
 
 # Test results
 test-results/
