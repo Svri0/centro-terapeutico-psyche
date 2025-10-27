@@ -13,6 +13,7 @@ import { GenerarAgendaPDF } from '../componentes/GenerarAgendaPDF';
 import { TIPOS_SERVICIOS, TipoServicio, obtenerCategorias } from '../utilidades/tipos-servicios';
 import { obtenerServicios, crearServicio, eliminarServicio, ServicioPsicologo } from '../servicios/servicios.service';
 import Notificacion from '../componentes/Notificacion';
+import GestionReportesProgreso from '../componentes/GestionReportesProgreso';
 
 import { PacienteCreado } from '../servicios/pacientes.service';
 import { actualizarPerfilPsicologo, subirImagenReal } from '../servicios/usuarios.service';
@@ -39,7 +40,7 @@ const PanelPsicologo: React.FC = () => {
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'pacientes' | 'citas' | 'disponibilidad' | 'servicios' | 'tareas' | 'chat' | 'pdf' | 'perfil'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'pacientes' | 'citas' | 'disponibilidad' | 'servicios' | 'tareas' | 'reportes' | 'chat' | 'pdf' | 'perfil'>('dashboard');
   const [perfilData, setPerfilData] = useState({
     nombres: '',
     apellidos: '',
@@ -444,6 +445,7 @@ const PanelPsicologo: React.FC = () => {
                 {activeTab === 'disponibilidad' && 'Disponibilidad'}
                 {activeTab === 'servicios' && 'Mis Servicios'}
                 {activeTab === 'tareas' && 'Gestión de Tareas'}
+                {activeTab === 'reportes' && 'Reportes de Progreso'}
                 {activeTab === 'chat' && 'Chat'}
                 {activeTab === 'pdf' && 'Generar PDF'}
                 {activeTab === 'perfil' && 'Mi Perfil'}
@@ -455,6 +457,7 @@ const PanelPsicologo: React.FC = () => {
                 {activeTab === 'disponibilidad' && 'Configura tus horarios disponibles'}
                 {activeTab === 'servicios' && 'Configura los servicios que ofreces a los pacientes'}
                 {activeTab === 'tareas' && 'Asigna y gestiona tareas para tus pacientes'}
+                {activeTab === 'reportes' && 'Registra y consulta reportes de seguimiento'}
                 {activeTab === 'chat' && 'Comunícate en tiempo real con tus pacientes'}
                 {activeTab === 'pdf' && 'Descarga tu agenda en formato PDF'}
                 {activeTab === 'perfil' && 'Actualiza tu información personal y profesional'}
@@ -529,6 +532,16 @@ const PanelPsicologo: React.FC = () => {
                 }`}
               >
                 Tareas
+              </button>
+              <button
+                onClick={() => setActiveTab('reportes')}
+                className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
+                  activeTab === 'reportes'
+                    ? 'border-amber-500 text-amber-600'
+                    : 'border-transparent text-gray-500 hover:text-amber-600 hover:border-amber-300'
+                }`}
+              >
+                📊 Reportes
               </button>
               <button
                 onClick={() => setActiveTab('chat')}
@@ -729,6 +742,10 @@ const PanelPsicologo: React.FC = () => {
 
         {activeTab === 'tareas' && (
           <GestionTareas />
+        )}
+
+        {activeTab === 'reportes' && (
+          <GestionReportesProgreso />
         )}
 
         {activeTab === 'chat' && (
