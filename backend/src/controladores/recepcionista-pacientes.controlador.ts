@@ -3,6 +3,8 @@ import { Request, Response } from 'express';
 import sequelize from '../configuracion/database';
 import { ManejadorRespuestas } from '../utilidades/respuestas';
 import { log } from '../utilidades/logger';
+import { enviarEmailRegistroPaciente } from '../utilidades/email.service';
+import { QueryTypes } from 'sequelize';
 
 // Crear paciente básico (para recepcionistas)
 export const crearPacienteBasico = async (req: Request, res: Response) => {
@@ -175,13 +177,30 @@ export const crearPacienteBasico = async (req: Request, res: Response) => {
 
     const paciente = pacienteCreado[0];
 
+    // Enviar email de bienvenida al paciente
+    const nombreCompleto = `${nombres} ${apellidos}`;
+    const emailEnviado = await enviarEmailRegistroPaciente(
+      email,
+      nombreCompleto,
+      email,
+      passwordTemporal,
+      usuario.token_activacion || ''
+    );
+
+    if (emailEnviado) {
+      log.info(`Email de bienvenida enviado exitosamente al paciente: ${email}`);
+    } else {
+      log.warn(`No se pudo enviar el email de bienvenida al paciente: ${email}`);
+    }
+
     return ManejadorRespuestas.creado(
       res,
-      'Paciente creado exitosamente. El psicólogo completará la información en la primera sesión.',
+      'Paciente creado exitosamente. Se ha enviado un email de bienvenida. El psicólogo completará la información en la primera sesión.',
       {
         ...usuario,
         ...paciente,
-        password_temporal: passwordTemporal
+        password_temporal: passwordTemporal,
+        email_enviado: emailEnviado
       },
       'REC_018'
     );
@@ -192,6 +211,85 @@ export const crearPacienteBasico = async (req: Request, res: Response) => {
       res,
       'Error interno al crear el paciente',
       'REC_019'
+    );
+  }
+};
+
+// Obtener el paciente del usuario autenticado
+export const obtenerMiPaciente = async (req: Request, res: Response) => {
+  try {
+    const usuarioId = req.usuario?.id;
+    
+    if (!usuarioId) {
+      return ManejadorRespuestas.noAutorizado(
+        res,
+        'Usuario no autenticado',
+        'PAC_001'
+      );
+    }
+
+    console.log('🔍 Obteniendo paciente para usuario ID:', usuarioId);
+
+    // Obtener el paciente del usuario autenticado
+    const [paciente] = await sequelize.query(
+      `SELECT 
+        p.id,
+        p.numero_ficha,
+        p.rut,
+        p.direccion,
+        p.contacto_emergencia_nombre,
+        p.contacto_emergencia_telefono,
+        p.contacto_emergencia_relacion,
+        p.diagnosticos,
+        p.etiquetas,
+        p.estrategias_autorregulacion,
+        p.puntos_acumulados,
+        p.estado,
+        p.fecha_ingreso,
+        p.fecha_alta,
+        p.observaciones,
+        p.psicologo_id,
+        u.nombres,
+        u.apellidos,
+        u.email,
+        u.telefono,
+        u.fecha_nacimiento,
+        u.genero,
+        u.activo,
+        u.created_at,
+        u.updated_at
+      FROM pacientes p
+      INNER JOIN usuarios u ON p.usuario_id = u.id
+      WHERE p.usuario_id = :usuarioId AND p.deleted_at IS NULL`,
+      {
+        replacements: { usuarioId },
+        type: QueryTypes.SELECT
+      }
+    ) as any[];
+
+    if (!paciente) {
+      return ManejadorRespuestas.noEncontrado(
+        res,
+        'Paciente no encontrado',
+        'PAC_002'
+      );
+    }
+
+    console.log('✅ Paciente encontrado:', paciente.id);
+
+    return ManejadorRespuestas.exito(
+      res,
+      'Paciente obtenido exitosamente',
+      paciente,
+      'PAC_003'
+    );
+
+  } catch (error) {
+    log.error('Error en obtenerMiPaciente:', error);
+    return ManejadorRespuestas.errorInterno(
+      res,
+      'Error interno al obtener el paciente',
+      'PAC_004'
     );
   }
 };

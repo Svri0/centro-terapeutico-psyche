@@ -23,7 +23,7 @@ async function listarUsuarios() {
       SELECT 
         u.id,
         u.email,
-        u.password,
+        u.password_hash,
         u.nombres,
         u.apellidos,
         u.rol_id,
@@ -37,7 +37,7 @@ async function listarUsuarios() {
       console.log(`\n${index + 1}. ${user.nombres} ${user.apellidos}`);
       console.log(`   - ID: ${user.id}`);
       console.log(`   - Email: ${user.email}`);
-      console.log(`   - Password: ${user.password}`);
+      console.log(`   - Password Hash: ${user.password_hash}`);
       console.log(`   - Rol: ${user.rol_nombre} (ID: ${user.rol_id})`);
     });
 
@@ -53,13 +53,13 @@ async function listarUsuarios() {
     const usuariosPacientes = usuarios.filter(u => u.rol_id === 4);
     if (usuariosPacientes.length > 0) {
       const paciente = usuariosPacientes[0];
-      console.log(`   - Paciente: ${paciente.email} / ${paciente.password}`);
+      console.log(`   - Paciente: ${paciente.email} / [password_hash oculto]`);
     }
 
     const usuariosPsicologos = usuarios.filter(u => u.rol_id === 3);
     if (usuariosPsicologos.length > 0) {
       const psicologo = usuariosPsicologos[0];
-      console.log(`   - Psicólogo: ${psicologo.email} / ${psicologo.password}`);
+      console.log(`   - Psicólogo: ${psicologo.email} / [password_hash oculto]`);
     }
 
   } catch (error) {

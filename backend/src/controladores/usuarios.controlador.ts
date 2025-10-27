@@ -166,11 +166,11 @@ export const actualizarPerfilPaciente = async (req: Request, res: Response) => {
       observaciones: !!observaciones
     });
 
-    // Verificar que el usuario existe y es paciente (rol_id = 3)
+    // Verificar que el usuario existe y es paciente (rol_id = 4)
     const usuario = await Usuario.findOne({
       where: { 
         id,
-        rol_id: 3 // ID del rol de paciente
+        rol_id: 4 // ID del rol de paciente
       }
     });
 

@@ -7,7 +7,7 @@ export interface MensajeChat {
   contenido: string;
   remitente_id: string;
   destinatario_id: string;
-  tipo: 'psicologo' | 'paciente' | 'admin';
+  tipo: 'psicologo' | 'paciente' | 'admin' | 'recepcionista';
   leido: boolean;
   created_at: string;
   updated_at: string;
@@ -66,15 +66,15 @@ class ChatService {
     }
   }
 
-  // Obtener trabajadores (psicólogos y recepcionistas) para el chat del administrador
-  async obtenerTrabajadores(): Promise<PacienteChat[]> {
+  // Obtener personal (administradores y psicólogos) para el chat del recepcionista
+  async obtenerPersonalRecepcionista(): Promise<PacienteChat[]> {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/v1/chat/trabajadores`, {
+      const response = await axios.get(`${API_BASE_URL}/api/v1/chat/personal-recepcionista`, {
         headers: this.getAuthHeaders()
       });
       return response.data.data;
     } catch (error) {
-      console.error('Error al obtener trabajadores del chat:', error);
+      console.error('Error al obtener personal para recepcionista:', error);
       throw error;
     }
   }

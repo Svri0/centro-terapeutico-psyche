@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { verificarToken } from '../middleware/auth.middleware';
+import { verificarToken, verificarRol } from '../middleware/auth.middleware';
 import { 
   obtenerTodas, 
   obtenerPorId, 
@@ -15,25 +15,25 @@ const router = Router();
 // Aplicar middleware de autenticación a todas las rutas
 router.use(verificarToken);
 
-// GET /sesiones
-router.get('/', obtenerTodas);
+// GET /sesiones - Solo administradores
+router.get('/', verificarRol(['admin']), obtenerTodas);
 
 // GET /sesiones/psicologo - Obtener sesiones del psicólogo autenticado
-router.get('/psicologo', obtenerSesionesPsicologo);
+router.get('/psicologo', verificarRol(['psicologo', 'admin']), obtenerSesionesPsicologo);
 
 // GET /sesiones/paciente - Obtener sesiones del paciente autenticado
-router.get('/paciente', obtenerSesionesPaciente);
+router.get('/paciente', verificarRol(['paciente', 'admin']), obtenerSesionesPaciente);
 
-// GET /sesiones/:id
-router.get('/:id', obtenerPorId);
+// GET /sesiones/:id - Psicólogos y administradores pueden ver cualquier sesión
+router.get('/:id', verificarRol(['psicologo', 'admin']), obtenerPorId);
 
-// POST /sesiones
-router.post('/', crear);
+// POST /sesiones - Pacientes pueden crear sesiones, psicólogos y admin también
+router.post('/', verificarRol(['paciente', 'psicologo', 'admin']), crear);
 
-// PUT /sesiones/:id
-router.put('/:id', actualizar);
+// PUT /sesiones/:id - Psicólogos y administradores pueden actualizar
+router.put('/:id', verificarRol(['psicologo', 'admin']), actualizar);
 
-// DELETE /sesiones/:id
-router.delete('/:id', eliminar);
+// DELETE /sesiones/:id - Psicólogos y administradores pueden eliminar
+router.delete('/:id', verificarRol(['psicologo', 'admin']), eliminar);
 
 export default router; 

@@ -18,8 +18,8 @@ export const verificarRecepcionista = async (req: Request, res: Response, next: 
       return;
     }
 
-    // Verificar que el usuario tenga rol de recepcionista (ID 4)
-    if (req.usuario.rol_id !== 4) {
+    // Verificar que el usuario tenga rol de recepcionista (ID 3)
+    if (req.usuario.rol_id !== 3) {
       ManejadorRespuestas.prohibido(
         res,
         'Acceso denegado. Se requieren permisos de recepcionista',
@@ -58,7 +58,7 @@ export const verificarPermisoRecepcionista = (permiso: string) => {
       }
 
       // Verificar que el usuario tenga rol de recepcionista
-      if (req.usuario.rol_id !== 4) {
+      if (req.usuario.rol_id !== 3) {
         ManejadorRespuestas.prohibido(
           res,
           'Acceso denegado. Se requieren permisos de recepcionista',

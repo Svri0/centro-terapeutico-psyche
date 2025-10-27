@@ -10,7 +10,7 @@ export interface Cita {
   hora_fin: string;
   duracion_minutos: number;
   estado: 'programada' | 'confirmada' | 'en_progreso' | 'completada' | 'cancelada' | 'no_show';
-  tipo_sesion: 'individual' | 'grupal' | 'familiar' | 'evaluacion' | 'seguimiento';
+  tipo_sesion: 'presencial' | 'virtual' | 'telefonica';
   modalidad: 'presencial' | 'virtual' | 'telefonica';
   notas_paciente?: string;
   notas_psicologo?: string;
@@ -35,8 +35,8 @@ export interface CrearCitaData {
   fecha: string;
   hora_inicio: string;
   hora_fin: string;
-  duracion_minutos: number;
-  tipo_sesion: 'individual' | 'grupal' | 'familiar' | 'evaluacion' | 'seguimiento';
+  duracion_minutos?: number;
+  tipo_sesion: 'presencial' | 'virtual' | 'telefonica';
   modalidad: 'presencial' | 'virtual' | 'telefonica';
   notas_paciente?: string;
 }

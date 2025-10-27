@@ -9,6 +9,7 @@ import serviciosRoutes from './servicios.routes';
 import adminRoutes from './admin.routes';
 import recepcionistaRoutes from './recepcionista.routes';
 import chatRoutes from './chat.rutas';
+import agendaPDFRoutes from './agendaPDF.routes';
 
 const router = Router();
 
@@ -42,5 +43,8 @@ router.use('/recepcionista', recepcionistaRoutes);
 
 // Rutas de chat
 router.use('/chat', chatRoutes);
+
+// Rutas de agenda PDF
+router.use('/agenda-pdf', agendaPDFRoutes);
 
 export default router; 
