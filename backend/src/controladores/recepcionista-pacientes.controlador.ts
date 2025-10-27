@@ -118,8 +118,26 @@ export const crearPacienteBasico = async (req: Request, res: Response) => {
 
     const usuario = usuarioCreado[0];
 
-    // Generar número de ficha
-    const numeroFicha = `P${String(usuario.id).padStart(6, '0')}`;
+    // Generar número de ficha usando un contador
+    const [ultimoPaciente] = await sequelize.query(`
+      SELECT numero_ficha FROM pacientes 
+      WHERE numero_ficha LIKE 'P%' 
+      ORDER BY numero_ficha DESC 
+      LIMIT 1
+    `) as [any[], unknown];
+
+    let numeroFicha;
+    if (Array.isArray(ultimoPaciente) && ultimoPaciente.length > 0) {
+      const ultimoNumero = ultimoPaciente[0].numero_ficha.match(/P(\d+)/);
+      if (ultimoNumero) {
+        const siguienteNumero = parseInt(ultimoNumero[1]) + 1;
+        numeroFicha = `P${String(siguienteNumero).padStart(6, '0')}`;
+      } else {
+        numeroFicha = 'P000001';
+      }
+    } else {
+      numeroFicha = 'P000001';
+    }
 
     // Crear paciente básico (sin psicólogo asignado inicialmente)
     const [pacienteCreado] = await sequelize.query(`
