@@ -47,10 +47,13 @@ export {
 
 // Reportes
 export {
-  obtenerTodos as obtenerTodosReportes,
-  obtenerPorId as obtenerReportePorId,
-  crear as crearReporte,
-  exportar as exportarReporte
+  obtenerTodosReportes,
+  obtenerReportePorId,
+  crearReporte,
+  exportarReporte,
+  actualizarReporte,
+  eliminarReporte,
+  obtenerReportesPorPaciente
 } from './reportes.controlador';
 
 // Administrador
