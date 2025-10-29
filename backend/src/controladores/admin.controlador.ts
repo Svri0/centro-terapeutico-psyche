@@ -2608,4 +2608,181 @@ export const eliminarRecepcionista = async (req: Request, res: Response) => {
       'ADMIN_071'
     );
   }
+};
+
+// ==================== ESTADÍSTICAS GENERALES ====================
+
+// Obtener estadísticas generales del centro
+export const obtenerEstadisticasGenerales = async (req: Request, res: Response) => {
+  try {
+    console.log('📊 Admin solicitando estadísticas generales del centro...');
+
+    // Estadísticas de usuarios por rol
+    const [usuariosPorRol] = await sequelize.query(`
+      SELECT 
+        r.nombre as rol,
+        COUNT(u.id) as total,
+        COUNT(CASE WHEN u.activo = true THEN 1 END) as activos
+      FROM usuarios u
+      INNER JOIN roles r ON u.rol_id = r.id
+      WHERE u.deleted_at IS NULL
+      GROUP BY r.nombre, r.id
+      ORDER BY r.id
+    `) as [any[], unknown];
+
+    // Estadísticas de pacientes
+    const [estadisticasPacientes] = await sequelize.query(`
+      SELECT 
+        COUNT(*) as total_pacientes,
+        COUNT(CASE WHEN estado = 'activo' THEN 1 END) as pacientes_activos,
+        COUNT(CASE WHEN estado = 'inactivo' THEN 1 END) as pacientes_inactivos,
+        COUNT(CASE WHEN estado = 'alta' THEN 1 END) as pacientes_alta,
+        COUNT(CASE WHEN estado = 'derivado' THEN 1 END) as pacientes_derivados,
+        COUNT(CASE WHEN fecha_ingreso >= CURRENT_DATE - INTERVAL '30 days' THEN 1 END) as pacientes_nuevos_mes,
+        AVG(puntos_acumulados) as promedio_puntos
+      FROM pacientes 
+      WHERE deleted_at IS NULL
+    `) as [any[], unknown];
+
+    // Estadísticas de sesiones
+    const [estadisticasSesiones] = await sequelize.query(`
+      SELECT 
+        COUNT(*) as total_sesiones,
+        COUNT(CASE WHEN estado = 'programada' THEN 1 END) as sesiones_programadas,
+        COUNT(CASE WHEN estado = 'confirmada' THEN 1 END) as sesiones_confirmadas,
+        COUNT(CASE WHEN estado = 'en_curso' THEN 1 END) as sesiones_en_curso,
+        COUNT(CASE WHEN estado = 'completada' THEN 1 END) as sesiones_completadas,
+        COUNT(CASE WHEN estado = 'cancelada' THEN 1 END) as sesiones_canceladas,
+        COUNT(CASE WHEN estado = 'no_asistio' THEN 1 END) as sesiones_no_asistio,
+        COUNT(CASE WHEN fecha_programada >= CURRENT_DATE THEN 1 END) as sesiones_futuras,
+        COUNT(CASE WHEN fecha_programada >= CURRENT_DATE - INTERVAL '30 days' AND fecha_programada < CURRENT_DATE THEN 1 END) as sesiones_mes_pasado
+      FROM sesiones
+    `) as [any[], unknown];
+
+    // Estadísticas de tareas
+    const [estadisticasTareas] = await sequelize.query(`
+      SELECT 
+        COUNT(*) as total_tareas,
+        COUNT(CASE WHEN estado = 'pendiente' THEN 1 END) as tareas_pendientes,
+        COUNT(CASE WHEN estado = 'en_progreso' THEN 1 END) as tareas_en_progreso,
+        COUNT(CASE WHEN estado = 'completada' THEN 1 END) as tareas_completadas,
+        COUNT(CASE WHEN estado = 'vencida' THEN 1 END) as tareas_vencidas,
+        COUNT(CASE WHEN estado = 'cancelada' THEN 1 END) as tareas_canceladas,
+        COUNT(CASE WHEN fecha_asignacion >= CURRENT_DATE - INTERVAL '7 days' THEN 1 END) as tareas_semana,
+        AVG(puntos_asignados) as promedio_puntos_tarea
+      FROM tareas
+    `) as [any[], unknown];
+
+    // Estadísticas por tipo de sesión
+    const [sesionesPorTipo] = await sequelize.query(`
+      SELECT 
+        tipo_sesion,
+        COUNT(*) as total
+      FROM sesiones
+      GROUP BY tipo_sesion
+      ORDER BY total DESC
+    `) as [any[], unknown];
+
+    // Estadísticas por tipo de tarea
+    const [tareasPorTipo] = await sequelize.query(`
+      SELECT 
+        tipo_tarea,
+        COUNT(*) as total
+      FROM tareas
+      GROUP BY tipo_tarea
+      ORDER BY total DESC
+    `) as [any[], unknown];
+
+    // Estadísticas de actividad reciente (últimos 7 días)
+    const [actividadReciente] = await sequelize.query(`
+      SELECT 
+        DATE(created_at) as fecha,
+        'usuarios' as tipo,
+        COUNT(*) as cantidad
+      FROM usuarios 
+      WHERE created_at >= CURRENT_DATE - INTERVAL '7 days'
+      GROUP BY DATE(created_at)
+      
+      UNION ALL
+      
+      SELECT 
+        DATE(created_at) as fecha,
+        'sesiones' as tipo,
+        COUNT(*) as cantidad
+      FROM sesiones 
+      WHERE created_at >= CURRENT_DATE - INTERVAL '7 days'
+      GROUP BY DATE(created_at)
+      
+      UNION ALL
+      
+      SELECT 
+        DATE(created_at) as fecha,
+        'tareas' as tipo,
+        COUNT(*) as cantidad
+      FROM tareas 
+      WHERE created_at >= CURRENT_DATE - INTERVAL '7 days'
+      GROUP BY DATE(created_at)
+      
+      ORDER BY fecha DESC, tipo
+    `) as [any[], unknown];
+
+    // Estadísticas de psicólogos más activos (por número de sesiones)
+    const [psicologosActivos] = await sequelize.query(`
+      SELECT 
+        u.nombres,
+        u.apellidos,
+        COUNT(s.id) as total_sesiones,
+        COUNT(CASE WHEN s.estado = 'completada' THEN 1 END) as sesiones_completadas,
+        COUNT(p.id) as total_pacientes
+      FROM usuarios u
+      INNER JOIN roles r ON u.rol_id = r.id
+      LEFT JOIN sesiones s ON u.id = s.psicologo_id
+      LEFT JOIN pacientes p ON u.id = p.psicologo_id
+      WHERE r.nombre = 'psicologo' AND u.activo = true
+      GROUP BY u.id, u.nombres, u.apellidos
+      ORDER BY total_sesiones DESC
+      LIMIT 5
+    `) as [any[], unknown];
+
+    // Resumen general
+    const resumen = {
+      total_usuarios: usuariosPorRol.reduce((sum: number, item: any) => sum + parseInt(item.total), 0),
+      total_pacientes: estadisticasPacientes[0]?.total_pacientes || 0,
+      total_sesiones: estadisticasSesiones[0]?.total_sesiones || 0,
+      total_tareas: estadisticasTareas[0]?.total_tareas || 0,
+      pacientes_activos: estadisticasPacientes[0]?.pacientes_activos || 0,
+      sesiones_programadas: estadisticasSesiones[0]?.sesiones_programadas || 0,
+      tareas_pendientes: estadisticasTareas[0]?.tareas_pendientes || 0
+    };
+
+    const estadisticas = {
+      resumen,
+      usuarios_por_rol: usuariosPorRol,
+      pacientes: estadisticasPacientes[0] || {},
+      sesiones: estadisticasSesiones[0] || {},
+      tareas: estadisticasTareas[0] || {},
+      sesiones_por_tipo: sesionesPorTipo,
+      tareas_por_tipo: tareasPorTipo,
+      actividad_reciente: actividadReciente,
+      psicologos_mas_activos: psicologosActivos,
+      fecha_consulta: new Date().toISOString()
+    };
+
+    console.log('✅ Estadísticas generales obtenidas exitosamente');
+
+    return ManejadorRespuestas.exito(
+      res,
+      'Estadísticas generales obtenidas exitosamente',
+      estadisticas,
+      'ADMIN_072'
+    );
+
+  } catch (error) {
+    log.error('Error en obtenerEstadisticasGenerales:', error);
+    return ManejadorRespuestas.errorInterno(
+      res,
+      'Error al obtener las estadísticas generales',
+      'ADMIN_073'
+    );
+  }
 }; 

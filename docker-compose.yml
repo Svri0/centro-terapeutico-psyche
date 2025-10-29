@@ -50,7 +50,7 @@ services:
     container_name: psyche_backend
     environment:
       NODE_ENV: development
-      PORT: 3001
+      PORT: 3002
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: postgres
@@ -60,7 +60,7 @@ services:
       JWT_EXPIRES_IN: 24h
       CORS_ORIGIN: http://localhost:3000
     ports:
-      - "3001:3001"
+      - "3002:3002"
     depends_on:
       postgres:
         condition: service_healthy
@@ -81,7 +81,7 @@ services:
       target: development
     container_name: psyche_frontend
     environment:
-      VITE_API_URL: http://localhost:3001
+      VITE_API_URL: http://localhost:3002
       VITE_APP_NAME: Centro Terapéutico Psyche
       VITE_NODE_ENV: development
     ports:
@@ -106,7 +106,7 @@ services:
     environment:
       NODE_ENV: development
       PORT: 3003
-      BACKEND_URL: http://backend:3001
+      BACKEND_URL: http://backend:3002
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: postgres

@@ -75,7 +75,7 @@ export const iniciarSesion = async (req: Request, res: Response) => {
       );
     }
 
-    // Generar token JWT con configuración segura
+    // Generar token JWT con configuración segura (sin lastActivity para tokens nuevos)
     const secret = process.env.JWT_SECRET || 'tu_secreto_super_seguro_para_jwt_tokens_2024';
     console.log('🔍 JWT_SECRET usado:', secret);
     const token = jwt.sign(
@@ -412,6 +412,57 @@ export const cambiarPassword = async (req: Request, res: Response) => {
       res,
       'Error interno del servidor',
       'AUTH_022'
+    );
+  }
+};
+
+// Controlador para actualizar actividad de sesión
+export const actualizarActividadSesion = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const usuarioId = req.usuario?.id;
+    
+    if (!usuarioId || !req.usuario) {
+      ManejadorRespuestas.noAutorizado(
+        res,
+        'Usuario no autenticado',
+        'AUTH_023'
+      );
+      return;
+    }
+
+    // Generar nuevo token con timestamp actualizado
+    const secret = process.env.JWT_SECRET || 'tu_secreto_super_seguro_para_jwt_tokens_2024';
+    const nuevoToken = jwt.sign(
+      {
+        id: req.usuario.id,
+        email: req.usuario.email,
+        rol_id: req.usuario.rol_id,
+        nombres: req.usuario.nombres,
+        apellidos: req.usuario.apellidos,
+        lastActivity: Date.now(), // Actualizar timestamp de actividad
+        iat: Math.floor(Date.now() / 1000)
+      },
+      secret,
+      { 
+        expiresIn: '24h',
+        algorithm: 'HS256',
+        issuer: 'psyche-api',
+        audience: 'psyche-client'
+      }
+    );
+
+    ManejadorRespuestas.exito(
+      res,
+      'Actividad de sesión actualizada',
+      { token: nuevoToken },
+      'AUTH_024'
+    );
+  } catch (error) {
+    log.error('Error en actualizarActividadSesion:', error);
+    ManejadorRespuestas.errorInterno(
+      res,
+      'Error al actualizar actividad de sesión',
+      'AUTH_025'
     );
   }
 };

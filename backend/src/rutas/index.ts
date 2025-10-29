@@ -11,6 +11,7 @@ import recepcionistaRoutes from './recepcionista.routes';
 import chatRoutes from './chat.rutas';
 import agendaPDFRoutes from './agendaPDF.routes';
 import reportesRoutes from './reportes.routes';
+import recordatoriosRoutes from './recordatorios.routes';
 
 const router = Router();
 
@@ -38,7 +39,6 @@ router.use('/servicios', serviciosRoutes);
 // Rutas de administración
 router.use('/admin', adminRoutes);
 
-
 // Rutas de recepcionista
 router.use('/recepcionista', recepcionistaRoutes);
 
@@ -50,5 +50,8 @@ router.use('/agenda-pdf', agendaPDFRoutes);
 
 // Rutas de reportes de progreso
 router.use('/reportes', reportesRoutes);
+
+// Rutas de recordatorios
+router.use('/recordatorios', recordatoriosRoutes);
 
 export default router; 

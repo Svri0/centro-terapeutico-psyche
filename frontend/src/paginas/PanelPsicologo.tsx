@@ -18,6 +18,7 @@ import GestionReportesProgreso from '../componentes/GestionReportesProgreso';
 import { PacienteCreado } from '../servicios/pacientes.service';
 import { actualizarPerfilPsicologo, subirImagenReal } from '../servicios/usuarios.service';
 import { AVATARS_ANIMALES } from '../assets/avatars/default-avatars';
+import { useSessionTimeout } from '../hooks/useSessionTimeout';
 
 interface Sesion {
   id: string;
@@ -88,6 +89,9 @@ const PanelPsicologo: React.FC = () => {
 
   const user = authService.getUser();
   console.log('🔍 Debug - PanelPsicologo - user:', user);
+
+  // Hook para timeout de sesión (15 minutos)
+  useSessionTimeout(15); // 15 minutos
 
   useEffect(() => {
     // Cargar datos reales

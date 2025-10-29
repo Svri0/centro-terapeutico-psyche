@@ -27,7 +27,8 @@ import {
   actualizarRecepcionista,
   desactivarRecepcionista,
   activarRecepcionista,
-  eliminarRecepcionista
+  eliminarRecepcionista,
+  obtenerEstadisticasGenerales
 } from '../controladores/admin.controlador';
 
 const router = Router();
@@ -95,6 +96,9 @@ router.get('/auditoria/logs', obtenerLogsAuditoria);
 
 // GET /admin/auditoria/estadisticas - Obtener estadísticas de auditoría
 router.get('/auditoria/estadisticas', obtenerEstadisticasAuditoria);
+
+// GET /admin/estadisticas-generales - Obtener estadísticas generales del centro
+router.get('/estadisticas-generales', obtenerEstadisticasGenerales);
 
 // Rutas de gestión de recepcionistas para administradores
 // GET /admin/recepcionistas - Obtener todos los recepcionistas

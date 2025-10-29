@@ -13,12 +13,13 @@ declare global {
         rol_id: number;
         nombres: string;
         apellidos: string;
+        lastActivity?: number;
       };
     }
   }
 }
 
-// Middleware para verificar JWT
+// Middleware para verificar JWT (sin timeout para login inicial)
 export const verificarToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   console.log('🔍 verificarToken - INICIANDO');
   console.log('🔍 URL:', req.url);
@@ -54,7 +55,8 @@ export const verificarToken = async (req: Request, res: Response, next: NextFunc
       email: decoded.email,
       rol_id: decoded.rol_id,
       nombres: decoded.nombres,
-      apellidos: decoded.apellidos
+      apellidos: decoded.apellidos,
+      lastActivity: decoded.lastActivity
     };
 
     console.log('🔍 Usuario configurado en req:', req.usuario);
@@ -76,6 +78,42 @@ export const verificarToken = async (req: Request, res: Response, next: NextFunc
       'Error al verificar el token',
       'AUTH_103'
     );
+  }
+};
+
+// Middleware para verificar timeout de sesión (solo para rutas protegidas)
+export const verificarTimeoutSesion = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    if (!req.usuario || !req.usuario.lastActivity) {
+      // Si no hay usuario o lastActivity, continuar (token nuevo)
+      return next();
+    }
+
+    const now = Date.now();
+    const timeSinceLastActivity = now - req.usuario.lastActivity;
+    const SESSION_TIMEOUT = 10 * 1000; // 10 segundos para pruebas
+    
+    console.log('🔍 Verificando timeout:', {
+      lastActivity: req.usuario.lastActivity,
+      now: now,
+      timeSinceLastActivity: timeSinceLastActivity,
+      timeout: SESSION_TIMEOUT
+    });
+    
+    if (timeSinceLastActivity > SESSION_TIMEOUT) {
+      console.log('⏰ Sesión expirada por timeout');
+      ManejadorRespuestas.noAutorizado(
+        res,
+        'Sesión expirada por inactividad. Por favor, inicia sesión nuevamente.',
+        'AUTH_TIMEOUT'
+      );
+      return;
+    }
+
+    next();
+  } catch (error) {
+    log.error('Error en verificarTimeoutSesion:', error);
+    next();
   }
 };
 
@@ -219,7 +257,7 @@ export const verificarRol = (rolesPermitidos: string[]) => {
 
 // Middleware combinado para rutas de administrador
 // En desarrollo, omitimos la verificación de subdominio
-export const authAdmin = [verificarToken, verificarAdmin];
+export const authAdmin = [verificarToken, verificarTimeoutSesion, verificarAdmin];
 
 // Middleware combinado para rutas de psicólogo
-export const authPsicologo = [verificarToken, verificarPsicologo]; 
+export const authPsicologo = [verificarToken, verificarTimeoutSesion, verificarPsicologo]; 

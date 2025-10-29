@@ -67,15 +67,10 @@ export {
   eliminarPsicologo,
   obtenerPacientesPsicologo,
   obtenerSesionesPsicologo,
-  eliminarSesion,
   reasignarPaciente,
   obtenerPsicologosDisponibles,
   obtenerLogsAuditoria,
   obtenerEstadisticasAuditoria,
-  obtenerTodosPacientes,
-  crearPaciente,
-  actualizarPaciente,
-  eliminarPaciente,
   activarPaciente,
   desactivarPaciente,
   obtenerRecepcionistas,
@@ -83,5 +78,15 @@ export {
   actualizarRecepcionista,
   desactivarRecepcionista,
   activarRecepcionista,
-  eliminarRecepcionista
-} from './admin.controlador'; 
+  eliminarRecepcionista,
+  obtenerEstadisticasGenerales
+} from './admin.controlador';
+
+// Recordatorios
+export {
+  obtenerConfiguracionesRecordatorio,
+  crearActualizarConfiguracionRecordatorio,
+  eliminarConfiguracionRecordatorio,
+  obtenerConfiguracionesActivas,
+  obtenerConfiguracionesPorCanal
+} from './recordatorios.controlador'; 
