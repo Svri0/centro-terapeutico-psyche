@@ -95,6 +95,74 @@ export interface EstadisticasAuditoria {
   total_acciones: number;
 }
 
+export interface EstadisticasGenerales {
+  resumen: {
+    total_usuarios: number;
+    total_pacientes: number;
+    total_sesiones: number;
+    total_tareas: number;
+    pacientes_activos: number;
+    sesiones_programadas: number;
+    tareas_pendientes: number;
+  };
+  usuarios_por_rol: Array<{
+    rol: string;
+    total: number;
+    activos: number;
+  }>;
+  pacientes: {
+    total_pacientes: number;
+    pacientes_activos: number;
+    pacientes_inactivos: number;
+    pacientes_alta: number;
+    pacientes_derivados: number;
+    pacientes_nuevos_mes: number;
+    promedio_puntos: number;
+  };
+  sesiones: {
+    total_sesiones: number;
+    sesiones_programadas: number;
+    sesiones_confirmadas: number;
+    sesiones_en_curso: number;
+    sesiones_completadas: number;
+    sesiones_canceladas: number;
+    sesiones_no_asistio: number;
+    sesiones_futuras: number;
+    sesiones_mes_pasado: number;
+  };
+  tareas: {
+    total_tareas: number;
+    tareas_pendientes: number;
+    tareas_en_progreso: number;
+    tareas_completadas: number;
+    tareas_vencidas: number;
+    tareas_canceladas: number;
+    tareas_semana: number;
+    promedio_puntos_tarea: number;
+  };
+  sesiones_por_tipo: Array<{
+    tipo_sesion: string;
+    total: number;
+  }>;
+  tareas_por_tipo: Array<{
+    tipo_tarea: string;
+    total: number;
+  }>;
+  actividad_reciente: Array<{
+    fecha: string;
+    tipo: string;
+    cantidad: number;
+  }>;
+  psicologos_mas_activos: Array<{
+    nombres: string;
+    apellidos: string;
+    total_sesiones: number;
+    sesiones_completadas: number;
+    total_pacientes: number;
+  }>;
+  fecha_consulta: string;
+}
+
 class AdminService {
   async obtenerPsicologos(): Promise<Psicologo[]> {
     try {
@@ -427,6 +495,109 @@ class AdminService {
         estadisticas_por_accion: [],
         estadisticas_diarias: [],
         total_acciones: 0
+      };
+    }
+  }
+
+  // Obtener estadísticas generales del centro
+  async obtenerEstadisticasGenerales(): Promise<EstadisticasGenerales> {
+    try {
+      const response = await api.get('/admin/estadisticas-generales');
+      return response.data?.data || {
+        resumen: {
+          total_usuarios: 0,
+          total_pacientes: 0,
+          total_sesiones: 0,
+          total_tareas: 0,
+          pacientes_activos: 0,
+          sesiones_programadas: 0,
+          tareas_pendientes: 0
+        },
+        usuarios_por_rol: [],
+        pacientes: {
+          total_pacientes: 0,
+          pacientes_activos: 0,
+          pacientes_inactivos: 0,
+          pacientes_alta: 0,
+          pacientes_derivados: 0,
+          pacientes_nuevos_mes: 0,
+          promedio_puntos: 0
+        },
+        sesiones: {
+          total_sesiones: 0,
+          sesiones_programadas: 0,
+          sesiones_confirmadas: 0,
+          sesiones_en_curso: 0,
+          sesiones_completadas: 0,
+          sesiones_canceladas: 0,
+          sesiones_no_asistio: 0,
+          sesiones_futuras: 0,
+          sesiones_mes_pasado: 0
+        },
+        tareas: {
+          total_tareas: 0,
+          tareas_pendientes: 0,
+          tareas_en_progreso: 0,
+          tareas_completadas: 0,
+          tareas_vencidas: 0,
+          tareas_canceladas: 0,
+          tareas_semana: 0,
+          promedio_puntos_tarea: 0
+        },
+        sesiones_por_tipo: [],
+        tareas_por_tipo: [],
+        actividad_reciente: [],
+        psicologos_mas_activos: [],
+        fecha_consulta: new Date().toISOString()
+      };
+    } catch (error: any) {
+      console.error('Error al obtener estadísticas generales:', error);
+      return {
+        resumen: {
+          total_usuarios: 0,
+          total_pacientes: 0,
+          total_sesiones: 0,
+          total_tareas: 0,
+          pacientes_activos: 0,
+          sesiones_programadas: 0,
+          tareas_pendientes: 0
+        },
+        usuarios_por_rol: [],
+        pacientes: {
+          total_pacientes: 0,
+          pacientes_activos: 0,
+          pacientes_inactivos: 0,
+          pacientes_alta: 0,
+          pacientes_derivados: 0,
+          pacientes_nuevos_mes: 0,
+          promedio_puntos: 0
+        },
+        sesiones: {
+          total_sesiones: 0,
+          sesiones_programadas: 0,
+          sesiones_confirmadas: 0,
+          sesiones_en_curso: 0,
+          sesiones_completadas: 0,
+          sesiones_canceladas: 0,
+          sesiones_no_asistio: 0,
+          sesiones_futuras: 0,
+          sesiones_mes_pasado: 0
+        },
+        tareas: {
+          total_tareas: 0,
+          tareas_pendientes: 0,
+          tareas_en_progreso: 0,
+          tareas_completadas: 0,
+          tareas_vencidas: 0,
+          tareas_canceladas: 0,
+          tareas_semana: 0,
+          promedio_puntos_tarea: 0
+        },
+        sesiones_por_tipo: [],
+        tareas_por_tipo: [],
+        actividad_reciente: [],
+        psicologos_mas_activos: [],
+        fecha_consulta: new Date().toISOString()
       };
     }
   }

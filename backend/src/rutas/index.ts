@@ -40,11 +40,19 @@ router.use('/servicios', serviciosRoutes);
 // Rutas de administración
 router.use('/admin', adminRoutes);
 
-
 // Rutas de recepcionista
 router.use('/recepcionista', recepcionistaRoutes);
 
 // Rutas de sesiones terapéuticas
 router.use('/sesiones-terapeuticas', sesionesTerapeuticasRoutes);
+
+// Rutas de agenda PDF
+router.use('/agenda-pdf', agendaPDFRoutes);
+
+// Rutas de reportes de progreso
+router.use('/reportes', reportesRoutes);
+
+// Rutas de recordatorios
+router.use('/recordatorios', recordatoriosRoutes);
 
 export default router; 

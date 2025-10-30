@@ -8,6 +8,7 @@ import ServicioPsicologo from './ServicioPsicologo';
 import RespuestaTarea from './RespuestaTarea';
 import DisponibilidadMensual from './DisponibilidadMensual';
 import MensajeChat from './MensajeChat';
+import ReporteProgreso from './ReporteProgreso';
 
 // Configurar asociaciones
 
@@ -179,6 +180,39 @@ MensajeChat.belongsTo(Usuario, {
   as: 'destinatario',
 });
 
+// Paciente - ReporteProgreso (1:N)
+Paciente.hasMany(ReporteProgreso, {
+  foreignKey: 'paciente_id',
+  as: 'reportes_progreso',
+});
+
+ReporteProgreso.belongsTo(Paciente, {
+  foreignKey: 'paciente_id',
+  as: 'paciente',
+});
+
+// Usuario - ReporteProgreso (1:N) - Psicólogo
+Usuario.hasMany(ReporteProgreso, {
+  foreignKey: 'psicologo_id',
+  as: 'reportes_progreso',
+});
+
+ReporteProgreso.belongsTo(Usuario, {
+  foreignKey: 'psicologo_id',
+  as: 'psicologo',
+});
+
+// Sesion - ReporteProgreso (1:N)
+Sesion.hasMany(ReporteProgreso, {
+  foreignKey: 'sesion_id',
+  as: 'reportes',
+});
+
+ReporteProgreso.belongsTo(Sesion, {
+  foreignKey: 'sesion_id',
+  as: 'sesion',
+});
+
 export {
   Rol,
   Usuario,
@@ -190,4 +224,5 @@ export {
   RespuestaTarea,
   DisponibilidadMensual,
   MensajeChat,
+  ReporteProgreso,
 }; 

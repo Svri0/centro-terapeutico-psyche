@@ -7,7 +7,7 @@ export interface MensajeChatAttributes {
   contenido: string;
   remitente_id: string;
   destinatario_id: string;
-  tipo: 'psicologo' | 'paciente' | 'admin';
+  tipo: 'psicologo' | 'paciente' | 'admin' | 'recepcionista';
   leido: boolean;
   created_at: Date;
   updated_at: Date;
@@ -22,7 +22,7 @@ class MensajeChat extends Model<MensajeChatAttributes, MensajeChatCreationAttrib
   public contenido!: string;
   public remitente_id!: string;
   public destinatario_id!: string;
-  public tipo!: 'psicologo' | 'paciente' | 'admin';
+  public tipo!: 'psicologo' | 'paciente' | 'admin' | 'recepcionista';
   public leido!: boolean;
   public created_at!: Date;
   public updated_at!: Date;
@@ -62,7 +62,7 @@ MensajeChat.init(
       },
     },
     tipo: {
-      type: DataTypes.ENUM('psicologo', 'paciente', 'admin'),
+      type: DataTypes.ENUM('psicologo', 'paciente', 'admin', 'recepcionista'),
       allowNull: false,
     },
     leido: {

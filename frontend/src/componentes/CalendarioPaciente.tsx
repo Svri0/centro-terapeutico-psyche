@@ -21,6 +21,7 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
   const [vistaActual, setVistaActual] = useState<'calendario' | 'semana'>('calendario');
   const [semanaSeleccionada, setSemanaSeleccionada] = useState<Date | null>(null);
   const [mostrarPerfil, setMostrarPerfil] = useState(false);
+  const [pacienteRealId, setPacienteRealId] = useState<string>('');
   
   // Sistema de notificaciones
   const {
@@ -58,6 +59,15 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
       // Obtener psicólogo asignado al paciente desde la API
       const psicologoAsignado = await pacientesService.obtenerPsicologoAsignado();
       setPsicologo(psicologoAsignado);
+      
+      // Por ahora usar el ID del usuario directamente
+      // TODO: Implementar obtención del ID real del paciente cuando el endpoint esté funcionando
+      setPacienteRealId(pacienteId);
+      
+      // Cargar disponibilidad del psicólogo
+      if (psicologoAsignado?.id) {
+        await cargarDisponibilidadDelMes(psicologoAsignado.id);
+      }
     } catch (err: any) {
       console.error('Error al cargar datos:', err);
       setError(err.message || 'Error al cargar los datos');
@@ -66,18 +76,19 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
     }
   };
 
-  const cargarDisponibilidadDelMes = async () => {
-    if (!psicologo?.id) return;
+  const cargarDisponibilidadDelMes = async (psicologoId?: string) => {
+    const idPsicologo = psicologoId || psicologo?.id;
+    if (!idPsicologo) return;
     
     try {
       console.log('🔍 Cargando disponibilidad para:', {
-        psicologoId: psicologo.id,
+        psicologoId: idPsicologo,
         mes: mesActual.getMonth() + 1,
         año: mesActual.getFullYear()
       });
       
       const disponibilidadData = await disponibilidadMensualService.obtenerDisponibilidadPaciente(
-        psicologo.id, 
+        idPsicologo, 
         mesActual.getMonth() + 1, 
         mesActual.getFullYear()
       );
@@ -302,9 +313,39 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
         return;
       }
 
+      // Validar que el horario esté disponible
+      const horariosDisponibles = generarHorariosDisponibles(diaSeleccionado);
+      if (!horariosDisponibles.includes(horario)) {
+        mostrarError(
+          'Horario No Disponible',
+          'El horario seleccionado ya no está disponible. Por favor, selecciona otro horario.'
+        );
+        return;
+      }
+
+      // Validar que la fecha no sea en el pasado
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+      const fechaSeleccionada = new Date(diaSeleccionado);
+      fechaSeleccionada.setHours(0, 0, 0, 0);
+      
+      if (fechaSeleccionada < hoy) {
+        mostrarError(
+          'Fecha Inválida',
+          'No puedes agendar una cita en una fecha pasada. Por favor, selecciona una fecha futura.'
+        );
+        return;
+      }
+
+      console.log('🔍 Frontend - Iniciando agendamiento de cita');
+      console.log('🔍 Frontend - Horario seleccionado:', horario);
+      console.log('🔍 Frontend - Día seleccionado:', diaSeleccionado);
+      console.log('🔍 Frontend - Psicólogo:', psicologo);
+      console.log('🔍 Frontend - Paciente ID:', pacienteRealId || pacienteId);
+      
       console.log('Agendando cita:', {
         psicologoId: psicologo.id,
-        pacienteId,
+        pacienteId: pacienteRealId || pacienteId,
         dia: diaSeleccionado.toLocaleDateString('es-ES', { 
           weekday: 'long', 
           year: 'numeric', 
@@ -319,17 +360,24 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
       const horaFin = new Date(horaInicio.getTime() + 60 * 60 * 1000); // +60 minutos
       const horaFinStr = horaFin.toTimeString().slice(0, 5);
       
-      // Crear la cita usando el servicio
-      await citasService.crearCita({
-        paciente_id: pacienteId,
+      const datosCita = {
+        paciente_id: pacienteRealId || pacienteId,
         fecha: diaSeleccionado.toISOString().split('T')[0],
         hora_inicio: horario,
         hora_fin: horaFinStr,
         duracion_minutos: 60,
-        tipo_sesion: 'individual',
-        modalidad: 'presencial',
+        tipo_sesion: 'presencial' as const,
+        modalidad: 'presencial' as const,
         notas_paciente: 'Cita agendada desde el calendario del paciente'
-      });
+      };
+
+      console.log('🔍 Frontend - Datos de cita preparados:', datosCita);
+      console.log('🔍 Frontend - Llamando a citasService.crearCita...');
+      
+      // Crear la cita usando el servicio
+      await citasService.crearCita(datosCita);
+      
+      console.log('✅ Frontend - Cita creada exitosamente');
       
       mostrarExito(
         'Cita Agendada',
@@ -341,11 +389,32 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
       setDiaSeleccionado(null);
       setSemanaSeleccionada(null);
     } catch (err: any) {
-      console.error('Error al agendar cita:', err);
-      mostrarError(
-        'Error al Agendar Cita',
-        err.message || 'No se pudo agendar la cita. Por favor, inténtalo nuevamente.'
-      );
+      console.error('❌ Frontend - Error al agendar cita:', err);
+      console.error('❌ Frontend - Stack trace:', err.stack);
+      console.error('❌ Frontend - Error completo:', {
+        message: err.message,
+        name: err.name,
+        response: err.response,
+        config: err.config
+      });
+      
+      // Manejar errores específicos del backend
+      if (err.message && err.message.includes('ya existe')) {
+        mostrarError(
+          'Cita Duplicada',
+          'Ya tienes una cita programada en esa fecha y hora. Por favor, selecciona otro horario.'
+        );
+      } else if (err.message && err.message.includes('no disponible')) {
+        mostrarError(
+          'Horario Ocupado',
+          'El horario seleccionado ya está ocupado. Por favor, elige otro horario disponible.'
+        );
+      } else {
+        mostrarError(
+          'Error al Agendar Cita',
+          err.message || 'No se pudo agendar la cita. Por favor, inténtalo nuevamente.'
+        );
+      }
     }
   };
 

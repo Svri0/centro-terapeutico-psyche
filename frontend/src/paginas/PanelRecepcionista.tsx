@@ -5,10 +5,12 @@ import AgendaRecepcionista from '../componentes/AgendaRecepcionista';
 import GestionPacientesRecepcionista from '../componentes/GestionPacientesRecepcionista';
 import GestionPagos from '../componentes/GestionPagos';
 import ReportesRecepcionista from '../componentes/ReportesRecepcionista';
+import ChatRecepcionista from '../componentes/ChatRecepcionista';
 import Logo from '../componentes/Logo';
+import { useSessionTimeout } from '../hooks/useSessionTimeout';
 
 const PanelRecepcionista: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'agenda' | 'pacientes' | 'pagos' | 'reportes'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'agenda' | 'pacientes' | 'pagos' | 'reportes' | 'chat'>('dashboard');
   const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -19,6 +21,9 @@ const PanelRecepcionista: React.FC = () => {
   });
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [message, setMessage] = useState('');
+
+  // Hook para timeout de sesión (15 minutos)
+  useSessionTimeout(15); // 15 minutos
 
   useEffect(() => {
     const user = authService.getUser();
@@ -81,7 +86,8 @@ const PanelRecepcionista: React.FC = () => {
     { id: 'agenda', label: 'Agenda', icon: '📅' },
     { id: 'pacientes', label: 'Pacientes', icon: '👥' },
     { id: 'pagos', label: 'Pagos', icon: '💳' },
-    { id: 'reportes', label: 'Reportes', icon: '📈' }
+    { id: 'reportes', label: 'Reportes', icon: '📈' },
+    { id: 'chat', label: 'Chat', icon: '💬' }
   ];
 
   return (
@@ -165,6 +171,7 @@ const PanelRecepcionista: React.FC = () => {
           {activeTab === 'pacientes' && <GestionPacientesRecepcionista />}
           {activeTab === 'pagos' && <GestionPagos />}
           {activeTab === 'reportes' && <ReportesRecepcionista />}
+          {activeTab === 'chat' && <ChatRecepcionista recepcionistaId={userData?.id || ''} />}
         </div>
       </main>
 

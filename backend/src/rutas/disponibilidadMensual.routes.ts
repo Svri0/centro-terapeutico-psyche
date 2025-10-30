@@ -12,7 +12,7 @@ import { verificarToken, verificarRol } from '../middleware/auth.middleware';
 
 const router = Router();
 
-// Rutas para psicólogos y pacientes
+// Rutas para psicólogos
 router.get('/psicologo/:psicologoId', verificarToken, verificarRol(['psicologo', 'admin', 'paciente']), obtenerDisponibilidadMensual);
 router.post('/', verificarToken, verificarRol(['psicologo', 'admin']), crearDisponibilidadMensual);
 router.put('/:id', verificarToken, verificarRol(['psicologo', 'admin']), actualizarDisponibilidadMensual);

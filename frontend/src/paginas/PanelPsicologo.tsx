@@ -12,6 +12,7 @@ import GestionDisponibilidadMensual from '../componentes/GestionDisponibilidadMe
 import { TIPOS_SERVICIOS, TipoServicio, obtenerCategorias } from '../utilidades/tipos-servicios';
 import { obtenerServicios, crearServicio, eliminarServicio, ServicioPsicologo } from '../servicios/servicios.service';
 import Notificacion from '../componentes/Notificacion';
+import GestionReportesProgreso from '../componentes/GestionReportesProgreso';
 
 import { PacienteCreado } from '../servicios/pacientes.service';
 import { actualizarPerfilPsicologo, subirImagenReal } from '../servicios/usuarios.service';
@@ -88,6 +89,9 @@ const PanelPsicologo: React.FC = () => {
 
   const user = authService.getUser();
   console.log('🔍 Debug - PanelPsicologo - user:', user);
+
+  // Hook para timeout de sesión (15 minutos)
+  useSessionTimeout(15); // 15 minutos
 
   useEffect(() => {
     // Cargar datos reales
@@ -709,6 +713,12 @@ const PanelPsicologo: React.FC = () => {
         )}
 
 
+        {activeTab === 'pdf' && (
+          <div className="space-y-6">
+            <GenerarAgendaPDF psicologoId={user?.id || ''} />
+          </div>
+        )}
+
         {activeTab === 'perfil' && (
           <div className="bg-white rounded-lg shadow">
             <div className="px-6 py-4 border-b border-gray-200">
@@ -1048,6 +1058,7 @@ const PanelPsicologo: React.FC = () => {
 
       {/* Componente de Notificación */}
       <Notificacion
+        titulo={notificacion.tipo === 'exito' ? 'Éxito' : notificacion.tipo === 'error' ? 'Error' : notificacion.tipo === 'advertencia' ? 'Advertencia' : 'Información'}
         mensaje={notificacion.mensaje}
         tipo={notificacion.tipo}
         visible={notificacion.visible}

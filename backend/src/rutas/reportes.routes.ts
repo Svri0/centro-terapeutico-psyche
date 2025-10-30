@@ -3,21 +3,37 @@ import {
   obtenerTodosReportes, 
   obtenerReportePorId, 
   crearReporte, 
-  exportarReporte 
-} from '../controladores';
+  exportarReporte,
+  actualizarReporte,
+  eliminarReporte,
+  obtenerReportesPorPaciente
+} from '../controladores/reportes.controlador';
+import { verificarToken, verificarRol } from '../middleware/auth.middleware';
 
 const router = Router();
 
-// GET /reportes
-router.get('/', obtenerTodosReportes);
+// Aplicar middleware de autenticación a todas las rutas
+router.use(verificarToken);
 
-// GET /reportes/:id
-router.get('/:id', obtenerReportePorId);
+// GET /reportes - Solo psicólogos y admins
+router.get('/', verificarRol(['psicologo', 'admin']), obtenerTodosReportes);
 
-// POST /reportes
-router.post('/', crearReporte);
+// POST /reportes - Crear un nuevo reporte
+router.post('/', verificarRol(['psicologo', 'admin']), crearReporte);
 
-// GET /reportes/:id/exportar
-router.get('/:id/exportar', exportarReporte);
+// GET /reportes/paciente/:paciente_id - Obtener reportes de un paciente específico
+router.get('/paciente/:paciente_id', verificarRol(['psicologo', 'admin']), obtenerReportesPorPaciente);
+
+// GET /reportes/:id/exportar - Exportar un reporte (debe estar antes de /:id)
+router.get('/:id/exportar', verificarRol(['psicologo', 'admin']), exportarReporte);
+
+// GET /reportes/:id - Obtener un reporte por ID
+router.get('/:id', verificarRol(['psicologo', 'admin']), obtenerReportePorId);
+
+// PUT /reportes/:id - Actualizar un reporte
+router.put('/:id', verificarRol(['psicologo', 'admin']), actualizarReporte);
+
+// DELETE /reportes/:id - Eliminar un reporte
+router.delete('/:id', verificarRol(['psicologo', 'admin']), eliminarReporte);
 
 export default router; 

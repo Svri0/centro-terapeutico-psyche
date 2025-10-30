@@ -140,8 +140,16 @@ const EstadisticasPsicologo: React.FC<EstadisticasPsicologoProps> = ({ psicologo
     );
   }
 
+  const user = authService.getUser();
+
   return (
     <div className="space-y-6">
+      {/* Botón de exportar PDF */}
+      <ExportarDashboardPDF 
+        estadisticas={estadisticas}
+        nombrePsicologo={`${user?.nombres} ${user?.apellidos}`}
+      />
+      
       {/* Estadísticas principales */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg shadow-sm border border-amber-100 p-4">

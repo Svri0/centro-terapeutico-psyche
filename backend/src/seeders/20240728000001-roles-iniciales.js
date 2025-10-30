@@ -56,24 +56,6 @@ module.exports = {
     if (!existingIds.includes(3)) {
       rolesToInsert.push({
         id: 3,
-        nombre: 'paciente',
-        descripcion: 'Paciente con acceso limitado a su información',
-        permisos: JSON.stringify({
-          perfil: ['leer', 'actualizar'],
-          sesiones: ['leer'],
-          tareas: ['leer', 'actualizar'],
-          mensajes: ['crear', 'leer'],
-          archivos: ['leer']
-        }),
-        activo: true,
-        created_at: new Date(),
-        updated_at: new Date()
-      });
-    }
-
-    if (!existingIds.includes(4)) {
-      rolesToInsert.push({
-        id: 4,
         nombre: 'recepcionista',
         descripcion: 'Personal de recepción con acceso a gestión de agenda, pacientes y pagos',
         permisos: JSON.stringify({
@@ -84,6 +66,24 @@ module.exports = {
           mensajes: ['crear', 'leer'],
           reportes: ['leer'],
           dashboard: ['leer']
+        }),
+        activo: true,
+        created_at: new Date(),
+        updated_at: new Date()
+      });
+    }
+
+    if (!existingIds.includes(4)) {
+      rolesToInsert.push({
+        id: 4,
+        nombre: 'paciente',
+        descripcion: 'Paciente con acceso limitado a su información',
+        permisos: JSON.stringify({
+          perfil: ['leer', 'actualizar'],
+          sesiones: ['leer'],
+          tareas: ['leer', 'actualizar'],
+          mensajes: ['crear', 'leer'],
+          archivos: ['leer']
         }),
         activo: true,
         created_at: new Date(),
