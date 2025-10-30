@@ -136,16 +136,16 @@ export const obtenerPacientesRecepcionista = async (req: Request, res: Response)
     const replacements: any = {};
 
     if (busqueda) {
-      query += ` AND (u.nombres ILIKE :busqueda OR u.apellidos ILIKE :busqueda OR u.email ILIKE :busqueda OR p.numero_ficha ILIKE :busqueda)`;
+      query += ' AND (u.nombres ILIKE :busqueda OR u.apellidos ILIKE :busqueda OR u.email ILIKE :busqueda OR p.numero_ficha ILIKE :busqueda)';
       replacements.busqueda = `%${busqueda}%`;
     }
 
     if (estado) {
-      query += ` AND p.estado = :estado`;
+      query += ' AND p.estado = :estado';
       replacements.estado = estado;
     }
 
-    query += ` ORDER BY u.apellidos, u.nombres`;
+    query += ' ORDER BY u.apellidos, u.nombres';
 
     const [pacientes] = await sequelize.query(query, { replacements }) as [any[], unknown];
 
