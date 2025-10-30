@@ -1,6 +1,6 @@
 import api from './api';
 
-// Usar el puerto correcto 3002
+// Usar el puerto correcto 3006
 const API_BASE_URL = 'http://localhost:3002/api/v1';
 
 export interface DisponibilidadMensual {

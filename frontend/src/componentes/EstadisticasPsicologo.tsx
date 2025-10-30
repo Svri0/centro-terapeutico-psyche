@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { citasService } from '../servicios/citas.service';
 import { authService } from '../servicios/auth.service';
-import ExportarDashboardPDF from './ExportarDashboardPDF';
+import HorasTrabajadas from './HorasTrabajadas';
+import CrearCitasPrueba from './CrearCitasPrueba';
 
 interface EstadisticasPsicologoProps {
   psicologoId: string;
@@ -43,7 +44,36 @@ const EstadisticasPsicologo: React.FC<EstadisticasPsicologoProps> = ({ psicologo
       setLoading(true);
       setError(null);
 
-      const sesiones = await citasService.obtenerCitasPsicologo(psicologoId);
+      const citas = await citasService.obtenerCitas();
+      
+      console.log('🔍 Citas obtenidas:', citas);
+      console.log('🔍 Tipo de citas:', typeof citas);
+      console.log('🔍 Es array:', Array.isArray(citas));
+      
+      // Verificar que las citas tengan la estructura esperada
+      if (!Array.isArray(citas)) {
+        console.error('Las citas no son un array:', citas);
+        setError('Error en el formato de datos de citas');
+        return;
+      }
+      
+      // Si no hay citas, mostrar estadísticas vacías
+      if (citas.length === 0) {
+        console.log('📝 No hay citas disponibles');
+        setEstadisticas({
+          totalCitas: 0,
+          citasHoy: 0,
+          citasEstaSemana: 0,
+          citasEsteMes: 0,
+          pacientesActivos: 0,
+          citasCompletadas: 0,
+          citasCanceladas: 0,
+          citasNoShow: 0,
+          promedioDuracion: 0
+        });
+        setLoading(false);
+        return;
+      }
       
       const hoy = new Date().toISOString().split('T')[0];
       const inicioSemana = new Date();
@@ -55,23 +85,36 @@ const EstadisticasPsicologo: React.FC<EstadisticasPsicologoProps> = ({ psicologo
       const inicioMesStr = inicioMes.toISOString().split('T')[0];
 
       const estadisticasCalculadas: Estadisticas = {
-        totalCitas: sesiones.length,
-        citasHoy: sesiones.filter(s => s.fecha === hoy).length,
-        citasEstaSemana: sesiones.filter(s => s.fecha >= inicioSemanaStr).length,
-        citasEsteMes: sesiones.filter(s => s.fecha >= inicioMesStr).length,
-        pacientesActivos: new Set(sesiones.map(s => s.paciente_id)).size,
-        citasCompletadas: sesiones.filter(s => s.estado === 'completada').length,
-        citasCanceladas: sesiones.filter(s => s.estado === 'cancelada').length,
-        citasNoShow: sesiones.filter(s => s.estado === 'no_show').length,
-        promedioDuracion: sesiones.length > 0 
-          ? Math.round(sesiones.reduce((sum, s) => sum + s.duracion_minutos, 0) / sesiones.length)
+        totalCitas: citas.length,
+        citasHoy: citas.filter(c => c.fecha === hoy).length,
+        citasEstaSemana: citas.filter(c => c.fecha >= inicioSemanaStr).length,
+        citasEsteMes: citas.filter(c => c.fecha >= inicioMesStr).length,
+        pacientesActivos: new Set(citas.map(c => c.paciente_id)).size,
+        citasCompletadas: citas.filter(c => c.estado === 'completada').length,
+        citasCanceladas: citas.filter(c => c.estado === 'cancelada').length,
+        citasNoShow: citas.filter(c => c.estado === 'no_show').length,
+        promedioDuracion: citas.length > 0 
+          ? Math.round(citas.reduce((sum, c) => sum + c.duracion_minutos, 0) / citas.length)
           : 0
       };
 
       setEstadisticas(estadisticasCalculadas);
     } catch (err: any) {
       console.error('Error al cargar estadísticas:', err);
-      setError(err.message || 'Error al cargar las estadísticas');
+      console.error('Error completo:', err);
+      console.error('Error response:', err.response);
+      console.error('Error message:', err.message);
+      
+      // Manejar diferentes tipos de errores
+      if (err.message && err.message.includes('obtenerCitasPsicologo')) {
+        setError('Error: Método no encontrado en el servicio de citas');
+      } else if (err.response && err.response.status === 500) {
+        setError('Error del servidor: Problema interno del backend');
+      } else if (err.response && err.response.status === 401) {
+        setError('Error de autenticación: Token inválido o expirado');
+      } else {
+        setError(err.message || 'Error al cargar las estadísticas');
+      }
     } finally {
       setLoading(false);
     }
@@ -253,6 +296,16 @@ const EstadisticasPsicologo: React.FC<EstadisticasPsicologoProps> = ({ psicologo
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Componente temporal para crear citas de prueba */}
+      <div className="mt-8">
+        <CrearCitasPrueba />
+      </div>
+
+      {/* Sección de Horas Trabajadas */}
+      <div className="mt-8">
+        <HorasTrabajadas psicologoId={psicologoId} />
       </div>
     </div>
   );

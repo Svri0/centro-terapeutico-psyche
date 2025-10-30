@@ -295,3 +295,11 @@ export const obtenerMiPaciente = async (req: Request, res: Response) => {
 };
 
 
+
+
+
+
+
+
+
+

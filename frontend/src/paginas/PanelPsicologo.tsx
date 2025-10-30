@@ -6,10 +6,9 @@ import AvatarSelector from '../componentes/AvatarSelector';
 import ImageUpload from '../componentes/ImageUpload';
 import GestionTareas from '../componentes/GestionTareas';
 import CitasPsicologo from '../componentes/CitasPsicologo';
+import AgendaPsicologo from '../componentes/AgendaPsicologo';
 import EstadisticasPsicologo from '../componentes/EstadisticasPsicologo';
 import GestionDisponibilidadMensual from '../componentes/GestionDisponibilidadMensual';
-import ChatPsicologo from '../componentes/ChatPsicologo';
-import { GenerarAgendaPDF } from '../componentes/GenerarAgendaPDF';
 import { TIPOS_SERVICIOS, TipoServicio, obtenerCategorias } from '../utilidades/tipos-servicios';
 import { obtenerServicios, crearServicio, eliminarServicio, ServicioPsicologo } from '../servicios/servicios.service';
 import Notificacion from '../componentes/Notificacion';
@@ -17,15 +16,15 @@ import GestionReportesProgreso from '../componentes/GestionReportesProgreso';
 
 import { PacienteCreado } from '../servicios/pacientes.service';
 import { actualizarPerfilPsicologo, subirImagenReal } from '../servicios/usuarios.service';
-import { AVATARS_ANIMALES } from '../assets/avatars/default-avatars';
-import { useSessionTimeout } from '../hooks/useSessionTimeout';
+import Logo from '../componentes/Logo';
+import { getAvatarById, AVATARS_ANIMALES } from '../assets/avatars/default-avatars';
 
 interface Sesion {
   id: string;
   paciente: string;
   fecha: string;
   hora: string;
-  estado: 'programada' | 'en_curso' | 'completada' | 'cancelada' | 'confirmada' | 'en_progreso' | 'no_show';
+  estado: 'programada' | 'en_curso' | 'completada' | 'cancelada';
   notas?: string;
 }
 
@@ -41,7 +40,7 @@ const PanelPsicologo: React.FC = () => {
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'pacientes' | 'citas' | 'disponibilidad' | 'servicios' | 'tareas' | 'reportes' | 'chat' | 'pdf' | 'perfil'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'pacientes' | 'citas' | 'disponibilidad' | 'servicios' | 'tareas' | 'perfil'>('dashboard');
   const [perfilData, setPerfilData] = useState({
     nombres: '',
     apellidos: '',
@@ -71,6 +70,7 @@ const PanelPsicologo: React.FC = () => {
 
 
   // Frase motivadora elegante
+  const fraseMotivadora = "Transformando vidas a través de la salud mental";
 
   // Función para mostrar notificaciones
   const mostrarNotificacion = (mensaje: string, tipo: 'exito' | 'error' | 'advertencia' | 'info') => {
@@ -115,7 +115,7 @@ const PanelPsicologo: React.FC = () => {
       
       // Si el usuario tiene un avatar_url, verificar si es uno de los avatares predefinidos
       if (user.avatar_url) {
-        const avatar = AVATARS_ANIMALES.find((av: any) => av.url === user.avatar_url);
+        const avatar = AVATARS_ANIMALES.find(av => av.url === user.avatar_url);
         if (avatar) {
           setSelectedAvatarId(avatar.id);
         }
@@ -130,39 +130,39 @@ const PanelPsicologo: React.FC = () => {
       // Importar el servicio de citas dinámicamente para evitar dependencias circulares
       const { citasService } = await import('../servicios/citas.service');
       
-      // Obtener sesiones del psicólogo
-      const sesionesData = await citasService.obtenerCitasPsicologo(user.id);
+      // Obtener citas del psicólogo
+      const citasData = await citasService.obtenerCitas();
       
       // Obtener fecha de hoy
       const hoy = new Date().toISOString().split('T')[0];
       
-      // Filtrar sesiones de hoy
-      const sesionesHoy = sesionesData.filter(sesion => sesion.fecha === hoy);
+      // Filtrar citas de hoy
+      const citasHoy = citasData.filter(cita => cita.fecha === hoy);
       
-      // Filtrar sesiones realizadas (completadas o en progreso)
-      const sesionesRealizadas = sesionesData.filter(sesion => 
-        sesion.estado === 'completada' || sesion.estado === 'en_progreso'
+      // Filtrar citas realizadas (completadas o en progreso)
+      const citasRealizadas = citasData.filter(cita => 
+        cita.estado === 'completada' || cita.estado === 'en_progreso'
       );
       
-      setSesionesHoy(sesionesHoy.map(sesion => ({
-        id: sesion.id,
-        paciente: `${sesion.paciente_nombres} ${sesion.paciente_apellidos}`,
-        fecha: sesion.fecha,
-        hora: sesion.hora_inicio,
-        estado: sesion.estado,
-        notas: sesion.notas_psicologo
+      setSesionesHoy(citasHoy.map(cita => ({
+        id: cita.id,
+        paciente: `${cita.paciente_nombres} ${cita.paciente_apellidos}`,
+        fecha: cita.fecha,
+        hora: cita.hora_inicio,
+        estado: cita.estado,
+        notas: cita.notas_psicologo
       })));
       
-      setSesionesRealizadas(sesionesRealizadas.map(sesion => ({
-        id: sesion.id,
-        paciente: `${sesion.paciente_nombres} ${sesion.paciente_apellidos}`,
-        fecha: sesion.fecha,
-        hora: sesion.hora_inicio,
-        estado: sesion.estado,
-        notas: sesion.notas_psicologo
+      setSesionesRealizadas(citasRealizadas.map(cita => ({
+        id: cita.id,
+        paciente: `${cita.paciente_nombres} ${cita.paciente_apellidos}`,
+        fecha: cita.fecha,
+        hora: cita.hora_inicio,
+        estado: cita.estado,
+        notas: cita.notas_psicologo
       })));
       
-      setTotalSesiones(sesionesData.length);
+      setTotalSesiones(citasData.length);
     } catch (error) {
       console.error('Error al cargar datos:', error);
       setSesionesHoy([]);
@@ -382,7 +382,7 @@ const PanelPsicologo: React.FC = () => {
             {/* Logo y título - Izquierda */}
             <div className="flex items-center">
               <div className="flex-shrink-0 mr-4">
-                <img src="/psyche.svg" alt="de psyche" className="h-20 w-auto" />
+                <img src="/src/img/psyche.svg" alt="de psyche" className="h-20 w-auto" />
               </div>
               <div>
                 <h1 className="text-lg font-light text-gray-800 tracking-widest uppercase">
@@ -449,9 +449,6 @@ const PanelPsicologo: React.FC = () => {
                 {activeTab === 'disponibilidad' && 'Disponibilidad'}
                 {activeTab === 'servicios' && 'Mis Servicios'}
                 {activeTab === 'tareas' && 'Gestión de Tareas'}
-                {activeTab === 'reportes' && 'Reportes de Progreso'}
-                {activeTab === 'chat' && 'Chat'}
-                {activeTab === 'pdf' && 'Generar PDF'}
                 {activeTab === 'perfil' && 'Mi Perfil'}
               </h2>
               <p className="mt-1 text-xs font-semibold text-gray-600 tracking-widest uppercase truncate">
@@ -461,9 +458,6 @@ const PanelPsicologo: React.FC = () => {
                 {activeTab === 'disponibilidad' && 'Configura tus horarios disponibles'}
                 {activeTab === 'servicios' && 'Configura los servicios que ofreces a los pacientes'}
                 {activeTab === 'tareas' && 'Asigna y gestiona tareas para tus pacientes'}
-                {activeTab === 'reportes' && 'Registra y consulta reportes de seguimiento'}
-                {activeTab === 'chat' && 'Comunícate en tiempo real con tus pacientes'}
-                {activeTab === 'pdf' && 'Descarga tu agenda en formato PDF'}
                 {activeTab === 'perfil' && 'Actualiza tu información personal y profesional'}
               </p>
             </div>
@@ -536,36 +530,6 @@ const PanelPsicologo: React.FC = () => {
                 }`}
               >
                 Tareas
-              </button>
-              <button
-                onClick={() => setActiveTab('reportes')}
-                className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
-                  activeTab === 'reportes'
-                    ? 'border-amber-500 text-amber-600'
-                    : 'border-transparent text-gray-500 hover:text-amber-600 hover:border-amber-300'
-                }`}
-              >
-                📊 Reportes
-              </button>
-              <button
-                onClick={() => setActiveTab('chat')}
-                className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
-                  activeTab === 'chat'
-                    ? 'border-amber-500 text-amber-600'
-                    : 'border-transparent text-gray-500 hover:text-amber-600 hover:border-amber-300'
-                }`}
-              >
-                Chat
-              </button>
-              <button
-                onClick={() => setActiveTab('pdf')}
-                className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
-                  activeTab === 'pdf'
-                    ? 'border-amber-500 text-amber-600'
-                    : 'border-transparent text-gray-500 hover:text-amber-600 hover:border-amber-300'
-                }`}
-              >
-                PDF
               </button>
               <button
                 onClick={() => setActiveTab('perfil')}
@@ -669,7 +633,7 @@ const PanelPsicologo: React.FC = () => {
         )}
 
         {activeTab === 'citas' && (
-          <CitasPsicologo />
+          <AgendaPsicologo />
         )}
 
         {activeTab === 'disponibilidad' && (
@@ -748,15 +712,6 @@ const PanelPsicologo: React.FC = () => {
           <GestionTareas />
         )}
 
-        {activeTab === 'reportes' && (
-          <GestionReportesProgreso />
-        )}
-
-        {activeTab === 'chat' && (
-          <div className="space-y-6">
-            <ChatPsicologo psicologoId={user?.id || ''} />
-          </div>
-        )}
 
         {activeTab === 'pdf' && (
           <div className="space-y-6">

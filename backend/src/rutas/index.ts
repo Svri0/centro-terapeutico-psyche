@@ -3,15 +3,13 @@ import autenticacionRoutes from './autenticacion.routes';
 import usuariosRoutes from './usuarios.routes';
 import pacientesRoutes from './pacientes.routes';
 import tareasRoutes from './tareas.routes';
-import sesionesRoutes from './sesiones.routes';
+import citasRoutes from './citas.routes';
+import disponibilidadRoutes from './disponibilidad.routes';
 import disponibilidadMensualRoutes from './disponibilidadMensual.routes';
 import serviciosRoutes from './servicios.routes';
 import adminRoutes from './admin.routes';
 import recepcionistaRoutes from './recepcionista.routes';
-import chatRoutes from './chat.rutas';
-import agendaPDFRoutes from './agendaPDF.routes';
-import reportesRoutes from './reportes.routes';
-import recordatoriosRoutes from './recordatorios.routes';
+import sesionesTerapeuticasRoutes from './sesiones-terapeuticas.routes';
 
 const router = Router();
 
@@ -27,8 +25,11 @@ router.use('/pacientes', pacientesRoutes);
 // Rutas de tareas
 router.use('/tareas', tareasRoutes);
 
-// Rutas de sesiones
-router.use('/sesiones', sesionesRoutes);
+// Rutas de citas
+router.use('/citas', citasRoutes);
+
+// Rutas de disponibilidad (semanal - legacy)
+router.use('/disponibilidad', disponibilidadRoutes);
 
 // Rutas de disponibilidad mensual
 router.use('/disponibilidad-mensual', disponibilidadMensualRoutes);
@@ -42,8 +43,8 @@ router.use('/admin', adminRoutes);
 // Rutas de recepcionista
 router.use('/recepcionista', recepcionistaRoutes);
 
-// Rutas de chat
-router.use('/chat', chatRoutes);
+// Rutas de sesiones terapéuticas
+router.use('/sesiones-terapeuticas', sesionesTerapeuticasRoutes);
 
 // Rutas de agenda PDF
 router.use('/agenda-pdf', agendaPDFRoutes);
