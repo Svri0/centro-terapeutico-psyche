@@ -179,3 +179,11 @@ export const crearPacienteBasico = async (req: Request, res: Response) => {
 };
 
 
+
+
+
+
+
+
+
+

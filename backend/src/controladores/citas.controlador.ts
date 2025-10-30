@@ -363,7 +363,7 @@ export const crearCita = async (req: Request, res: Response) => {
           duracionMinutos: duracion_minutos,
           tipoSesion: tipo_sesion,
           modalidad,
-          notasPaciente: notas_paciente
+          notasPaciente: notas_paciente || null
         }
       }
     ) as [any[], unknown];

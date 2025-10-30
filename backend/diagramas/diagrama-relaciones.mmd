@@ -1,0 +1,262 @@
+
+erDiagram
+    ROLES {
+        int id PK
+        string nombre
+        string descripcion
+        boolean activo
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    USUARIOS {
+        uuid id PK
+        string email UK
+        string password_hash
+        string nombres
+        string apellidos
+        string telefono
+        date fecha_nacimiento
+        enum genero
+        string avatar_url
+        string especialidad
+        string descripcion
+        string codigo_sbs
+        int rol_id FK
+        boolean activo
+        boolean email_verificado
+        string token_activacion
+        timestamp token_activacion_expira
+        timestamp ultimo_acceso
+        jsonb configuracion
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+    
+    PACIENTES {
+        uuid id PK
+        uuid usuario_id FK
+        uuid psicologo_id FK
+        string nombres
+        string apellidos
+        string email
+        string telefono
+        date fecha_nacimiento
+        enum genero
+        string numero_ficha UK
+        string rut UK
+        text direccion
+        string contacto_emergencia_nombre
+        string contacto_emergencia_telefono
+        string contacto_emergencia_relacion
+        jsonb diagnosticos
+        jsonb etiquetas
+        jsonb estrategias_autorregulacion
+        int puntos_acumulados
+        enum estado
+        date fecha_ingreso
+        date fecha_alta
+        text observaciones
+        jsonb antecedentes_medicos
+        jsonb medicacion_actual
+        jsonb alergias
+        jsonb condiciones_cronicas
+        jsonb historial_psiquiatrico
+        text observaciones_medicas
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+    
+    SESIONES {
+        uuid id PK
+        uuid paciente_id FK
+        uuid psicologo_id FK
+        date fecha_sesion
+        time hora_inicio
+        time hora_fin
+        enum tipo_sesion
+        enum estado
+        text notas_psicologo
+        text objetivos_sesion
+        text tareas_asignadas
+        text observaciones
+        decimal costo_sesion
+        boolean pagada
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+    
+    TAREAS {
+        uuid id PK
+        uuid paciente_id FK
+        uuid psicologo_id FK
+        uuid sesion_id FK
+        string titulo
+        text descripcion
+        enum tipo_tarea
+        enum estado
+        date fecha_vencimiento
+        date fecha_completada
+        text instrucciones
+        jsonb recursos_adicionales
+        int puntos_recompensa
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+    
+    RESPUESTAS_TAREAS {
+        uuid id PK
+        uuid tarea_id FK
+        uuid paciente_id FK
+        text respuesta_texto
+        jsonb respuesta_archivos
+        jsonb respuesta_multimedia
+        enum estado
+        text comentarios_psicologo
+        int puntos_obtenidos
+        timestamp fecha_respuesta
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+    
+    SERVICIOS_PSICOLOGO {
+        uuid id PK
+        uuid psicologo_id FK
+        string nombre_servicio
+        text descripcion
+        decimal precio
+        int duracion_minutos
+        enum tipo_servicio
+        boolean activo
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+    
+    DISPONIBILIDAD_MENSUAL {
+        uuid id PK
+        uuid psicologo_id FK
+        int año
+        int mes
+        jsonb disponibilidad_dias
+        jsonb horarios_disponibles
+        text observaciones
+        boolean activo
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+    
+    LOGS_AUDITORIA {
+        uuid id PK
+        uuid usuario_id FK
+        string accion
+        string tabla_afectada
+        uuid registro_id
+        jsonb datos_anteriores
+        jsonb datos_nuevos
+        string ip_address
+        string user_agent
+        timestamp created_at
+    }
+    
+    CHAT {
+        uuid id PK
+        uuid paciente_id FK
+        uuid psicologo_id FK
+        text mensaje
+        enum tipo_mensaje
+        boolean leido
+        timestamp fecha_envio
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+    
+    MENSAJES {
+        uuid id PK
+        uuid chat_id FK
+        uuid remitente_id FK
+        text contenido
+        enum tipo_contenido
+        jsonb archivos_adjuntos
+        boolean leido
+        timestamp fecha_envio
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+    
+    CITAS {
+        uuid id PK
+        uuid paciente_id FK
+        uuid psicologo_id FK
+        date fecha_cita
+        time hora_inicio
+        time hora_fin
+        enum estado
+        text motivo
+        text observaciones
+        decimal costo
+        boolean confirmada
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+    
+    DISPONIBILIDAD_PSICOLOGOS {
+        uuid id PK
+        uuid psicologo_id FK
+        int dia_semana
+        time hora_inicio
+        time hora_fin
+        boolean activo
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+    
+    DISPONIBILIDAD_SEMANAL {
+        uuid id PK
+        uuid psicologo_id FK
+        int semana
+        int año
+        jsonb horarios_disponibles
+        text observaciones
+        boolean activo
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    %% Relaciones
+    ROLES ||--o{ USUARIOS : "tiene"
+    USUARIOS ||--o{ PACIENTES : "es_usuario"
+    USUARIOS ||--o{ PACIENTES : "asigna_psicologo"
+    USUARIOS ||--o{ SESIONES : "realiza"
+    USUARIOS ||--o{ TAREAS : "asigna"
+    USUARIOS ||--o{ SERVICIOS_PSICOLOGO : "ofrece"
+    USUARIOS ||--o{ DISPONIBILIDAD_MENSUAL : "tiene"
+    USUARIOS ||--o{ LOGS_AUDITORIA : "genera"
+    USUARIOS ||--o{ CHAT : "participa"
+    USUARIOS ||--o{ MENSAJES : "envia"
+    USUARIOS ||--o{ CITAS : "tiene"
+    USUARIOS ||--o{ DISPONIBILIDAD_PSICOLOGOS : "tiene"
+    USUARIOS ||--o{ DISPONIBILIDAD_SEMANAL : "tiene"
+    
+    PACIENTES ||--o{ SESIONES : "tiene"
+    PACIENTES ||--o{ TAREAS : "recibe"
+    PACIENTES ||--o{ RESPUESTAS_TAREAS : "responde"
+    PACIENTES ||--o{ CHAT : "participa"
+    PACIENTES ||--o{ CITAS : "tiene"
+    
+    SESIONES ||--o{ TAREAS : "genera"
+    
+    TAREAS ||--o{ RESPUESTAS_TAREAS : "tiene"
+    
+    CHAT ||--o{ MENSAJES : "contiene"

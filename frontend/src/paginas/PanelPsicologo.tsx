@@ -6,6 +6,7 @@ import AvatarSelector from '../componentes/AvatarSelector';
 import ImageUpload from '../componentes/ImageUpload';
 import GestionTareas from '../componentes/GestionTareas';
 import CitasPsicologo from '../componentes/CitasPsicologo';
+import AgendaPsicologo from '../componentes/AgendaPsicologo';
 import EstadisticasPsicologo from '../componentes/EstadisticasPsicologo';
 import GestionDisponibilidadMensual from '../componentes/GestionDisponibilidadMensual';
 import { TIPOS_SERVICIOS, TipoServicio, obtenerCategorias } from '../utilidades/tipos-servicios';
@@ -126,7 +127,7 @@ const PanelPsicologo: React.FC = () => {
       const { citasService } = await import('../servicios/citas.service');
       
       // Obtener citas del psicólogo
-      const citasData = await citasService.obtenerCitasPsicologo(user.id);
+      const citasData = await citasService.obtenerCitas();
       
       // Obtener fecha de hoy
       const hoy = new Date().toISOString().split('T')[0];
@@ -628,7 +629,7 @@ const PanelPsicologo: React.FC = () => {
         )}
 
         {activeTab === 'citas' && (
-          <CitasPsicologo />
+          <AgendaPsicologo />
         )}
 
         {activeTab === 'disponibilidad' && (

@@ -34,7 +34,7 @@ const CitasPsicologo: React.FC = () => {
       setLoading(true);
       setError(null);
       console.log('🔍 Cargando citas para psicólogo:', psicologoId);
-      const citasData = await citasService.obtenerCitasPsicologo(psicologoId);
+      const citasData = await citasService.obtenerCitas();
       console.log('✅ Citas cargadas exitosamente:', citasData);
       
       // Debug: verificar que los datos del paciente estén presentes

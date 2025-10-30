@@ -107,15 +107,6 @@ pids
 *.key
 *.crt
 
-# 📊 Uploads folder (if contains sensitive files)
-uploads/
-*.jpg
-*.jpeg
-*.png
-*.gif
-*.pdf
-*.doc
-*.docx
 
 # 🎮 Game save files
 *.save

@@ -9,6 +9,7 @@ import disponibilidadMensualRoutes from './disponibilidadMensual.routes';
 import serviciosRoutes from './servicios.routes';
 import adminRoutes from './admin.routes';
 import recepcionistaRoutes from './recepcionista.routes';
+import sesionesTerapeuticasRoutes from './sesiones-terapeuticas.routes';
 
 const router = Router();
 
@@ -42,5 +43,8 @@ router.use('/admin', adminRoutes);
 
 // Rutas de recepcionista
 router.use('/recepcionista', recepcionistaRoutes);
+
+// Rutas de sesiones terapéuticas
+router.use('/sesiones-terapeuticas', sesionesTerapeuticasRoutes);
 
 export default router; 

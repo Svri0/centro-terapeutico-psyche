@@ -1,44 +1,41 @@
 import { api } from './api';
 
-// Tipos para las citas
 export interface Cita {
   id: string;
+  paciente_id: string;
+  paciente_nombres: string;
+  paciente_apellidos: string;
+  paciente_rut: string;
+  paciente_telefono: string;
+  psicologo_id: string;
+  psicologo_nombres: string;
+  psicologo_apellidos: string;
+  fecha: string;
+  hora_inicio: string;
+  hora_fin: string;
+  duracion_minutos: number;
+  estado: 'programada' | 'confirmada' | 'en_curso' | 'completada' | 'cancelada' | 'no_asistio';
+  tipo_sesion: string;
+  modalidad: 'presencial' | 'online';
+  notas?: string;
+  notas_psicologo?: string;
+  recordatorio_enviado: boolean;
+  pago_estado: 'pendiente' | 'pagado';
+  pago_monto?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CrearCitaData {
   paciente_id: string;
   psicologo_id: string;
   fecha: string;
   hora_inicio: string;
   hora_fin: string;
   duracion_minutos: number;
-  estado: 'programada' | 'confirmada' | 'en_progreso' | 'completada' | 'cancelada' | 'no_show';
-  tipo_sesion: 'individual' | 'grupal' | 'familiar' | 'evaluacion' | 'seguimiento';
-  modalidad: 'presencial' | 'virtual' | 'telefonica';
-  notas_paciente?: string;
-  notas_psicologo?: string;
-  recordatorio_enviado: boolean;
-  created_at: string;
-  updated_at: string;
-  
-  // Campos adicionales para mostrar información del paciente
-  paciente_nombres?: string;
-  paciente_apellidos?: string;
-  paciente_email?: string;
-  numero_ficha?: string;
-  
-  // Campos adicionales para mostrar información del psicólogo
-  psicologo_nombres?: string;
-  psicologo_apellidos?: string;
-  psicologo_email?: string;
-}
-
-export interface CrearCitaData {
-  paciente_id: string;
-  fecha: string;
-  hora_inicio: string;
-  hora_fin: string;
-  duracion_minutos: number;
-  tipo_sesion: 'individual' | 'grupal' | 'familiar' | 'evaluacion' | 'seguimiento';
-  modalidad: 'presencial' | 'virtual' | 'telefonica';
-  notas_paciente?: string;
+  tipo_sesion: string;
+  modalidad: 'presencial' | 'online';
+  notas?: string;
 }
 
 export interface ActualizarCitaData {
@@ -46,142 +43,251 @@ export interface ActualizarCitaData {
   hora_inicio?: string;
   hora_fin?: string;
   duracion_minutos?: number;
-  tipo_sesion?: 'individual' | 'grupal' | 'familiar' | 'evaluacion' | 'seguimiento';
-  modalidad?: 'presencial' | 'virtual' | 'telefonica';
-  notas_paciente?: string;
+  tipo_sesion?: string;
+  modalidad?: 'presencial' | 'online';
+  notas?: string;
   notas_psicologo?: string;
+  estado?: 'programada' | 'confirmada' | 'en_curso' | 'completada' | 'cancelada' | 'no_asistio';
+  pago_estado?: 'pendiente' | 'pagado';
+  pago_monto?: number;
 }
 
-// Respuestas de la API
-interface CitasResponse {
-  success: boolean;
-  message: string;
-  data: Cita[];
-}
-
-interface CitaResponse {
-  success: boolean;
-  message: string;
-  data: Cita;
-}
-
-// Servicio de citas
 class CitasService {
-  // Obtener citas del psicólogo autenticado
-  async obtenerCitasPsicologo(psicologoId: string): Promise<Cita[]> {
+  // Obtener todas las citas del psicólogo logueado
+  async obtenerCitas(): Promise<Cita[]> {
     try {
       const response = await api.get('/citas/psicologo');
-      return response.data.data || [];
-    } catch (error: any) {
-      console.error('Error al obtener citas del psicólogo:', error);
-      throw new Error(error.response?.data?.message || 'Error al obtener las citas');
-    }
-  }
-
-  // Obtener citas del paciente autenticado
-  async obtenerCitasPaciente(): Promise<any> {
-    try {
-      console.log('🔍 Servicio - Haciendo petición a /citas/paciente');
-      const response = await api.get('/citas/paciente');
-      console.log('🔍 Servicio - Respuesta completa:', response);
-      console.log('🔍 Servicio - response.data:', response.data);
-      console.log('🔍 Servicio - response.data.data:', response.data.data);
+      console.log('🔍 Respuesta completa del backend:', response);
+      console.log('🔍 response.data:', response.data);
+      console.log('🔍 response.data.data:', response.data.data);
       
-      // Devolver la respuesta completa para diagnóstico
-      return response;
-    } catch (error: any) {
-      console.error('❌ Servicio - Error al obtener citas del paciente:', error);
-      throw new Error(error.response?.data?.message || 'Error al obtener las citas');
+      // Verificar si la respuesta tiene la estructura esperada
+      if (response.data && response.data.data) {
+        return response.data.data;
+      } else if (Array.isArray(response.data)) {
+        return response.data;
+      } else {
+        console.error('Estructura de respuesta inesperada:', response.data);
+        return [];
+      }
+    } catch (error) {
+      console.error('Error al obtener citas:', error);
+      throw error;
     }
   }
 
-  // Obtener una cita específica
-  async obtenerCita(citaId: string): Promise<Cita> {
+  // Obtener todas las citas del paciente logueado
+  async obtenerCitasPaciente(): Promise<Cita[]> {
     try {
-      const response = await api.get(`/citas/${citaId}`);
-      return response.data.data;
-    } catch (error: any) {
-      console.error('Error al obtener cita:', error);
-      throw new Error(error.response?.data?.message || 'Error al obtener la cita');
+      console.log('🔍 [CITAS SERVICE] Llamando a obtenerCitasPaciente - Timestamp:', new Date().toISOString());
+      const response = await api.get(`/citas/paciente?t=${Date.now()}`);
+      console.log('🔍 [CITAS SERVICE] Respuesta del backend para paciente:', response);
+      console.log('🔍 [CITAS SERVICE] response.data:', response.data);
+      console.log('🔍 [CITAS SERVICE] response.data.data:', response.data.data);
+      
+      // Verificar si la respuesta tiene la estructura esperada
+      if (response.data && response.data.data) {
+        console.log('✅ [CITAS SERVICE] Devolviendo response.data.data:', response.data.data);
+        return response.data.data;
+      } else if (Array.isArray(response.data)) {
+        console.log('✅ [CITAS SERVICE] Devolviendo response.data (array):', response.data);
+        return response.data;
+      } else {
+        console.error('❌ [CITAS SERVICE] Estructura de respuesta inesperada:', response.data);
+        return [];
+      }
+    } catch (error) {
+      console.error('❌ [CITAS SERVICE] Error al obtener citas del paciente:', error);
+      throw error;
     }
   }
 
-  // Crear una nueva cita
-  async crearCita(citaData: CrearCitaData): Promise<Cita> {
+  // Obtener citas del día
+  async obtenerCitasDelDia(fecha: string): Promise<Cita[]> {
     try {
-      console.log('🔍 Enviando datos de cita:', citaData);
-      console.log('🔍 URL de la API:', api.defaults.baseURL);
-      const response = await api.post('/citas', citaData);
-      console.log('✅ Respuesta exitosa:', response.data);
-      return response.data.data;
-    } catch (error: any) {
-      console.error('❌ Error al crear cita:', error);
-      console.error('❌ Detalles del error:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        url: error.config?.url,
-        method: error.config?.method
+      // Filtrar las citas del psicólogo por fecha
+      const todasLasCitas = await this.obtenerCitas();
+      return todasLasCitas.filter(cita => cita.fecha === fecha);
+    } catch (error) {
+      console.error('Error al obtener citas del día:', error);
+      throw error;
+    }
+  }
+
+  // Obtener citas por rango de fechas
+  async obtenerCitasPorRango(fechaInicio: string, fechaFin: string): Promise<Cita[]> {
+    try {
+      // Filtrar las citas del psicólogo por rango de fechas
+      const todasLasCitas = await this.obtenerCitas();
+      return todasLasCitas.filter(cita => {
+        const fechaCita = new Date(cita.fecha);
+        const inicio = new Date(fechaInicio);
+        const fin = new Date(fechaFin);
+        return fechaCita >= inicio && fechaCita <= fin;
       });
-      throw new Error(error.response?.data?.message || 'Error al crear la cita');
+    } catch (error) {
+      console.error('Error al obtener citas por rango:', error);
+      throw error;
     }
   }
 
-  // Actualizar una cita
-  async actualizarCita(citaId: string, citaData: ActualizarCitaData): Promise<Cita> {
+  // Obtener citas de la semana actual
+  async obtenerCitasSemanaActual(): Promise<Cita[]> {
     try {
-      const response = await api.put(`/citas/${citaId}`, citaData);
+      const hoy = new Date();
+      const inicioSemana = new Date(hoy);
+      inicioSemana.setDate(hoy.getDate() - hoy.getDay() + 1); // Lunes
+      
+      const finSemana = new Date(inicioSemana);
+      finSemana.setDate(inicioSemana.getDate() + 6); // Domingo
+      
+      return await this.obtenerCitasPorRango(
+        inicioSemana.toISOString().split('T')[0],
+        finSemana.toISOString().split('T')[0]
+      );
+    } catch (error) {
+      console.error('Error al obtener citas de la semana:', error);
+      throw error;
+    }
+  }
+
+  // Obtener citas del mes actual
+  async obtenerCitasMesActual(): Promise<Cita[]> {
+    try {
+      const hoy = new Date();
+      const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+      const finMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+      
+      return await this.obtenerCitasPorRango(
+        inicioMes.toISOString().split('T')[0],
+        finMes.toISOString().split('T')[0]
+      );
+    } catch (error) {
+      console.error('Error al obtener citas del mes:', error);
+      throw error;
+    }
+  }
+
+  // Obtener una cita por ID
+  async obtenerCitaPorId(id: string): Promise<Cita> {
+    try {
+      const response = await api.get(`/citas/${id}`);
       return response.data.data;
-    } catch (error: any) {
+    } catch (error) {
+      console.error('Error al obtener cita:', error);
+      throw error;
+    }
+  }
+
+  // Crear nueva cita
+  async crearCita(data: CrearCitaData): Promise<Cita> {
+    try {
+      const response = await api.post('/citas', data);
+      return response.data.data;
+    } catch (error) {
+      console.error('Error al crear cita:', error);
+      throw error;
+    }
+  }
+
+  // Actualizar cita
+  async actualizarCita(id: string, data: ActualizarCitaData): Promise<Cita> {
+    try {
+      const response = await api.put(`/citas/${id}`, data);
+      return response.data.data;
+    } catch (error) {
       console.error('Error al actualizar cita:', error);
-      throw new Error(error.response?.data?.message || 'Error al actualizar la cita');
+      throw error;
     }
   }
 
-  // Actualizar estado de una cita
-  async actualizarEstadoCita(citaId: string, nuevoEstado: string): Promise<Cita> {
+  // Actualizar estado de cita
+  async actualizarEstado(id: string, data: { estado: string }): Promise<Cita> {
     try {
-      const response = await api.patch(`/citas/${citaId}/estado`, { estado: nuevoEstado });
+      const response = await api.patch(`/citas/${id}/estado`, data);
       return response.data.data;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error al actualizar estado de cita:', error);
-      throw new Error(error.response?.data?.message || 'Error al actualizar el estado de la cita');
+      throw error;
     }
   }
 
-  // Cancelar una cita
-  async cancelarCita(citaId: string): Promise<void> {
+  // Cancelar cita
+  async cancelarCita(id: string, motivo?: string): Promise<Cita> {
     try {
-      await api.delete(`/citas/${citaId}`);
-    } catch (error: any) {
+      const response = await api.patch(`/citas/${id}/cancelar`, { motivo });
+      return response.data.data;
+    } catch (error) {
       console.error('Error al cancelar cita:', error);
-      throw new Error(error.response?.data?.message || 'Error al cancelar la cita');
+      throw error;
+    }
+  }
+
+  // Eliminar cita
+  async eliminarCita(id: string): Promise<void> {
+    try {
+      await api.delete(`/citas/${id}`);
+    } catch (error) {
+      console.error('Error al eliminar cita:', error);
+      throw error;
+    }
+  }
+
+  // Obtener estadísticas de citas
+  async obtenerEstadisticas(_fechaInicio?: string, _fechaFin?: string): Promise<any> {
+    try {
+      const response = await api.get('/citas/psicologos/estadisticas-citas');
+      return response.data.data;
+    } catch (error) {
+      console.error('Error al obtener estadísticas:', error);
+      throw error;
+    }
+  }
+
+  // Enviar recordatorio de cita
+  async enviarRecordatorio(id: string): Promise<void> {
+    try {
+      // TODO: Implementar endpoint de recordatorio en el backend
+      console.log('Enviando recordatorio para cita:', id);
+      // await api.post(`/citas/${id}/recordatorio`);
+    } catch (error) {
+      console.error('Error al enviar recordatorio:', error);
+      throw error;
     }
   }
 
   // Obtener disponibilidad del psicólogo
-  async obtenerDisponibilidad(psicologoId: string, fecha: string): Promise<any[]> {
+  async obtenerDisponibilidad(psicologoId: string, fecha: string): Promise<any> {
     try {
       const response = await api.get(`/citas/psicologos/${psicologoId}/disponibilidad`, {
         params: { fecha }
       });
-      return response.data.data || [];
-    } catch (error: any) {
+      return response.data.data;
+    } catch (error) {
       console.error('Error al obtener disponibilidad:', error);
-      throw new Error(error.response?.data?.message || 'Error al obtener la disponibilidad');
+      throw error;
     }
   }
 
-  // Obtener estadísticas de citas del psicólogo
-  async obtenerEstadisticas(psicologoId: string): Promise<any> {
+  // Verificar conflictos de horario
+  async verificarConflictos(psicologoId: string, fecha: string, _horaInicio: string, _horaFin: string, _citaId?: string): Promise<boolean> {
     try {
-      const response = await api.get('/citas/psicologos/estadisticas-citas');
-      return response.data.data;
-    } catch (error: any) {
-      console.error('Error al obtener estadísticas:', error);
-      throw new Error(error.response?.data?.message || 'Error al obtener las estadísticas');
+      // TODO: Implementar endpoint de verificación de conflictos en el backend
+      console.log('Verificando conflictos para psicólogo:', psicologoId, 'fecha:', fecha);
+      return false; // Por ahora retorna false (sin conflictos)
+      // const response = await api.post('/citas/verificar-conflictos', {
+      //   psicologo_id: psicologoId,
+      //   fecha,
+      //   hora_inicio: horaInicio,
+      //   hora_fin: horaFin,
+      //   cita_id: citaId // Para excluir la cita actual en caso de edición
+      // });
+      // return response.data.tiene_conflictos;
+    } catch (error) {
+      console.error('Error al verificar conflictos:', error);
+      throw error;
     }
   }
 }
 
-export const citasService = new CitasService(); 
+export const citasService = new CitasService();
