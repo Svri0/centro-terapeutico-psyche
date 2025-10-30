@@ -162,11 +162,16 @@ class DisponibilidadMensualService {
     horariosPorDia: Record<string, { inicio: string; fin: string }>;
   }> {
     try {
+      console.log('🔍 Debug - obtenerDisponibilidadPaciente - Iniciando:', { psicologoId, mes, año });
+      
       const disponibilidad = await this.obtenerDisponibilidadMensual(psicologoId, mes, año);
+      console.log('🔍 Debug - obtenerDisponibilidadPaciente - Disponibilidad raw:', disponibilidad);
       
       const diasDisponibles = disponibilidad
         .filter(d => d.activo)
         .map(d => d.fecha);
+      
+      console.log('🔍 Debug - obtenerDisponibilidadPaciente - Días disponibles:', diasDisponibles);
       
       const horariosPorDia = disponibilidad
         .filter(d => d.activo)
@@ -178,12 +183,18 @@ class DisponibilidadMensualService {
           return acc;
         }, {} as Record<string, { inicio: string; fin: string }>);
 
-      return {
+      console.log('🔍 Debug - obtenerDisponibilidadPaciente - Horarios por día:', horariosPorDia);
+
+      const resultado = {
         diasDisponibles,
         horariosPorDia
       };
+      
+      console.log('🔍 Debug - obtenerDisponibilidadPaciente - Resultado final:', resultado);
+      
+      return resultado;
     } catch (error: any) {
-      console.error('Error al obtener disponibilidad para paciente:', error);
+      console.error('❌ Error al obtener disponibilidad para paciente:', error);
       throw new Error(error.response?.data?.mensaje || 'Error al obtener la disponibilidad');
     }
   }

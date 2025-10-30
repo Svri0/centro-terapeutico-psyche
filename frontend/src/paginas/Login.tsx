@@ -131,7 +131,7 @@ const Login: React.FC = () => {
             {/* Logo oficial "de psyche" */}
                          <div className="mx-auto mb-6">
                                                <div className="flex justify-center mb-1">
-                  <img src="/src/img/psyche.svg" alt="de psyche" className="h-32 w-auto" />
+                  <img src="/psyche.svg" alt="de psyche" className="h-32 w-auto" />
                 </div>
                 <div className="text-sm text-amber-600 tracking-wider uppercase mt-1">
                   Centro Terapéutico

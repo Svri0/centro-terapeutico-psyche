@@ -2,8 +2,154 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Chatbot from '../componentes/Chatbot';
 
+interface FormData {
+  nombreCompleto: string;
+  telefono: string;
+  email: string;
+  preferenciaSesion: string;
+  horarioPreferido: string;
+  motivoConsulta: string;
+}
+
+interface FormErrors {
+  nombreCompleto?: string;
+  telefono?: string;
+  email?: string;
+  preferenciaSesion?: string;
+  horarioPreferido?: string;
+  motivoConsulta?: string;
+}
+
 const Inicio: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [formData, setFormData] = useState<FormData>({
+    nombreCompleto: '',
+    telefono: '',
+    email: '',
+    preferenciaSesion: '',
+    horarioPreferido: '',
+    motivoConsulta: ''
+  });
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Funciones de validación
+  const validateEmail = (email: string): boolean => {
+    // Acepta emails que terminen en .com o .cl
+    const emailRegex = /^[a-zA-Z0-9._%+-ñáéíóúüÑÁÉÍÓÚÜ]+@[a-zA-Z0-9.-]+\.(com|cl)$/;
+    return emailRegex.test(email);
+  };
+
+  const validatePhone = (phone: string): boolean => {
+    // Formato chileno: +56 9 1234 5678 o 9 1234 5678
+    const phoneRegex = /^(\+56\s?)?[2-9]\d{8}$/;
+    return phoneRegex.test(phone.replace(/\s/g, ''));
+  };
+
+  // Validación en tiempo real para cada campo
+  const validateField = (field: keyof FormData, value: string): string | undefined => {
+    switch (field) {
+      case 'email':
+        if (!value.trim()) {
+          return 'El email es requerido';
+        } else if (!validateEmail(value)) {
+          return 'Ingresa un email válido que termine en .com o .cl (ej: usuario@gmail.com)';
+        }
+        break;
+      case 'telefono':
+        if (!value.trim()) {
+          return 'El teléfono es requerido';
+        } else if (!validatePhone(value)) {
+          return 'Ingresa un número de teléfono válido (ej: +56 9 1234 5678)';
+        }
+        break;
+      case 'nombreCompleto':
+        if (!value.trim()) {
+          return 'El nombre completo es requerido';
+        } else if (value.trim().length < 2) {
+          return 'El nombre debe tener al menos 2 caracteres';
+        }
+        break;
+      case 'motivoConsulta':
+        if (!value.trim()) {
+          return 'El motivo de consulta es requerido';
+        } else if (value.trim().length < 10) {
+          return 'El motivo de consulta debe tener al menos 10 caracteres';
+        }
+        break;
+      case 'preferenciaSesion':
+        if (!value) {
+          return 'Selecciona una preferencia de sesión';
+        }
+        break;
+      case 'horarioPreferido':
+        if (!value) {
+          return 'Selecciona un horario preferido';
+        }
+        break;
+    }
+    return undefined;
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    // Validar todos los campos usando la función validateField
+    (Object.keys(formData) as Array<keyof FormData>).forEach(field => {
+      const error = validateField(field, formData[field]);
+      if (error) {
+        newErrors[field] = error;
+      }
+    });
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleInputChange = (field: keyof FormData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Validar el campo en tiempo real
+    const error = validateField(field, value);
+    setErrors(prev => ({ ...prev, [field]: error }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    try {
+      // Aquí iría la lógica para enviar el formulario
+      console.log('Datos del formulario:', formData);
+      
+      // Simular envío
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Mostrar mensaje de éxito
+      alert('¡Solicitud enviada exitosamente! Nos pondremos en contacto contigo pronto.');
+      
+      // Limpiar formulario
+      setFormData({
+        nombreCompleto: '',
+        telefono: '',
+        email: '',
+        preferenciaSesion: '',
+        horarioPreferido: '',
+        motivoConsulta: ''
+      });
+      
+    } catch (error) {
+      console.error('Error al enviar formulario:', error);
+      alert('Hubo un error al enviar tu solicitud. Por favor, inténtalo de nuevo.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
@@ -212,7 +358,7 @@ const Inicio: React.FC = () => {
             <div className="relative lg:pt-16 animate-fade-in-right">
               <div className="shadow-2xl">
                 <img 
-                  src="/fotorecepcion.png" 
+                  src="/recepcion.png" 
                   alt="Recepción de Dentro de Psyché" 
                   className="w-full h-64 sm:h-80 lg:h-96 object-cover"
                 />
@@ -432,50 +578,122 @@ const Inicio: React.FC = () => {
           </div>
           
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg">
-            <form className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Nombre Completo</label>
-                  <input type="text" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent" placeholder="Tu nombre completo" />
+                  <input 
+                    type="text" 
+                    value={formData.nombreCompleto}
+                    onChange={(e) => handleInputChange('nombreCompleto', e.target.value)}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent ${
+                      errors.nombreCompleto ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="Tu nombre completo" 
+                  />
+                  {errors.nombreCompleto && (
+                    <p className="mt-1 text-sm text-red-600">{errors.nombreCompleto}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
-                  <input type="tel" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent" placeholder="+56 9 1234 5678" />
+                  <input 
+                    type="tel" 
+                    value={formData.telefono}
+                    onChange={(e) => handleInputChange('telefono', e.target.value)}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent ${
+                      errors.telefono ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="+56 9 1234 5678" 
+                  />
+                  {errors.telefono && (
+                    <p className="mt-1 text-sm text-red-600">{errors.telefono}</p>
+                  )}
                 </div>
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                <input type="email" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent" placeholder="tu@email.com" />
+                <input 
+                  type="email" 
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent ${
+                    errors.email ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="ejemplo@gmail.com" 
+                />
+                {errors.email && (
+                  <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                )}
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Preferencia de Sesión</label>
-                  <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent">
-                    <option>Presencial</option>
-                    <option>Online</option>
-                    <option>Sin preferencia</option>
+                  <select 
+                    value={formData.preferenciaSesion}
+                    onChange={(e) => handleInputChange('preferenciaSesion', e.target.value)}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent ${
+                      errors.preferenciaSesion ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  >
+                    <option value="">Selecciona una opción</option>
+                    <option value="presencial">Presencial</option>
+                    <option value="online">Online</option>
+                    <option value="sin-preferencia">Sin preferencia</option>
                   </select>
+                  {errors.preferenciaSesion && (
+                    <p className="mt-1 text-sm text-red-600">{errors.preferenciaSesion}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Horario Preferido</label>
-                  <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent">
-                    <option>Mañana (8:00 - 12:00)</option>
-                    <option>Tarde (12:00 - 18:00)</option>
-                    <option>Noche (18:00 - 20:00)</option>
+                  <select 
+                    value={formData.horarioPreferido}
+                    onChange={(e) => handleInputChange('horarioPreferido', e.target.value)}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent ${
+                      errors.horarioPreferido ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  >
+                    <option value="">Selecciona un horario</option>
+                    <option value="manana">Mañana (8:00 - 12:00)</option>
+                    <option value="tarde">Tarde (12:00 - 18:00)</option>
+                    <option value="noche">Noche (18:00 - 20:00)</option>
                   </select>
+                  {errors.horarioPreferido && (
+                    <p className="mt-1 text-sm text-red-600">{errors.horarioPreferido}</p>
+                  )}
                 </div>
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Motivo de Consulta</label>
-                <textarea rows={4} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent" placeholder="Cuéntanos brevemente qué te motiva a buscar apoyo psicológico..."></textarea>
+                <textarea 
+                  rows={4} 
+                  value={formData.motivoConsulta}
+                  onChange={(e) => handleInputChange('motivoConsulta', e.target.value)}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent ${
+                    errors.motivoConsulta ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Cuéntanos brevemente qué te motiva a buscar apoyo psicológico..." 
+                />
+                {errors.motivoConsulta && (
+                  <p className="mt-1 text-sm text-red-600">{errors.motivoConsulta}</p>
+                )}
               </div>
               
               <div className="text-center">
-                <button type="submit" className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-8 py-4 rounded-full text-lg font-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
-                  Enviar Solicitud
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className={`px-8 py-4 rounded-full text-lg font-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 ${
+                    isSubmitting 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600'
+                  } text-white`}
+                >
+                  {isSubmitting ? 'Enviando...' : 'Enviar Solicitud'}
                 </button>
               </div>
             </form>
@@ -599,7 +817,7 @@ const Inicio: React.FC = () => {
             <div className="text-center sm:col-span-2 lg:col-span-1">
               <div className="w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 rounded-full overflow-hidden mx-auto mb-4 lg:mb-6 shadow-lg">
                 <img 
-                  src="/psicologa 2.png" 
+                  src="/psicologa2.png" 
                   alt="Dra. Patricia Herrera" 
                   className="w-full h-full object-cover"
                 />
@@ -672,7 +890,7 @@ const Inicio: React.FC = () => {
                   <img src="/cruzblanca.png" alt="Cruz Blanca" className="h-12 sm:h-14 lg:h-16 w-auto opacity-70 hover:opacity-100 transition-opacity duration-300" />
                 </div>
                 <div className="flex justify-center">
-                  <img src="/banmedica.png" alt="Banmédica" className="h-12 sm:h-14 lg:h-16 w-auto opacity-70 hover:opacity-100 transition-opacity duration-300" />
+                  <img src="/banmedica-logo.png" alt="Banmédica" className="h-12 sm:h-14 lg:h-16 w-auto opacity-70 hover:opacity-100 transition-opacity duration-300" />
                 </div>
                 <div className="flex justify-center">
                   <img src="/consalud.png" alt="Consalud" className="h-12 sm:h-14 lg:h-16 w-auto opacity-70 hover:opacity-100 transition-opacity duration-300" />
@@ -684,7 +902,7 @@ const Inicio: React.FC = () => {
                   <img src="/vidatres.png" alt="Vida Tres" className="h-12 sm:h-14 lg:h-16 w-auto opacity-70 hover:opacity-100 transition-opacity duration-300" />
                 </div>
                 <div className="flex justify-center">
-                  <img src="/masvida.png" alt="Nueva Masvida" className="h-12 sm:h-14 lg:h-16 w-auto opacity-70 hover:opacity-100 transition-opacity duration-300" />
+                  <img src="/masvida.png" alt="Masvida" className="h-12 sm:h-14 lg:h-16 w-auto opacity-70 hover:opacity-100 transition-opacity duration-300" />
                 </div>
               </div>
               
@@ -697,7 +915,7 @@ const Inicio: React.FC = () => {
                   <img src="/cruzblanca.png" alt="Cruz Blanca" className="h-12 sm:h-14 lg:h-16 w-auto opacity-70 hover:opacity-100 transition-opacity duration-300" />
                 </div>
                 <div className="flex justify-center">
-                  <img src="/banmedica.png" alt="Banmédica" className="h-12 sm:h-14 lg:h-16 w-auto opacity-70 hover:opacity-100 transition-opacity duration-300" />
+                  <img src="/banmedica-logo.png" alt="Banmédica" className="h-12 sm:h-14 lg:h-16 w-auto opacity-70 hover:opacity-100 transition-opacity duration-300" />
                 </div>
                 <div className="flex justify-center">
                   <img src="/consalud.png" alt="Consalud" className="h-12 sm:h-14 lg:h-16 w-auto opacity-70 hover:opacity-100 transition-opacity duration-300" />
@@ -709,7 +927,7 @@ const Inicio: React.FC = () => {
                   <img src="/vidatres.png" alt="Vida Tres" className="h-12 sm:h-14 lg:h-16 w-auto opacity-70 hover:opacity-100 transition-opacity duration-300" />
                 </div>
                 <div className="flex justify-center">
-                  <img src="/masvida.png" alt="Nueva Masvida" className="h-12 sm:h-14 lg:h-16 w-auto opacity-70 hover:opacity-100 transition-opacity duration-300" />
+                  <img src="/masvida.png" alt="Masvida" className="h-12 sm:h-14 lg:h-16 w-auto opacity-70 hover:opacity-100 transition-opacity duration-300" />
                 </div>
               </div>
             </div>
@@ -752,11 +970,14 @@ const Inicio: React.FC = () => {
             {/* Artículo 1 */}
             <article className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden">
               <div className="h-72 bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
-                <img 
-                  src="/tecnicarelajacion.png" 
-                  alt="Técnicas de Relajación" 
-                  className="w-full h-full object-cover"
-                />
+                <div className="w-full h-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="text-2xl text-white">🧘‍♀️</span>
+                    </div>
+                    <p className="text-gray-600 font-medium">Técnicas de Relajación</p>
+                  </div>
+                </div>
               </div>
               <div className="p-6">
                 <div className="flex items-center mb-3">
@@ -774,11 +995,14 @@ const Inicio: React.FC = () => {
             {/* Artículo 2 */}
             <article className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden">
               <div className="h-72 bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
-                <img 
-                  src="/comunicacionfamilia.png" 
-                  alt="Comunicación Familiar" 
-                  className="w-full h-full object-cover"
-                />
+                <div className="w-full h-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="text-2xl text-white">👨‍👩‍👧‍👦</span>
+                    </div>
+                    <p className="text-gray-600 font-medium">Comunicación Familiar</p>
+                  </div>
+                </div>
               </div>
               <div className="p-6">
                 <div className="flex items-center mb-3">
@@ -796,11 +1020,14 @@ const Inicio: React.FC = () => {
             {/* Artículo 3 */}
             <article className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden">
               <div className="h-72 bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
-                <img 
-                  src="/ansiedad.png" 
-                  alt="Señales de Ansiedad" 
-                  className="w-full h-full object-cover"
-                />
+                <div className="w-full h-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="text-2xl text-white">😰</span>
+                    </div>
+                    <p className="text-gray-600 font-medium">Señales de Ansiedad</p>
+                  </div>
+                </div>
               </div>
               <div className="p-6">
                 <div className="flex items-center mb-3">

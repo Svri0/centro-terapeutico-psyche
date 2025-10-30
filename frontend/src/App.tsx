@@ -9,9 +9,20 @@ import PanelPsicologo from './paginas/PanelPsicologo';
 import PanelPaciente from './paginas/PanelPaciente';
 import PanelRecepcionista from './paginas/PanelRecepcionista';
 import PerfilPaciente from './componentes/PerfilPaciente';
+import TestImages from './paginas/TestImages';
+import Pagina404 from './paginas/Pagina404';
+import PaginaSistemaCaido from './paginas/PaginaSistemaCaido';
+import PaginaSinConexion from './paginas/PaginaSinConexion';
+import PaginaSinPermisos from './paginas/PaginaSinPermisos';
+import PanelAdminProtegido from './componentes/PanelAdminProtegido';
+import PanelPsicologoProtegido from './componentes/PanelPsicologoProtegido';
 import { authService } from './servicios/auth.service';
+import { useErrorHandler } from './hooks/useErrorHandler';
 
 function App() {
+  // Manejar errores globales
+  useErrorHandler();
+
   return (
     <Router>
       <Routes>
@@ -21,11 +32,26 @@ function App() {
         {/* Ruta de login */}
         <Route path="/login" element={<LoginNuevo />} />
         
+        {/* Ruta de prueba para imágenes */}
+        <Route path="/test-images" element={<TestImages />} />
+        
+        {/* Rutas de error */}
+        <Route path="/error/404" element={<Pagina404 />} />
+        <Route path="/error/sistema-caido" element={<PaginaSistemaCaido />} />
+        <Route path="/error/sin-conexion" element={<PaginaSinConexion />} />
+        <Route path="/error/sin-permisos" element={<PaginaSinPermisos />} />
+        
         {/* Rutas protegidas */}
         <Route path="/dashboard/*" element={<ProtectedRoutes />} />
         
-        {/* Ruta por defecto - Página de inicio */}
-        <Route path="*" element={<Inicio />} />
+        {/* Rutas específicas de admin */}
+        <Route path="/admin/*" element={<PanelAdminProtegido />} />
+        
+        {/* Rutas específicas de psicólogo */}
+        <Route path="/psicologo/*" element={<PanelPsicologoProtegido />} />
+        
+        {/* Ruta por defecto - Página 404 */}
+        <Route path="*" element={<Pagina404 />} />
       </Routes>
     </Router>
   );

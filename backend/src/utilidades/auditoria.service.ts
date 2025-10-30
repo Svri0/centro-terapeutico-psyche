@@ -129,25 +129,25 @@ export class AuditoriaService {
   }
 
   /**
-   * Log para eliminación de citas
+   * Log para eliminación de sesiones
    */
-  static async logEliminacionCita(
-    citaId: string,
-    citaData: any,
+  static async logEliminacionSesion(
+    sesionId: string,
+    sesionData: any,
     usuarioId: string | undefined,
     req: Request
   ): Promise<void> {
     await this.crearLog({
       usuario_id: usuarioId,
-      accion: 'ELIMINACION_CITA',
-      tabla_afectada: 'citas',
-      registro_id: citaId,
-      valores_anteriores: citaData,
+      accion: 'ELIMINACION_SESION',
+      tabla_afectada: 'sesiones',
+      registro_id: sesionId,
+      valores_anteriores: sesionData,
       metadatos: {
-        tipo: 'eliminacion_cita',
-        paciente_id: citaData.paciente_id,
-        psicologo_id: citaData.psicologo_id,
-        fecha_cita: citaData.fecha_cita
+        tipo: 'eliminacion_sesion',
+        paciente_id: sesionData.paciente_id,
+        psicologo_id: sesionData.psicologo_id,
+        fecha_sesion: sesionData.fecha_programada
       },
       req
     });

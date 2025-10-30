@@ -65,12 +65,45 @@ const ModalEditarPaciente: React.FC<ModalEditarPacienteProps> = ({
     }
   }, [paciente]);
 
+  // Función para formatear RUT automáticamente
+  const formatRUT = (rut: string): string => {
+    // Solo permitir números
+    const soloNumeros = rut.replace(/[^0-9]/g, '');
+    
+    if (soloNumeros.length === 0) return '';
+    
+    // Si tiene más de 9 dígitos (8 + DV), tomar solo los primeros 9
+    const numero = soloNumeros.slice(0, 9);
+    
+    // Formatear según la longitud
+    if (numero.length <= 2) {
+      return numero;
+    } else if (numero.length <= 5) {
+      return `${numero.slice(0, 2)}.${numero.slice(2)}`;
+    } else if (numero.length <= 8) {
+      return `${numero.slice(0, 2)}.${numero.slice(2, 5)}.${numero.slice(5)}`;
+    } else {
+      // 9 dígitos: formato completo XX.XXX.XXX-X
+      return `${numero.slice(0, 2)}.${numero.slice(2, 5)}.${numero.slice(5, 8)}-${numero.slice(8)}`;
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    // Formatear RUT automáticamente
+    if (name === 'rut') {
+      const rutFormateado = formatRUT(value);
+      setFormData(prev => ({
+        ...prev,
+        [name]: rutFormateado
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
     
     // Limpiar error del campo cuando el usuario empiece a escribir
     if (errors[name]) {
@@ -273,7 +306,7 @@ const ModalEditarPaciente: React.FC<ModalEditarPacienteProps> = ({
                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                   errors.rut ? 'border-red-500' : 'border-gray-300'
                 }`}
-                placeholder="12.345.678-9"
+                placeholder="12345678K (escribe tú el dígito verificador)"
               />
               {errors.rut && (
                 <p className="text-red-500 text-xs mt-1">{errors.rut}</p>

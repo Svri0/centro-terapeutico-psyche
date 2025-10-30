@@ -150,4 +150,4 @@ async function crearAdmin(): Promise<void> {
 }
 
 // Ejecutar creación
-crearAdmin(); 
+crearAdmin();
