@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { authService } from '../servicios/auth.service';
+import { useSessionTimeout } from '../hooks/useSessionTimeout';
 import GestionPacientes from '../componentes/GestionPacientes';
 
 import AvatarSelector from '../componentes/AvatarSelector';
@@ -13,6 +14,7 @@ import { TIPOS_SERVICIOS, TipoServicio, obtenerCategorias } from '../utilidades/
 import { obtenerServicios, crearServicio, eliminarServicio, ServicioPsicologo } from '../servicios/servicios.service';
 import Notificacion from '../componentes/Notificacion';
 import GestionReportesProgreso from '../componentes/GestionReportesProgreso';
+import { GenerarAgendaPDF } from '../componentes/GenerarAgendaPDF';
 
 import { PacienteCreado } from '../servicios/pacientes.service';
 import { actualizarPerfilPsicologo, subirImagenReal } from '../servicios/usuarios.service';
@@ -89,9 +91,40 @@ const PanelPsicologo: React.FC = () => {
 
   const user = authService.getUser();
   console.log('🔍 Debug - PanelPsicologo - user:', user);
+  console.log('🔍 Debug - PanelPsicologo - user.rol:', user?.rol);
+  console.log('🔍 Debug - PanelPsicologo - user.rol_id:', user?.rol_id);
+
+  // Si no hay usuario, redirigir al login
+  useEffect(() => {
+    if (!user) {
+      console.warn('⚠️ PanelPsicologo - No hay usuario, redirigiendo al login');
+      window.location.href = '/login';
+      return;
+    }
+    // Verificar también que el rol sea correcto
+    const rolNormalizado = user.rol?.toLowerCase()?.trim();
+    const rolIdMap: { [key: number]: string } = {
+      1: 'admin',
+      2: 'psicologo',
+      3: 'recepcionista',
+      4: 'paciente'
+    };
+    const rolDesdeId = user.rol_id ? rolIdMap[user.rol_id] : null;
+    
+    if (rolNormalizado !== 'psicologo' && rolDesdeId !== 'psicologo') {
+      console.warn('⚠️ PanelPsicologo - Usuario no es psicólogo. Rol:', user.rol, 'Rol_id:', user.rol_id);
+      window.location.href = '/login';
+      return;
+    }
+  }, [user]);
 
   // Hook para timeout de sesión (15 minutos)
   useSessionTimeout(15); // 15 minutos
+
+  // Si no hay usuario, no renderizar nada
+  if (!user) {
+    return null;
+  }
 
   useEffect(() => {
     // Cargar datos reales
@@ -133,33 +166,42 @@ const PanelPsicologo: React.FC = () => {
       // Obtener citas del psicólogo
       const citasData = await citasService.obtenerCitas();
       
+      // Validar que citasData sea un array
+      if (!Array.isArray(citasData)) {
+        console.warn('citasData no es un array:', citasData);
+        setSesionesHoy([]);
+        setSesionesRealizadas([]);
+        setTotalSesiones(0);
+        return;
+      }
+      
       // Obtener fecha de hoy
       const hoy = new Date().toISOString().split('T')[0];
       
       // Filtrar citas de hoy
-      const citasHoy = citasData.filter(cita => cita.fecha === hoy);
+      const citasHoy = citasData.filter(cita => cita && cita.fecha === hoy);
       
       // Filtrar citas realizadas (completadas o en progreso)
       const citasRealizadas = citasData.filter(cita => 
-        cita.estado === 'completada' || cita.estado === 'en_progreso'
+        cita && (cita.estado === 'completada' || cita.estado === 'en_progreso')
       );
       
       setSesionesHoy(citasHoy.map(cita => ({
         id: cita.id,
-        paciente: `${cita.paciente_nombres} ${cita.paciente_apellidos}`,
-        fecha: cita.fecha,
-        hora: cita.hora_inicio,
-        estado: cita.estado,
-        notas: cita.notas_psicologo
+        paciente: `${cita.paciente_nombres || ''} ${cita.paciente_apellidos || ''}`.trim(),
+        fecha: cita.fecha || '',
+        hora: cita.hora_inicio || '',
+        estado: cita.estado || 'programada',
+        notas: cita.notas_psicologo || ''
       })));
       
       setSesionesRealizadas(citasRealizadas.map(cita => ({
         id: cita.id,
-        paciente: `${cita.paciente_nombres} ${cita.paciente_apellidos}`,
-        fecha: cita.fecha,
-        hora: cita.hora_inicio,
-        estado: cita.estado,
-        notas: cita.notas_psicologo
+        paciente: `${cita.paciente_nombres || ''} ${cita.paciente_apellidos || ''}`.trim(),
+        fecha: cita.fecha || '',
+        hora: cita.hora_inicio || '',
+        estado: cita.estado || 'programada',
+        notas: cita.notas_psicologo || ''
       })));
       
       setTotalSesiones(citasData.length);
@@ -275,7 +317,7 @@ const PanelPsicologo: React.FC = () => {
       
       // Actualizar el usuario en localStorage con todos los datos actualizados
       const updatedUser = { 
-        ...user, 
+        ...(user || {}), 
         ...response.data,
         avatar_url: finalAvatarUrl // Asegurar que el avatar_url se guarde correctamente
       };

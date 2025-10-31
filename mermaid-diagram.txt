@@ -1,156 +1,249 @@
 erDiagram
-    roles {
+    ROLES {
         int id PK
         string nombre
-        text descripcion
+        string descripcion
+        boolean activo
         timestamp created_at
         timestamp updated_at
     }
 
-    usuarios {
+    USUARIOS {
         uuid id PK
-        int rol_id FK
+        string email UK
+        string password_hash
         string nombres
         string apellidos
-        string email
-        string password_hash
         string telefono
         date fecha_nacimiento
-        string genero
-        string especialidad
-        text descripcion
+        enum genero
         string avatar_url
+        string especialidad
+        string descripcion
         string codigo_sbs
+        int rol_id FK
         boolean activo
         boolean email_verificado
+        string token_activacion
+        timestamp token_activacion_expira
         timestamp ultimo_acceso
+        jsonb configuracion
         timestamp created_at
         timestamp updated_at
         timestamp deleted_at
     }
 
-    pacientes {
+    PACIENTES {
         uuid id PK
         uuid usuario_id FK
         uuid psicologo_id FK
-        string estado
-        text antecedentes_medicos
-        json informacion_adicional
-        timestamp created_at
-        timestamp updated_at
-        timestamp deleted_at
-    }
-
-    sesiones {
-        uuid id PK
-        uuid paciente_id FK
-        uuid psicologo_id FK
-        date fecha_programada
-        time fecha_inicio
-        time fecha_fin
-        int duracion_minutos
-        string estado
-        string tipo_sesion
+        string nombres
+        string apellidos
+        string email
+        string telefono
+        date fecha_nacimiento
+        enum genero
+        string numero_ficha UK
+        string rut UK
+        text direccion
+        jsonb estrategias_autorregulacion
+        int puntos_acumulados
+        enum estado
+        date fecha_ingreso
+        date fecha_alta
         text observaciones
-        text notas_evolucion
+        jsonb antecedentes_medicos
+        jsonb medicacion_actual
+        jsonb alergias
+        jsonb condiciones_cronicas
+        jsonb historial_psiquiatrico
+        text observaciones_medicas
         timestamp created_at
         timestamp updated_at
         timestamp deleted_at
     }
 
-    tareas {
+    CONTACTOS_EMERGENCIA {
+        uuid id PK
+        uuid paciente_id FK
+        string nombre
+        string telefono
+        string relacion
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    ETIQUETAS {
+        uuid id PK
+        string nombre UK
+        string color
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    DIAGNOSTICOS {
+        uuid id PK
+        string codigo
+        string nombre
+        text descripcion
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    PACIENTE_ETIQUETAS {
+        uuid paciente_id FK
+        uuid etiqueta_id FK
+        timestamp created_at
+    }
+
+    PACIENTE_DIAGNOSTICOS {
+        uuid paciente_id FK
+        uuid diagnostico_id FK
+        text observaciones
+        date fecha_diagnostico
+        timestamp created_at
+    }
+
+    SESIONES {
         uuid id PK
         uuid paciente_id FK
         uuid psicologo_id FK
+        timestamp fecha_programada
+        timestamp fecha_inicio
+        timestamp fecha_fin
+        int duracion_minutos
+        enum tipo_sesion
+        enum estado
+        text notas_evolucion
+        jsonb objetivos_sesion
+        jsonb tecnicas_utilizadas
+        jsonb evaluacion_paciente
+        text observaciones
+        text resumen_sesion
+        jsonb objetivos_alcanzados
+        jsonb tareas_asignadas
+        enum progreso_paciente
+        jsonb derivacion_recomendada
+        jsonb archivos_sesion
+        jsonb archivos_adjuntos
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    TAREAS {
+        uuid id PK
+        uuid paciente_id FK
+        uuid psicologo_id FK
+        uuid sesion_id FK
         string titulo
         text descripcion
-        string tipo
-        string estado
+        enum tipo_tarea
+        enum estado
         date fecha_vencimiento
-        int prioridad
+        date fecha_completada
+        text instrucciones
+        jsonb recursos_adicionales
+        int puntos_recompensa
         timestamp created_at
         timestamp updated_at
         timestamp deleted_at
     }
 
-    respuestas_tareas {
+    RESPUESTAS_TAREAS {
         uuid id PK
         uuid tarea_id FK
         uuid paciente_id FK
-        text respuesta
-        json archivos_adjuntos
+        text respuesta_texto
+        jsonb respuesta_archivos
+        jsonb respuesta_multimedia
+        enum estado
+        text comentarios_psicologo
+        int puntos_obtenidos
+        timestamp fecha_respuesta
         timestamp created_at
         timestamp updated_at
         timestamp deleted_at
     }
 
-    servicios_psicologo {
+    SERVICIOS_PSICOLOGO {
         uuid id PK
         uuid psicologo_id FK
-        uuid tipo_servicio_id FK
-        string nombre
+        string nombre_servicio
         text descripcion
-        int duracion
-        string categoria
+        decimal precio
+        int duracion_minutos
+        enum tipo_servicio
         boolean activo
         timestamp created_at
         timestamp updated_at
         timestamp deleted_at
     }
 
-    disponibilidad_mensual {
+    DISPONIBILIDAD_MENSUAL {
         uuid id PK
         uuid psicologo_id FK
-        date fecha
-        time hora_inicio
-        time hora_fin
-        boolean disponible
-        string motivo_no_disponible
+        int anio
+        int mes
+        jsonb disponibilidad_dias
+        jsonb horarios_disponibles
+        text observaciones
+        boolean activo
         timestamp created_at
         timestamp updated_at
         timestamp deleted_at
     }
 
-    mensajes_chat {
+    LOGS_AUDITORIA {
         uuid id PK
-        text contenido
+        uuid usuario_id FK
+        string accion
+        string tabla_afectada
+        uuid registro_id
+        jsonb datos_anteriores
+        jsonb datos_nuevos
+        string ip_address
+        string user_agent
+        jsonb metadatos
+        timestamp created_at
+    }
+
+    MENSAJES_CHAT {
+        uuid id PK
         uuid remitente_id FK
         uuid destinatario_id FK
-        string tipo
+        text contenido
+        enum tipo
         boolean leido
         timestamp created_at
         timestamp updated_at
         timestamp deleted_at
     }
 
-    logs_auditoria {
-        uuid id PK
-        uuid usuario_id FK
-        string accion
-        string tabla_afectada
-        uuid registro_id
-        json valores_anteriores
-        json valores_nuevos
-        json metadatos
-        timestamp created_at
-    }
+    %% Relaciones
+    ROLES ||--o{ USUARIOS : "tiene"
+    USUARIOS ||--o{ PACIENTES : "es_usuario"
+    USUARIOS ||--o{ PACIENTES : "asigna_psicologo"
+    USUARIOS ||--o{ SESIONES : "realiza"
+    USUARIOS ||--o{ TAREAS : "asigna"
+    USUARIOS ||--o{ SERVICIOS_PSICOLOGO : "ofrece"
+    USUARIOS ||--o{ DISPONIBILIDAD_MENSUAL : "tiene"
+    USUARIOS ||--o{ LOGS_AUDITORIA : "genera"
+    USUARIOS ||--o{ MENSAJES_CHAT : "envia"
+    USUARIOS ||--o{ MENSAJES_CHAT : "recibe"
 
-    SequelizeMeta {
-        string name PK
-    }
+    PACIENTES ||--o{ SESIONES : "tiene"
+    PACIENTES ||--o{ TAREAS : "recibe"
+    PACIENTES ||--o{ RESPUESTAS_TAREAS : "responde"
+    PACIENTES ||--o{ CONTACTOS_EMERGENCIA : "tiene"
+    PACIENTES ||--o{ PACIENTE_ETIQUETAS : "etiquetado"
+    PACIENTES ||--o{ PACIENTE_DIAGNOSTICOS : "diagnosticado"
 
-    roles ||--o{ usuarios : "tiene"
-    usuarios ||--o{ pacientes : "registra"
-    usuarios ||--o{ pacientes : "atiende"
-    usuarios ||--o{ sesiones : "conduce"
-    usuarios ||--o{ tareas : "asigna"
-    usuarios ||--o{ servicios_psicologo : "ofrece"
-    usuarios ||--o{ disponibilidad_mensual : "define"
-    usuarios ||--o{ mensajes_chat : "envia"
-    usuarios ||--o{ mensajes_chat : "recibe"
-    usuarios ||--o{ logs_auditoria : "registra"
-    pacientes ||--o{ sesiones : "tiene"
-    pacientes ||--o{ tareas : "recibe"
-    pacientes ||--o{ respuestas_tareas : "responde"
-    tareas ||--o{ respuestas_tareas : "genera"
+    SESIONES ||--o{ TAREAS : "genera"
+    TAREAS ||--o{ RESPUESTAS_TAREAS : "tiene"
 
+    ETIQUETAS ||--o{ PACIENTE_ETIQUETAS : "marca"
+    DIAGNOSTICOS ||--o{ PACIENTE_DIAGNOSTICOS : "asigna"

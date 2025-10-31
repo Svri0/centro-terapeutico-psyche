@@ -1448,25 +1448,47 @@ export const obtenerPacientesPsicologo = async (req: Request, res: Response) => 
       );
     }
 
-    // Obtener pacientes asignados al psicólogo
+    // Obtener pacientes asignados al psicólogo (normalizado)
     const [pacientes] = await sequelize.query(
       `SELECT 
         p.id,
         p.usuario_id,
-        p.nombres,
-        p.apellidos,
-        p.email,
-        p.telefono,
-        p.fecha_nacimiento,
-        p.genero,
+        u.nombres,
+        u.apellidos,
+        u.email,
+        u.telefono,
+        u.fecha_nacimiento,
+        u.genero,
         p.numero_ficha,
         p.rut,
         p.direccion,
-        p.contacto_emergencia_nombre,
-        p.contacto_emergencia_telefono,
-        p.contacto_emergencia_relacion,
-        p.diagnosticos,
-        p.etiquetas,
+        (
+          SELECT ce.nombre FROM contactos_emergencia ce 
+          WHERE ce.paciente_id = p.id AND ce.deleted_at IS NULL
+          ORDER BY ce.created_at ASC LIMIT 1
+        ) AS contacto_emergencia_nombre,
+        (
+          SELECT ce.telefono FROM contactos_emergencia ce 
+          WHERE ce.paciente_id = p.id AND ce.deleted_at IS NULL
+          ORDER BY ce.created_at ASC LIMIT 1
+        ) AS contacto_emergencia_telefono,
+        (
+          SELECT ce.relacion FROM contactos_emergencia ce 
+          WHERE ce.paciente_id = p.id AND ce.deleted_at IS NULL
+          ORDER BY ce.created_at ASC LIMIT 1
+        ) AS contacto_emergencia_relacion,
+        (
+          SELECT COALESCE(array_agg(e.nombre ORDER BY e.nombre), '{}')
+          FROM paciente_etiquetas pe 
+          JOIN etiquetas e ON e.id = pe.etiqueta_id
+          WHERE pe.paciente_id = p.id
+        ) AS etiquetas,
+        (
+          SELECT COALESCE(array_agg(d.nombre ORDER BY d.nombre), '{}')
+          FROM paciente_diagnosticos pd 
+          JOIN diagnosticos d ON d.id = pd.diagnostico_id
+          WHERE pd.paciente_id = p.id
+        ) AS diagnosticos,
         p.estrategias_autorregulacion,
         p.puntos_acumulados,
         p.estado,
@@ -1476,7 +1498,8 @@ export const obtenerPacientesPsicologo = async (req: Request, res: Response) => 
         p.created_at,
         p.updated_at
        FROM pacientes p
-       WHERE p.psicologo_id = :id
+       INNER JOIN usuarios u ON p.usuario_id = u.id
+       WHERE p.psicologo_id = :id AND p.deleted_at IS NULL
        ORDER BY p.created_at DESC`,
       {
         replacements: { id }
@@ -1527,24 +1550,24 @@ export const obtenerSesionesPsicologo = async (req: Request, res: Response) => {
     // Obtener sesiones del psicólogo con información del paciente
     const [sesiones] = await sequelize.query(
       `SELECT 
-        c.id,
-        c.paciente_id,
-        p.nombres as paciente_nombres,
-        p.apellidos as paciente_apellidos,
-        p.email as paciente_email,
-        c.fecha,
-        c.hora_inicio,
-        c.hora_fin,
-        c.estado,
-        c.tipo_sesion,
-        c.modalidad,
-        c.created_at,
-        c.updated_at
-       FROM sesiones c
-       INNER JOIN pacientes p ON c.paciente_id = p.id
-       WHERE c.psicologo_id = :id
-       AND c.estado IN ('programada', 'confirmada', 'en_progreso')
-       ORDER BY c.fecha ASC, c.hora_inicio ASC`,
+        s.id,
+        s.paciente_id,
+        u.nombres as paciente_nombres,
+        u.apellidos as paciente_apellidos,
+        u.email as paciente_email,
+        s.fecha_programada as fecha,
+        s.fecha_inicio as hora_inicio,
+        s.fecha_fin as hora_fin,
+        s.estado,
+        s.tipo_sesion,
+        s.created_at,
+        s.updated_at
+       FROM sesiones s
+       INNER JOIN pacientes p ON s.paciente_id = p.id
+       INNER JOIN usuarios u ON p.usuario_id = u.id
+       WHERE s.psicologo_id = :id
+       AND s.estado IN ('programada', 'confirmada', 'en_curso')
+       ORDER BY s.fecha_programada ASC, s.fecha_inicio ASC`,
       {
         replacements: { id }
       }
@@ -1584,24 +1607,25 @@ export const eliminarSesion = async (req: Request, res: Response) => {
       );
     }
 
-    // Verificar que la cita existe y obtener información
+    // Verificar que la sesión existe y obtener información
     const [cita] = await sequelize.query(
       `SELECT 
-        c.id,
-        c.paciente_id,
-        c.psicologo_id,
-        c.fecha,
-        c.hora_inicio,
-        c.hora_fin,
-        c.estado,
-        p.nombres as paciente_nombres,
-        p.apellidos as paciente_apellidos,
+        s.id,
+        s.paciente_id,
+        s.psicologo_id,
+        s.fecha_programada as fecha,
+        s.fecha_inicio as hora_inicio,
+        s.fecha_fin as hora_fin,
+        s.estado,
+        u_paciente.nombres as paciente_nombres,
+        u_paciente.apellidos as paciente_apellidos,
         u_psicologo.nombres as psicologo_nombres,
         u_psicologo.apellidos as psicologo_apellidos
-       FROM sesiones c
-       INNER JOIN pacientes p ON c.paciente_id = p.id
-       INNER JOIN usuarios u_psicologo ON c.psicologo_id = u_psicologo.id
-       WHERE c.id = :id`,
+       FROM sesiones s
+       INNER JOIN pacientes p ON s.paciente_id = p.id
+       INNER JOIN usuarios u_paciente ON p.usuario_id = u_paciente.id
+       INNER JOIN usuarios u_psicologo ON s.psicologo_id = u_psicologo.id
+       WHERE s.id = :id`,
       {
         replacements: { id },
         transaction
@@ -1698,14 +1722,15 @@ export const reasignarPaciente = async (req: Request, res: Response) => {
       `SELECT 
         p.id,
         p.usuario_id,
-        p.nombres,
-        p.apellidos,
+        u_paciente.nombres,
+        u_paciente.apellidos,
         p.psicologo_id as psicologo_actual_id,
         u_psicologo.nombres as psicologo_actual_nombres,
         u_psicologo.apellidos as psicologo_actual_apellidos
        FROM pacientes p
+       INNER JOIN usuarios u_paciente ON p.usuario_id = u_paciente.id
        INNER JOIN usuarios u_psicologo ON p.psicologo_id = u_psicologo.id
-       WHERE p.id = :pacienteId`,
+       WHERE p.id = :pacienteId AND p.deleted_at IS NULL`,
       {
         replacements: { pacienteId },
         transaction

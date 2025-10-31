@@ -17,16 +17,30 @@ export const obtenerInfoPacienteSesion = async (req: Request, res: Response) => 
       );
     }
 
-    // Obtener información completa del paciente
+    // Obtener información completa del paciente (normalizado)
     const [pacienteData] = await sequelize.query(
       `SELECT 
         p.id, p.numero_ficha, p.rut, p.direccion,
-        p.contacto_emergencia_nombre, p.contacto_emergencia_telefono,
-        p.contacto_emergencia_relacion, p.observaciones, p.fecha_ingreso,
+        (
+          SELECT ce.nombre FROM contactos_emergencia ce 
+          WHERE ce.paciente_id = p.id AND ce.deleted_at IS NULL
+          ORDER BY ce.created_at ASC LIMIT 1
+        ) AS contacto_emergencia_nombre,
+        (
+          SELECT ce.telefono FROM contactos_emergencia ce 
+          WHERE ce.paciente_id = p.id AND ce.deleted_at IS NULL
+          ORDER BY ce.created_at ASC LIMIT 1
+        ) AS contacto_emergencia_telefono,
+        (
+          SELECT ce.relacion FROM contactos_emergencia ce 
+          WHERE ce.paciente_id = p.id AND ce.deleted_at IS NULL
+          ORDER BY ce.created_at ASC LIMIT 1
+        ) AS contacto_emergencia_relacion,
+        p.observaciones, p.fecha_ingreso,
         u.nombres, u.apellidos, u.email, u.telefono, u.fecha_nacimiento
        FROM pacientes p
        INNER JOIN usuarios u ON p.usuario_id = u.id
-       WHERE p.id = :pacienteId AND p.psicologo_id = :psicologoId`,
+       WHERE p.id = :pacienteId AND p.psicologo_id = :psicologoId AND p.deleted_at IS NULL`,
       {
         replacements: { pacienteId, psicologoId }
       }
@@ -110,7 +124,7 @@ export const obtenerHistorialSesiones = async (req: Request, res: Response) => {
 // Iniciar sesión terapéutica
 export const iniciarSesionTerapeutica = async (req: Request, res: Response) => {
   try {
-    const { citaId } = req.params;
+    const { citaId } = req.params; // tratado como sesionId programada
     const psicologoId = req.usuario?.id;
 
     if (!psicologoId) {
@@ -121,13 +135,13 @@ export const iniciarSesionTerapeutica = async (req: Request, res: Response) => {
       );
     }
 
-    // Verificar que la cita existe y pertenece al psicólogo
+    // Verificar que la "cita" (sesión programada) existe y pertenece al psicólogo
     const [citaData] = await sequelize.query(
       `SELECT 
-        c.id, c.paciente_id, c.fecha, c.hora_inicio, c.hora_fin,
-        c.duracion_minutos, c.estado, c.tipo_sesion, c.modalidad
-       FROM citas c
-       WHERE c.id = :citaId AND c.psicologo_id = :psicologoId`,
+        s.id, s.paciente_id, s.fecha_programada as fecha, s.fecha_inicio, s.fecha_fin,
+        s.duracion_minutos, s.estado, s.tipo_sesion
+       FROM sesiones s
+       WHERE s.id = :citaId AND s.psicologo_id = :psicologoId`,
       {
         replacements: { citaId, psicologoId }
       }
@@ -143,11 +157,11 @@ export const iniciarSesionTerapeutica = async (req: Request, res: Response) => {
 
     const cita = citaData[0];
 
-    // Verificar que la cita esté en estado 'confirmada' o 'en_progreso'
-    if (!['confirmada', 'en_progreso'].includes(cita.estado)) {
+    // Verificar que la sesión esté en estado válido para iniciar
+    if (!['programada', 'confirmada', 'en_curso'].includes(cita.estado)) {
       return ManejadorRespuestas.errorValidacion(
         res,
-        'La cita debe estar confirmada para iniciar la sesión',
+        'La sesión debe estar programada/confirmada para iniciar',
         null,
         'SESION_010'
       );
@@ -216,7 +230,7 @@ export const iniciarSesionTerapeutica = async (req: Request, res: Response) => {
       );
     }
 
-    // Crear nueva sesión
+    // Crear nueva sesión (si no existe activa)
     const [nuevaSesion] = await sequelize.query(
       `INSERT INTO sesiones (
         id, paciente_id, psicologo_id, fecha_programada,
@@ -226,7 +240,7 @@ export const iniciarSesionTerapeutica = async (req: Request, res: Response) => {
         archivos_sesion, created_at, updated_at
       ) VALUES (
         gen_random_uuid(), :pacienteId, :psicologoId, :fechaSesion,
-        NOW(), :duracionMinutos, 'en_curso', 'presencial',
+        NOW(), :duracionMinutos, 'en_curso', :tipoSesion,
         '[]', '[]', '[]', '[]', '[]', '[]', '[]', NOW(), NOW()
       ) RETURNING id, fecha_inicio, duracion_minutos`,
       {
@@ -234,19 +248,11 @@ export const iniciarSesionTerapeutica = async (req: Request, res: Response) => {
           pacienteId: cita.paciente_id,
           psicologoId,
           fechaSesion: cita.fecha,
-          duracionMinutos: cita.duracion_minutos || 60
+          duracionMinutos: cita.duracion_minutos || 60,
+          tipoSesion: cita.tipo_sesion || 'presencial'
         }
       }
     ) as [any[], unknown];
-
-    // Actualizar estado de la cita a 'en_progreso'
-    await sequelize.query(
-      `UPDATE citas SET estado = 'en_progreso', updated_at = NOW() 
-       WHERE id = :citaId`,
-      {
-        replacements: { citaId }
-      }
-    );
 
     const sesion = Array.isArray(nuevaSesion) ? nuevaSesion[0] : null;
 
@@ -334,43 +340,7 @@ export const finalizarSesionTerapeutica = async (req: Request, res: Response) =>
       }
     );
 
-    // Actualizar estado de la cita a 'completada'
-    // Buscar la cita relacionada con esta sesión
-    try {
-      const fechaSesion = sesion.fecha_programada ? 
-        sesion.fecha_programada.split('T')[0] : 
-        new Date().toISOString().split('T')[0];
-        
-      const [citaRelacionada] = await sequelize.query(
-        `SELECT id FROM citas 
-         WHERE paciente_id = :pacienteId AND psicologo_id = :psicologoId 
-         AND fecha = :fechaSesion
-         ORDER BY created_at DESC LIMIT 1`,
-        {
-          replacements: { 
-            pacienteId: sesion.paciente_id, 
-            psicologoId, 
-            fechaSesion 
-          }
-        }
-      ) as [any[], unknown];
-
-      if (Array.isArray(citaRelacionada) && citaRelacionada.length > 0) {
-        await sequelize.query(
-          `UPDATE citas SET estado = 'completada', updated_at = NOW() 
-           WHERE id = :citaId`,
-          {
-            replacements: { citaId: citaRelacionada[0].id }
-          }
-        );
-        console.log('✅ Cita actualizada a completada:', citaRelacionada[0].id);
-      } else {
-        console.log('⚠️ No se encontró cita relacionada para actualizar');
-      }
-    } catch (citaError: any) {
-      console.error('⚠️ Error al actualizar cita (no crítico):', citaError.message);
-      // No lanzar error aquí, ya que la sesión se finalizó correctamente
-    }
+    // No hay citas legacy que actualizar; mantenemos solo el estado de la sesión
 
     return ManejadorRespuestas.exito(
       res,
@@ -402,7 +372,7 @@ export const finalizarSesionTerapeutica = async (req: Request, res: Response) =>
 // Obtener estado de sesión activa
 export const obtenerEstadoSesion = async (req: Request, res: Response) => {
   try {
-    const { citaId } = req.params;
+    const { citaId } = req.params; // tratado como sesionId programada
     const psicologoId = req.usuario?.id;
 
     if (!psicologoId) {
@@ -413,9 +383,9 @@ export const obtenerEstadoSesion = async (req: Request, res: Response) => {
       );
     }
 
-    // Obtener el paciente_id de la cita
+    // Obtener el paciente_id desde la sesión programada
     const [citaData] = await sequelize.query(
-      `SELECT paciente_id FROM citas WHERE id = :citaId AND psicologo_id = :psicologoId`,
+      `SELECT paciente_id FROM sesiones WHERE id = :citaId AND psicologo_id = :psicologoId`,
       {
         replacements: { citaId, psicologoId }
       }

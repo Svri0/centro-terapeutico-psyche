@@ -218,13 +218,10 @@ export const actualizarPerfilPaciente = async (req: Request, res: Response) => {
     if (paciente) {
       console.log('✅ Paciente encontrado, actualizando datos específicos');
       
-      // Crear objeto de actualización solo con campos definidos
+      // Crear objeto de actualización solo con campos definidos (sin contactos legacy)
       const updateDataPaciente: any = {};
       if (rut !== undefined) updateDataPaciente.rut = rut;
       if (direccion !== undefined) updateDataPaciente.direccion = direccion;
-      if (contacto_emergencia_nombre !== undefined) updateDataPaciente.contacto_emergencia_nombre = contacto_emergencia_nombre;
-      if (contacto_emergencia_telefono !== undefined) updateDataPaciente.contacto_emergencia_telefono = contacto_emergencia_telefono;
-      if (contacto_emergencia_relacion !== undefined) updateDataPaciente.contacto_emergencia_relacion = contacto_emergencia_relacion;
       if (observaciones !== undefined) updateDataPaciente.observaciones = observaciones;
 
       console.log('🔍 Datos a actualizar en paciente:', updateDataPaciente);
@@ -242,6 +239,52 @@ export const actualizarPerfilPaciente = async (req: Request, res: Response) => {
           throw updateError;
         }
       }
+
+      // Actualizar contactos de emergencia en tabla normalizada
+      if (contacto_emergencia_nombre !== undefined || contacto_emergencia_telefono !== undefined || contacto_emergencia_relacion !== undefined) {
+        const sequelize = require('../configuracion/database').default;
+        
+        // Buscar contacto existente o crear uno nuevo
+        const [contactoExistente] = await sequelize.query(`
+          SELECT id FROM contactos_emergencia 
+          WHERE paciente_id = :pacienteId AND deleted_at IS NULL
+          ORDER BY created_at ASC LIMIT 1
+        `, {
+          replacements: { pacienteId: paciente.id }
+        }) as [any[], unknown];
+
+        if (Array.isArray(contactoExistente) && contactoExistente.length > 0) {
+          // Actualizar contacto existente
+          await sequelize.query(`
+            UPDATE contactos_emergencia 
+            SET nombre = COALESCE(:nombre, nombre),
+                telefono = COALESCE(:telefono, telefono),
+                relacion = COALESCE(:relacion, relacion),
+                updated_at = NOW()
+            WHERE id = :contactoId
+          `, {
+            replacements: {
+              contactoId: contactoExistente[0].id,
+              nombre: contacto_emergencia_nombre || null,
+              telefono: contacto_emergencia_telefono || null,
+              relacion: contacto_emergencia_relacion || null,
+            }
+          });
+        } else if (contacto_emergencia_nombre) {
+          // Crear nuevo contacto
+          await sequelize.query(`
+            INSERT INTO contactos_emergencia (id, paciente_id, nombre, telefono, relacion, created_at, updated_at)
+            VALUES (gen_random_uuid(), :pacienteId, :nombre, :telefono, :relacion, NOW(), NOW())
+          `, {
+            replacements: {
+              pacienteId: paciente.id,
+              nombre: contacto_emergencia_nombre,
+              telefono: contacto_emergencia_telefono || null,
+              relacion: contacto_emergencia_relacion || null,
+            }
+          });
+        }
+      }
     } else {
       console.log('⚠️ No se encontró registro de paciente para usuario:', id);
     }
@@ -251,6 +294,24 @@ export const actualizarPerfilPaciente = async (req: Request, res: Response) => {
     const pacienteActualizado = await Paciente.findOne({ where: { usuario_id: id } });
 
     console.log('✅ Preparando respuesta con datos actualizados');
+
+    // Obtener contacto de emergencia desde tabla normalizada
+    let contactoEmergencia: any = null;
+    if (pacienteActualizado) {
+      const sequelize = require('../configuracion/database').default;
+      const [contacto] = await sequelize.query(`
+        SELECT nombre, telefono, relacion 
+        FROM contactos_emergencia 
+        WHERE paciente_id = :pacienteId AND deleted_at IS NULL
+        ORDER BY created_at ASC LIMIT 1
+      `, {
+        replacements: { pacienteId: pacienteActualizado.id }
+      }) as [any[], unknown];
+
+      if (Array.isArray(contacto) && contacto.length > 0) {
+        contactoEmergencia = contacto[0];
+      }
+    }
 
     return res.json({
       success: true,
@@ -267,9 +328,9 @@ export const actualizarPerfilPaciente = async (req: Request, res: Response) => {
         // Datos del paciente
         rut: pacienteActualizado?.rut,
         direccion: pacienteActualizado?.direccion,
-        contacto_emergencia_nombre: pacienteActualizado?.contacto_emergencia_nombre,
-        contacto_emergencia_telefono: pacienteActualizado?.contacto_emergencia_telefono,
-        contacto_emergencia_relacion: pacienteActualizado?.contacto_emergencia_relacion,
+        contacto_emergencia_nombre: contactoEmergencia?.nombre || null,
+        contacto_emergencia_telefono: contactoEmergencia?.telefono || null,
+        contacto_emergencia_relacion: contactoEmergencia?.relacion || null,
         observaciones: pacienteActualizado?.observaciones
       }
     });

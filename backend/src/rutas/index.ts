@@ -3,13 +3,15 @@ import autenticacionRoutes from './autenticacion.routes';
 import usuariosRoutes from './usuarios.routes';
 import pacientesRoutes from './pacientes.routes';
 import tareasRoutes from './tareas.routes';
-import citasRoutes from './citas.routes';
-import disponibilidadRoutes from './disponibilidad.routes';
+import sesionesRoutes from './sesiones.routes';
 import disponibilidadMensualRoutes from './disponibilidadMensual.routes';
 import serviciosRoutes from './servicios.routes';
 import adminRoutes from './admin.routes';
 import recepcionistaRoutes from './recepcionista.routes';
 import sesionesTerapeuticasRoutes from './sesiones-terapeuticas.routes';
+import agendaPDFRoutes from './agendaPDF.routes';
+import reportesRoutes from './reportes.routes';
+import recordatoriosRoutes from './recordatorios.routes';
 
 const router = Router();
 
@@ -25,11 +27,11 @@ router.use('/pacientes', pacientesRoutes);
 // Rutas de tareas
 router.use('/tareas', tareasRoutes);
 
-// Rutas de citas
-router.use('/citas', citasRoutes);
+// Rutas de citas (usando sesiones como backend)
+router.use('/citas', sesionesRoutes);
 
-// Rutas de disponibilidad (semanal - legacy)
-router.use('/disponibilidad', disponibilidadRoutes);
+// Rutas de disponibilidad (semanal - legacy) -> redirigido a disponibilidad mensual para compatibilidad
+router.use('/disponibilidad', disponibilidadMensualRoutes);
 
 // Rutas de disponibilidad mensual
 router.use('/disponibilidad-mensual', disponibilidadMensualRoutes);

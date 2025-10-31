@@ -33,7 +33,7 @@ export const GenerarAgendaPDF: React.FC<GenerarAgendaPDFProps> = ({ psicologoId 
       setPeriodosDisponibles(periodos);
     } catch (error: any) {
       console.error('Error al cargar períodos:', error);
-      mostrarNotificacion('Error al cargar períodos disponibles', 'error');
+      mostrarNotificacion('Error', error.message || 'Error al cargar períodos disponibles', 'error');
     } finally {
       setCargandoPeriodos(false);
     }
@@ -65,12 +65,12 @@ export const GenerarAgendaPDF: React.FC<GenerarAgendaPDFProps> = ({ psicologoId 
 
   const handleGenerarPDF = async () => {
     if (!fechaInicio || !fechaFin) {
-      mostrarNotificacion('Por favor selecciona las fechas', 'error');
+      mostrarNotificacion('Error', 'Por favor selecciona las fechas', 'error');
       return;
     }
 
     if (new Date(fechaInicio) > new Date(fechaFin)) {
-      mostrarNotificacion('La fecha de inicio debe ser anterior a la fecha de fin', 'error');
+      mostrarNotificacion('Error', 'La fecha de inicio debe ser anterior a la fecha de fin', 'error');
       return;
     }
 
@@ -84,11 +84,11 @@ export const GenerarAgendaPDF: React.FC<GenerarAgendaPDFProps> = ({ psicologoId 
       };
 
       await AgendaPDFService.generarPDF(datosPDF);
-      mostrarNotificacion('PDF generado y descargado exitosamente', 'success');
+      mostrarNotificacion('Éxito', 'PDF generado y descargado exitosamente', 'exito');
       
     } catch (error: any) {
       console.error('Error al generar PDF:', error);
-      mostrarNotificacion(error.message || 'Error al generar el PDF', 'error');
+      mostrarNotificacion('Error', error.message || 'Error al generar el PDF', 'error');
     } finally {
       setCargando(false);
     }

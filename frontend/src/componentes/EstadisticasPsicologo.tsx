@@ -3,6 +3,7 @@ import { citasService } from '../servicios/citas.service';
 import { authService } from '../servicios/auth.service';
 import HorasTrabajadas from './HorasTrabajadas';
 import CrearCitasPrueba from './CrearCitasPrueba';
+import ExportarDashboardPDF from './ExportarDashboardPDF';
 
 interface EstadisticasPsicologoProps {
   psicologoId: string;
