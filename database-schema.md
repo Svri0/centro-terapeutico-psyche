@@ -140,10 +140,6 @@ erDiagram
         timestamp created_at
     }
 
-    SequelizeMeta {
-        string name PK
-    }
-
     roles ||--o{ usuarios : "tiene"
     usuarios ||--o{ pacientes : "registra"
     usuarios ||--o{ pacientes : "atiende"
@@ -174,6 +170,7 @@ erDiagram
 | `disponibilidad_mensual` | Disponibilidad mensual de psicólogos | ~1000-5000 |
 | `mensajes_chat` | Mensajes del chat en tiempo real | ~5000-50000 |
 | `logs_auditoria` | Logs de auditoría del sistema | ~10000-100000 |
-| `SequelizeMeta` | Metadatos de migraciones | ~20 |
 
-**Total: 11 tablas**
+**Total: 10 tablas del modelo de negocio**
+
+> **Nota**: La tabla `SequelizeMeta` (tabla de sistema para control de migraciones) existe en la base de datos pero no se incluye en este diagrama ya que no forma parte del modelo de negocio.
