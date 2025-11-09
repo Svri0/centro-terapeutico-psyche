@@ -12,6 +12,7 @@ import sesionesTerapeuticasRoutes from './sesiones-terapeuticas.routes';
 import agendaPDFRoutes from './agendaPDF.routes';
 import reportesRoutes from './reportes.routes';
 import recordatoriosRoutes from './recordatorios.routes';
+import chatRoutes from './chat.rutas';
 
 const router = Router();
 
@@ -56,5 +57,8 @@ router.use('/reportes', reportesRoutes);
 
 // Rutas de recordatorios
 router.use('/recordatorios', recordatoriosRoutes);
+
+// Rutas de chat
+router.use('/chat', chatRoutes);
 
 export default router; 
