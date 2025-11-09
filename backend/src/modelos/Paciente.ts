@@ -15,11 +15,6 @@ export interface PacienteAttributes {
   numero_ficha: string;
   rut?: string;
   direccion?: string;
-  contacto_emergencia_nombre?: string;
-  contacto_emergencia_telefono?: string;
-  contacto_emergencia_relacion?: string;
-  diagnosticos: any[];
-  etiquetas: any[];
   estrategias_autorregulacion: any[];
   puntos_acumulados: number;
   estado: 'activo' | 'inactivo' | 'alta' | 'derivado';
@@ -38,7 +33,7 @@ export interface PacienteAttributes {
 }
 
 // Interfaz para las propiedades opcionales (para crear)
-export interface PacienteCreationAttributes extends Optional<PacienteAttributes, 'id' | 'diagnosticos' | 'etiquetas' | 'estrategias_autorregulacion' | 'puntos_acumulados' | 'estado' | 'fecha_ingreso' | 'created_at' | 'updated_at'> {}
+export interface PacienteCreationAttributes extends Optional<PacienteAttributes, 'id' | 'estrategias_autorregulacion' | 'puntos_acumulados' | 'estado' | 'fecha_ingreso' | 'created_at' | 'updated_at'> {}
 
 class Paciente extends Model<PacienteAttributes, PacienteCreationAttributes> implements PacienteAttributes {
   public id!: string;
@@ -53,11 +48,6 @@ class Paciente extends Model<PacienteAttributes, PacienteCreationAttributes> imp
   public numero_ficha!: string;
   public rut?: string;
   public direccion?: string;
-  public contacto_emergencia_nombre?: string;
-  public contacto_emergencia_telefono?: string;
-  public contacto_emergencia_relacion?: string;
-  public diagnosticos!: any[];
-  public etiquetas!: any[];
   public estrategias_autorregulacion!: any[];
   public puntos_acumulados!: number;
   public estado!: 'activo' | 'inactivo' | 'alta' | 'derivado';
@@ -140,28 +130,6 @@ Paciente.init(
     direccion: {
       type: DataTypes.TEXT,
       allowNull: true,
-    },
-    contacto_emergencia_nombre: {
-      type: DataTypes.STRING(200),
-      allowNull: true,
-    },
-    contacto_emergencia_telefono: {
-      type: DataTypes.STRING(20),
-      allowNull: true,
-    },
-    contacto_emergencia_relacion: {
-      type: DataTypes.STRING(50),
-      allowNull: true,
-    },
-    diagnosticos: {
-      type: DataTypes.JSONB,
-      allowNull: false,
-      defaultValue: [],
-    },
-    etiquetas: {
-      type: DataTypes.JSONB,
-      allowNull: false,
-      defaultValue: [],
     },
     estrategias_autorregulacion: {
       type: DataTypes.JSONB,

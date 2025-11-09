@@ -82,7 +82,7 @@ Write-Host "  npm run format                # Formatear código"
 Write-Host ""
 Write-Host "🌐 URLs de acceso:" -ForegroundColor Cyan
 Write-Host "  Frontend: http://localhost:3000"
-Write-Host "  Backend API: http://localhost:3001"
+Write-Host "  Backend API: http://localhost:3002"
 Write-Host "  ML Service: http://localhost:3003"
 Write-Host "  pgAdmin: http://localhost:5050"
 Write-Host ""

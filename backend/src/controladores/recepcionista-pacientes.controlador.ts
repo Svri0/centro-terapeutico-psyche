@@ -140,29 +140,39 @@ export const crearPacienteBasico = async (req: Request, res: Response) => {
     }
 
     // Crear paciente básico (sin psicólogo asignado inicialmente)
+    // NOTA: Necesitamos asignar un psicologo_id, usaremos el primero disponible o requerirlo
+    const [primerPsicologo] = await sequelize.query(`
+      SELECT id FROM usuarios WHERE rol_id = 2 AND activo = true LIMIT 1
+    `) as [any[], unknown];
+
+    if (!Array.isArray(primerPsicologo) || primerPsicologo.length === 0) {
+      return ManejadorRespuestas.errorInterno(
+        res,
+        'No hay psicólogos disponibles en el sistema. Contacte al administrador.',
+        'REC_020'
+      );
+    }
+
+    const psicologoId = primerPsicologo[0].id;
+
     const [pacienteCreado] = await sequelize.query(`
       INSERT INTO pacientes (
-        id, usuario_id, numero_ficha, rut, direccion,
-        contacto_emergencia_nombre, contacto_emergencia_telefono, 
-        contacto_emergencia_relacion, observaciones, estado,
-        fecha_ingreso, created_at, updated_at
+        id, usuario_id, psicologo_id, numero_ficha, rut, direccion,
+        estrategias_autorregulacion, puntos_acumulados, estado,
+        fecha_ingreso, observaciones, created_at, updated_at
       ) VALUES (
-        gen_random_uuid(), :usuario_id, :numero_ficha, :rut, :direccion,
-        :contacto_emergencia_nombre, :contacto_emergencia_telefono,
-        :contacto_emergencia_relacion, :observaciones, 'activo',
-        NOW(), NOW(), NOW()
+        gen_random_uuid(), :usuario_id, :psicologo_id, :numero_ficha, :rut, :direccion,
+        '[]', 0, 'activo',
+        NOW(), :observaciones, NOW(), NOW()
       ) RETURNING id, numero_ficha, rut, direccion, 
-                contacto_emergencia_nombre, contacto_emergencia_telefono, 
-                contacto_emergencia_relacion, observaciones, estado, fecha_ingreso
+                observaciones, estado, fecha_ingreso
     `, {
       replacements: {
         usuario_id: usuario.id,
+        psicologo_id: psicologoId,
         numero_ficha: numeroFicha,
         rut: rut || null,
         direccion: direccion || null,
-        contacto_emergencia_nombre: contacto_emergencia_nombre || null,
-        contacto_emergencia_telefono: contacto_emergencia_telefono || null,
-        contacto_emergencia_relacion: contacto_emergencia_relacion || null,
         observaciones: observaciones || null
       }
     }) as [any[], unknown];
@@ -176,6 +186,21 @@ export const crearPacienteBasico = async (req: Request, res: Response) => {
     }
 
     const paciente = pacienteCreado[0];
+
+    // Crear contacto de emergencia en tabla normalizada (si viene)
+    if (contacto_emergencia_nombre || contacto_emergencia_telefono || contacto_emergencia_relacion) {
+      await sequelize.query(`
+        INSERT INTO contactos_emergencia (id, paciente_id, nombre, telefono, relacion, created_at, updated_at)
+        VALUES (gen_random_uuid(), :pacienteId, :nombre, :telefono, :relacion, NOW(), NOW())
+      `, {
+        replacements: {
+          pacienteId: paciente.id,
+          nombre: contacto_emergencia_nombre || 'Sin nombre',
+          telefono: contacto_emergencia_telefono || null,
+          relacion: contacto_emergencia_relacion || null,
+        }
+      });
+    }
 
     // Enviar email de bienvenida al paciente
     const nombreCompleto = `${nombres} ${apellidos}`;
@@ -230,18 +255,40 @@ export const obtenerMiPaciente = async (req: Request, res: Response) => {
 
     console.log('🔍 Obteniendo paciente para usuario ID:', usuarioId);
 
-    // Obtener el paciente del usuario autenticado
+    // Obtener el paciente del usuario autenticado (normalizado)
     const [paciente] = await sequelize.query(
       `SELECT 
         p.id,
         p.numero_ficha,
         p.rut,
         p.direccion,
-        p.contacto_emergencia_nombre,
-        p.contacto_emergencia_telefono,
-        p.contacto_emergencia_relacion,
-        p.diagnosticos,
-        p.etiquetas,
+        (
+          SELECT ce.nombre FROM contactos_emergencia ce 
+          WHERE ce.paciente_id = p.id AND ce.deleted_at IS NULL
+          ORDER BY ce.created_at ASC LIMIT 1
+        ) AS contacto_emergencia_nombre,
+        (
+          SELECT ce.telefono FROM contactos_emergencia ce 
+          WHERE ce.paciente_id = p.id AND ce.deleted_at IS NULL
+          ORDER BY ce.created_at ASC LIMIT 1
+        ) AS contacto_emergencia_telefono,
+        (
+          SELECT ce.relacion FROM contactos_emergencia ce 
+          WHERE ce.paciente_id = p.id AND ce.deleted_at IS NULL
+          ORDER BY ce.created_at ASC LIMIT 1
+        ) AS contacto_emergencia_relacion,
+        (
+          SELECT COALESCE(array_agg(e.nombre ORDER BY e.nombre), '{}')
+          FROM paciente_etiquetas pe 
+          JOIN etiquetas e ON e.id = pe.etiqueta_id
+          WHERE pe.paciente_id = p.id
+        ) AS etiquetas,
+        (
+          SELECT COALESCE(array_agg(d.nombre ORDER BY d.nombre), '{}')
+          FROM paciente_diagnosticos pd 
+          JOIN diagnosticos d ON d.id = pd.diagnostico_id
+          WHERE pd.paciente_id = p.id
+        ) AS diagnosticos,
         p.estrategias_autorregulacion,
         p.puntos_acumulados,
         p.estado,
@@ -293,5 +340,13 @@ export const obtenerMiPaciente = async (req: Request, res: Response) => {
     );
   }
 };
+
+
+
+
+
+
+
+
 
 

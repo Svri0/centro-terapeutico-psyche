@@ -1,0 +1,46 @@
+
+digraph G {
+  rankdir=TB;
+  node [shape=record, style=filled, fillcolor=lightblue];
+  
+  // Definir tablas
+  ROLES [label="{ROLES|id (PK)|nombre|descripcion|activo|created_at|updated_at}"];
+  USUARIOS [label="{USUARIOS|id (PK)|email (UK)|password_hash|nombres|apellidos|telefono|fecha_nacimiento|genero|avatar_url|especialidad|descripcion|codigo_sbs|rol_id (FK)|activo|email_verificado|token_activacion|token_activacion_expira|ultimo_acceso|configuracion|created_at|updated_at|deleted_at}"];
+  PACIENTES [label="{PACIENTES|id (PK)|usuario_id (FK)|psicologo_id (FK)|nombres|apellidos|email|telefono|fecha_nacimiento|genero|numero_ficha (UK)|rut (UK)|direccion|contacto_emergencia_nombre|contacto_emergencia_telefono|contacto_emergencia_relacion|diagnosticos|etiquetas|estrategias_autorregulacion|puntos_acumulados|estado|fecha_ingreso|fecha_alta|observaciones|antecedentes_medicos|medicacion_actual|alergias|condiciones_cronicas|historial_psiquiatrico|observaciones_medicas|created_at|updated_at|deleted_at}"];
+  SESIONES [label="{SESIONES|id (PK)|paciente_id (FK)|psicologo_id (FK)|fecha_sesion|hora_inicio|hora_fin|tipo_sesion|estado|notas_psicologo|objetivos_sesion|tareas_asignadas|observaciones|costo_sesion|pagada|created_at|updated_at|deleted_at}"];
+  TAREAS [label="{TAREAS|id (PK)|paciente_id (FK)|psicologo_id (FK)|sesion_id (FK)|titulo|descripcion|tipo_tarea|estado|fecha_vencimiento|fecha_completada|instrucciones|recursos_adicionales|puntos_recompensa|created_at|updated_at|deleted_at}"];
+  RESPUESTAS_TAREAS [label="{RESPUESTAS_TAREAS|id (PK)|tarea_id (FK)|paciente_id (FK)|respuesta_texto|respuesta_archivos|respuesta_multimedia|estado|comentarios_psicologo|puntos_obtenidos|fecha_respuesta|created_at|updated_at|deleted_at}"];
+  SERVICIOS_PSICOLOGO [label="{SERVICIOS_PSICOLOGO|id (PK)|psicologo_id (FK)|nombre_servicio|descripcion|precio|duracion_minutos|tipo_servicio|activo|created_at|updated_at|deleted_at}"];
+  DISPONIBILIDAD_MENSUAL [label="{DISPONIBILIDAD_MENSUAL|id (PK)|psicologo_id (FK)|año|mes|disponibilidad_dias|horarios_disponibles|observaciones|activo|created_at|updated_at|deleted_at}"];
+  LOGS_AUDITORIA [label="{LOGS_AUDITORIA|id (PK)|usuario_id (FK)|accion|tabla_afectada|registro_id|datos_anteriores|datos_nuevos|ip_address|user_agent|created_at}"];
+  CHAT [label="{CHAT|id (PK)|paciente_id (FK)|psicologo_id (FK)|mensaje|tipo_mensaje|leido|fecha_envio|created_at|updated_at|deleted_at}"];
+  MENSAJES [label="{MENSAJES|id (PK)|chat_id (FK)|remitente_id (FK)|contenido|tipo_contenido|archivos_adjuntos|leido|fecha_envio|created_at|updated_at|deleted_at}"];
+  CITAS [label="{CITAS|id (PK)|paciente_id (FK)|psicologo_id (FK)|fecha_cita|hora_inicio|hora_fin|estado|motivo|observaciones|costo|confirmada|created_at|updated_at|deleted_at}"];
+  DISPONIBILIDAD_PSICOLOGOS [label="{DISPONIBILIDAD_PSICOLOGOS|id (PK)|psicologo_id (FK)|dia_semana|hora_inicio|hora_fin|activo|created_at|updated_at|deleted_at}"];
+  DISPONIBILIDAD_SEMANAL [label="{DISPONIBILIDAD_SEMANAL|id (PK)|psicologo_id (FK)|semana|año|horarios_disponibles|observaciones|activo|created_at|updated_at|deleted_at}"];
+  
+  // Relaciones
+  ROLES -> USUARIOS [label="1:N"];
+  USUARIOS -> PACIENTES [label="1:1 (usuario)"];
+  USUARIOS -> PACIENTES [label="1:N (psicologo)"];
+  USUARIOS -> SESIONES [label="1:N"];
+  USUARIOS -> TAREAS [label="1:N"];
+  USUARIOS -> SERVICIOS_PSICOLOGO [label="1:N"];
+  USUARIOS -> DISPONIBILIDAD_MENSUAL [label="1:N"];
+  USUARIOS -> LOGS_AUDITORIA [label="1:N"];
+  USUARIOS -> CHAT [label="1:N"];
+  USUARIOS -> MENSAJES [label="1:N"];
+  USUARIOS -> CITAS [label="1:N"];
+  USUARIOS -> DISPONIBILIDAD_PSICOLOGOS [label="1:N"];
+  USUARIOS -> DISPONIBILIDAD_SEMANAL [label="1:N"];
+  
+  PACIENTES -> SESIONES [label="1:N"];
+  PACIENTES -> TAREAS [label="1:N"];
+  PACIENTES -> RESPUESTAS_TAREAS [label="1:N"];
+  PACIENTES -> CHAT [label="1:N"];
+  PACIENTES -> CITAS [label="1:N"];
+  
+  SESIONES -> TAREAS [label="1:N"];
+  TAREAS -> RESPUESTAS_TAREAS [label="1:N"];
+  CHAT -> MENSAJES [label="1:N"];
+}

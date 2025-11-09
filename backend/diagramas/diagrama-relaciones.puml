@@ -1,0 +1,50 @@
+
+@startuml
+!define TABLE(name,desc) class name as "desc" << (T,#FFAAAA) >>
+!define PK(x) <b><color:red>x</color></b>
+!define FK(x) <color:blue>x</color>
+
+package "Centro Terapéutico Psyche" {
+  
+  TABLE(ROLES, "Roles del Sistema")
+  TABLE(USUARIOS, "Usuarios del Sistema")
+  TABLE(PACIENTES, "Pacientes")
+  TABLE(SESIONES, "Sesiones Terapéuticas")
+  TABLE(TAREAS, "Tareas Asignadas")
+  TABLE(RESPUESTAS_TAREAS, "Respuestas de Tareas")
+  TABLE(SERVICIOS_PSICOLOGO, "Servicios de Psicólogos")
+  TABLE(DISPONIBILIDAD_MENSUAL, "Disponibilidad Mensual")
+  TABLE(LOGS_AUDITORIA, "Logs de Auditoría")
+  TABLE(CHAT, "Chats")
+  TABLE(MENSAJES, "Mensajes")
+  TABLE(CITAS, "Citas")
+  TABLE(DISPONIBILIDAD_PSICOLOGOS, "Disponibilidad Psicólogos")
+  TABLE(DISPONIBILIDAD_SEMANAL, "Disponibilidad Semanal")
+  
+  %% Relaciones principales
+  ROLES ||--o{ USUARIOS : "FK: rol_id"
+  USUARIOS ||--o{ PACIENTES : "FK: usuario_id"
+  USUARIOS ||--o{ PACIENTES : "FK: psicologo_id"
+  USUARIOS ||--o{ SESIONES : "FK: psicologo_id"
+  USUARIOS ||--o{ TAREAS : "FK: psicologo_id"
+  USUARIOS ||--o{ SERVICIOS_PSICOLOGO : "FK: psicologo_id"
+  USUARIOS ||--o{ DISPONIBILIDAD_MENSUAL : "FK: psicologo_id"
+  USUARIOS ||--o{ LOGS_AUDITORIA : "FK: usuario_id"
+  USUARIOS ||--o{ CHAT : "FK: psicologo_id"
+  USUARIOS ||--o{ MENSAJES : "FK: remitente_id"
+  USUARIOS ||--o{ CITAS : "FK: psicologo_id"
+  USUARIOS ||--o{ DISPONIBILIDAD_PSICOLOGOS : "FK: psicologo_id"
+  USUARIOS ||--o{ DISPONIBILIDAD_SEMANAL : "FK: psicologo_id"
+  
+  PACIENTES ||--o{ SESIONES : "FK: paciente_id"
+  PACIENTES ||--o{ TAREAS : "FK: paciente_id"
+  PACIENTES ||--o{ RESPUESTAS_TAREAS : "FK: paciente_id"
+  PACIENTES ||--o{ CHAT : "FK: paciente_id"
+  PACIENTES ||--o{ CITAS : "FK: paciente_id"
+  
+  SESIONES ||--o{ TAREAS : "FK: sesion_id"
+  TAREAS ||--o{ RESPUESTAS_TAREAS : "FK: tarea_id"
+  CHAT ||--o{ MENSAJES : "FK: chat_id"
+}
+
+@enduml

@@ -42,15 +42,15 @@ const MisCitas: React.FC<MisCitasProps> = () => {
       
       console.log('🔍 MisCitas - Obteniendo citas para paciente ID:', currentUser.id);
       
-      const response = await citasService.obtenerCitasPaciente();
+      const citasData = await citasService.obtenerCitasPaciente();
       
-      console.log('🔍 MisCitas - Respuesta del servicio:', response);
+      console.log('🔍 MisCitas - Respuesta del servicio:', citasData);
       
-      if (response.data && response.data.success) {
-        setCitas(response.data.data || []);
-        console.log('✅ MisCitas - Citas cargadas:', response.data.data);
+      if (Array.isArray(citasData)) {
+        setCitas(citasData);
+        console.log('✅ MisCitas - Citas cargadas:', citasData);
       } else {
-        console.log('⚠️ MisCitas - Respuesta sin éxito:', response);
+        console.log('⚠️ MisCitas - Respuesta no es array:', citasData);
         setError('Error al cargar las citas');
       }
     } catch (err: any) {

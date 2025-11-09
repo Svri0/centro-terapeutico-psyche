@@ -1448,25 +1448,47 @@ export const obtenerPacientesPsicologo = async (req: Request, res: Response) => 
       );
     }
 
-    // Obtener pacientes asignados al psicólogo
+    // Obtener pacientes asignados al psicólogo (normalizado)
     const [pacientes] = await sequelize.query(
       `SELECT 
         p.id,
         p.usuario_id,
-        p.nombres,
-        p.apellidos,
-        p.email,
-        p.telefono,
-        p.fecha_nacimiento,
-        p.genero,
+        u.nombres,
+        u.apellidos,
+        u.email,
+        u.telefono,
+        u.fecha_nacimiento,
+        u.genero,
         p.numero_ficha,
         p.rut,
         p.direccion,
-        p.contacto_emergencia_nombre,
-        p.contacto_emergencia_telefono,
-        p.contacto_emergencia_relacion,
-        p.diagnosticos,
-        p.etiquetas,
+        (
+          SELECT ce.nombre FROM contactos_emergencia ce 
+          WHERE ce.paciente_id = p.id AND ce.deleted_at IS NULL
+          ORDER BY ce.created_at ASC LIMIT 1
+        ) AS contacto_emergencia_nombre,
+        (
+          SELECT ce.telefono FROM contactos_emergencia ce 
+          WHERE ce.paciente_id = p.id AND ce.deleted_at IS NULL
+          ORDER BY ce.created_at ASC LIMIT 1
+        ) AS contacto_emergencia_telefono,
+        (
+          SELECT ce.relacion FROM contactos_emergencia ce 
+          WHERE ce.paciente_id = p.id AND ce.deleted_at IS NULL
+          ORDER BY ce.created_at ASC LIMIT 1
+        ) AS contacto_emergencia_relacion,
+        (
+          SELECT COALESCE(array_agg(e.nombre ORDER BY e.nombre), '{}')
+          FROM paciente_etiquetas pe 
+          JOIN etiquetas e ON e.id = pe.etiqueta_id
+          WHERE pe.paciente_id = p.id
+        ) AS etiquetas,
+        (
+          SELECT COALESCE(array_agg(d.nombre ORDER BY d.nombre), '{}')
+          FROM paciente_diagnosticos pd 
+          JOIN diagnosticos d ON d.id = pd.diagnostico_id
+          WHERE pd.paciente_id = p.id
+        ) AS diagnosticos,
         p.estrategias_autorregulacion,
         p.puntos_acumulados,
         p.estado,
@@ -1476,7 +1498,8 @@ export const obtenerPacientesPsicologo = async (req: Request, res: Response) => 
         p.created_at,
         p.updated_at
        FROM pacientes p
-       WHERE p.psicologo_id = :id
+       INNER JOIN usuarios u ON p.usuario_id = u.id
+       WHERE p.psicologo_id = :id AND p.deleted_at IS NULL
        ORDER BY p.created_at DESC`,
       {
         replacements: { id }
@@ -1527,24 +1550,24 @@ export const obtenerSesionesPsicologo = async (req: Request, res: Response) => {
     // Obtener sesiones del psicólogo con información del paciente
     const [sesiones] = await sequelize.query(
       `SELECT 
-        c.id,
-        c.paciente_id,
-        p.nombres as paciente_nombres,
-        p.apellidos as paciente_apellidos,
-        p.email as paciente_email,
-        c.fecha,
-        c.hora_inicio,
-        c.hora_fin,
-        c.estado,
-        c.tipo_sesion,
-        c.modalidad,
-        c.created_at,
-        c.updated_at
-       FROM sesiones c
-       INNER JOIN pacientes p ON c.paciente_id = p.id
-       WHERE c.psicologo_id = :id
-       AND c.estado IN ('programada', 'confirmada', 'en_progreso')
-       ORDER BY c.fecha ASC, c.hora_inicio ASC`,
+        s.id,
+        s.paciente_id,
+        u.nombres as paciente_nombres,
+        u.apellidos as paciente_apellidos,
+        u.email as paciente_email,
+        s.fecha_programada as fecha,
+        s.fecha_inicio as hora_inicio,
+        s.fecha_fin as hora_fin,
+        s.estado,
+        s.tipo_sesion,
+        s.created_at,
+        s.updated_at
+       FROM sesiones s
+       INNER JOIN pacientes p ON s.paciente_id = p.id
+       INNER JOIN usuarios u ON p.usuario_id = u.id
+       WHERE s.psicologo_id = :id
+       AND s.estado IN ('programada', 'confirmada', 'en_curso')
+       ORDER BY s.fecha_programada ASC, s.fecha_inicio ASC`,
       {
         replacements: { id }
       }
@@ -1584,24 +1607,25 @@ export const eliminarSesion = async (req: Request, res: Response) => {
       );
     }
 
-    // Verificar que la cita existe y obtener información
+    // Verificar que la sesión existe y obtener información
     const [cita] = await sequelize.query(
       `SELECT 
-        c.id,
-        c.paciente_id,
-        c.psicologo_id,
-        c.fecha,
-        c.hora_inicio,
-        c.hora_fin,
-        c.estado,
-        p.nombres as paciente_nombres,
-        p.apellidos as paciente_apellidos,
+        s.id,
+        s.paciente_id,
+        s.psicologo_id,
+        s.fecha_programada as fecha,
+        s.fecha_inicio as hora_inicio,
+        s.fecha_fin as hora_fin,
+        s.estado,
+        u_paciente.nombres as paciente_nombres,
+        u_paciente.apellidos as paciente_apellidos,
         u_psicologo.nombres as psicologo_nombres,
         u_psicologo.apellidos as psicologo_apellidos
-       FROM sesiones c
-       INNER JOIN pacientes p ON c.paciente_id = p.id
-       INNER JOIN usuarios u_psicologo ON c.psicologo_id = u_psicologo.id
-       WHERE c.id = :id`,
+       FROM sesiones s
+       INNER JOIN pacientes p ON s.paciente_id = p.id
+       INNER JOIN usuarios u_paciente ON p.usuario_id = u_paciente.id
+       INNER JOIN usuarios u_psicologo ON s.psicologo_id = u_psicologo.id
+       WHERE s.id = :id`,
       {
         replacements: { id },
         transaction
@@ -1698,14 +1722,15 @@ export const reasignarPaciente = async (req: Request, res: Response) => {
       `SELECT 
         p.id,
         p.usuario_id,
-        p.nombres,
-        p.apellidos,
+        u_paciente.nombres,
+        u_paciente.apellidos,
         p.psicologo_id as psicologo_actual_id,
         u_psicologo.nombres as psicologo_actual_nombres,
         u_psicologo.apellidos as psicologo_actual_apellidos
        FROM pacientes p
+       INNER JOIN usuarios u_paciente ON p.usuario_id = u_paciente.id
        INNER JOIN usuarios u_psicologo ON p.psicologo_id = u_psicologo.id
-       WHERE p.id = :pacienteId`,
+       WHERE p.id = :pacienteId AND p.deleted_at IS NULL`,
       {
         replacements: { pacienteId },
         transaction
@@ -2606,6 +2631,183 @@ export const eliminarRecepcionista = async (req: Request, res: Response) => {
       res,
       'Error al eliminar el recepcionista',
       'ADMIN_071'
+    );
+  }
+};
+
+// ==================== ESTADÍSTICAS GENERALES ====================
+
+// Obtener estadísticas generales del centro
+export const obtenerEstadisticasGenerales = async (req: Request, res: Response) => {
+  try {
+    console.log('📊 Admin solicitando estadísticas generales del centro...');
+
+    // Estadísticas de usuarios por rol
+    const [usuariosPorRol] = await sequelize.query(`
+      SELECT 
+        r.nombre as rol,
+        COUNT(u.id) as total,
+        COUNT(CASE WHEN u.activo = true THEN 1 END) as activos
+      FROM usuarios u
+      INNER JOIN roles r ON u.rol_id = r.id
+      WHERE u.deleted_at IS NULL
+      GROUP BY r.nombre, r.id
+      ORDER BY r.id
+    `) as [any[], unknown];
+
+    // Estadísticas de pacientes
+    const [estadisticasPacientes] = await sequelize.query(`
+      SELECT 
+        COUNT(*) as total_pacientes,
+        COUNT(CASE WHEN estado = 'activo' THEN 1 END) as pacientes_activos,
+        COUNT(CASE WHEN estado = 'inactivo' THEN 1 END) as pacientes_inactivos,
+        COUNT(CASE WHEN estado = 'alta' THEN 1 END) as pacientes_alta,
+        COUNT(CASE WHEN estado = 'derivado' THEN 1 END) as pacientes_derivados,
+        COUNT(CASE WHEN fecha_ingreso >= CURRENT_DATE - INTERVAL '30 days' THEN 1 END) as pacientes_nuevos_mes,
+        AVG(puntos_acumulados) as promedio_puntos
+      FROM pacientes 
+      WHERE deleted_at IS NULL
+    `) as [any[], unknown];
+
+    // Estadísticas de sesiones
+    const [estadisticasSesiones] = await sequelize.query(`
+      SELECT 
+        COUNT(*) as total_sesiones,
+        COUNT(CASE WHEN estado = 'programada' THEN 1 END) as sesiones_programadas,
+        COUNT(CASE WHEN estado = 'confirmada' THEN 1 END) as sesiones_confirmadas,
+        COUNT(CASE WHEN estado = 'en_curso' THEN 1 END) as sesiones_en_curso,
+        COUNT(CASE WHEN estado = 'completada' THEN 1 END) as sesiones_completadas,
+        COUNT(CASE WHEN estado = 'cancelada' THEN 1 END) as sesiones_canceladas,
+        COUNT(CASE WHEN estado = 'no_asistio' THEN 1 END) as sesiones_no_asistio,
+        COUNT(CASE WHEN fecha_programada >= CURRENT_DATE THEN 1 END) as sesiones_futuras,
+        COUNT(CASE WHEN fecha_programada >= CURRENT_DATE - INTERVAL '30 days' AND fecha_programada < CURRENT_DATE THEN 1 END) as sesiones_mes_pasado
+      FROM sesiones
+    `) as [any[], unknown];
+
+    // Estadísticas de tareas
+    const [estadisticasTareas] = await sequelize.query(`
+      SELECT 
+        COUNT(*) as total_tareas,
+        COUNT(CASE WHEN estado = 'pendiente' THEN 1 END) as tareas_pendientes,
+        COUNT(CASE WHEN estado = 'en_progreso' THEN 1 END) as tareas_en_progreso,
+        COUNT(CASE WHEN estado = 'completada' THEN 1 END) as tareas_completadas,
+        COUNT(CASE WHEN estado = 'vencida' THEN 1 END) as tareas_vencidas,
+        COUNT(CASE WHEN estado = 'cancelada' THEN 1 END) as tareas_canceladas,
+        COUNT(CASE WHEN fecha_asignacion >= CURRENT_DATE - INTERVAL '7 days' THEN 1 END) as tareas_semana,
+        AVG(puntos_asignados) as promedio_puntos_tarea
+      FROM tareas
+    `) as [any[], unknown];
+
+    // Estadísticas por tipo de sesión
+    const [sesionesPorTipo] = await sequelize.query(`
+      SELECT 
+        tipo_sesion,
+        COUNT(*) as total
+      FROM sesiones
+      GROUP BY tipo_sesion
+      ORDER BY total DESC
+    `) as [any[], unknown];
+
+    // Estadísticas por tipo de tarea
+    const [tareasPorTipo] = await sequelize.query(`
+      SELECT 
+        tipo_tarea,
+        COUNT(*) as total
+      FROM tareas
+      GROUP BY tipo_tarea
+      ORDER BY total DESC
+    `) as [any[], unknown];
+
+    // Estadísticas de actividad reciente (últimos 7 días)
+    const [actividadReciente] = await sequelize.query(`
+      SELECT 
+        DATE(created_at) as fecha,
+        'usuarios' as tipo,
+        COUNT(*) as cantidad
+      FROM usuarios 
+      WHERE created_at >= CURRENT_DATE - INTERVAL '7 days'
+      GROUP BY DATE(created_at)
+      
+      UNION ALL
+      
+      SELECT 
+        DATE(created_at) as fecha,
+        'sesiones' as tipo,
+        COUNT(*) as cantidad
+      FROM sesiones 
+      WHERE created_at >= CURRENT_DATE - INTERVAL '7 days'
+      GROUP BY DATE(created_at)
+      
+      UNION ALL
+      
+      SELECT 
+        DATE(created_at) as fecha,
+        'tareas' as tipo,
+        COUNT(*) as cantidad
+      FROM tareas 
+      WHERE created_at >= CURRENT_DATE - INTERVAL '7 days'
+      GROUP BY DATE(created_at)
+      
+      ORDER BY fecha DESC, tipo
+    `) as [any[], unknown];
+
+    // Estadísticas de psicólogos más activos (por número de sesiones)
+    const [psicologosActivos] = await sequelize.query(`
+      SELECT 
+        u.nombres,
+        u.apellidos,
+        COUNT(s.id) as total_sesiones,
+        COUNT(CASE WHEN s.estado = 'completada' THEN 1 END) as sesiones_completadas,
+        COUNT(p.id) as total_pacientes
+      FROM usuarios u
+      INNER JOIN roles r ON u.rol_id = r.id
+      LEFT JOIN sesiones s ON u.id = s.psicologo_id
+      LEFT JOIN pacientes p ON u.id = p.psicologo_id
+      WHERE r.nombre = 'psicologo' AND u.activo = true
+      GROUP BY u.id, u.nombres, u.apellidos
+      ORDER BY total_sesiones DESC
+      LIMIT 5
+    `) as [any[], unknown];
+
+    // Resumen general
+    const resumen = {
+      total_usuarios: usuariosPorRol.reduce((sum: number, item: any) => sum + parseInt(item.total), 0),
+      total_pacientes: estadisticasPacientes[0]?.total_pacientes || 0,
+      total_sesiones: estadisticasSesiones[0]?.total_sesiones || 0,
+      total_tareas: estadisticasTareas[0]?.total_tareas || 0,
+      pacientes_activos: estadisticasPacientes[0]?.pacientes_activos || 0,
+      sesiones_programadas: estadisticasSesiones[0]?.sesiones_programadas || 0,
+      tareas_pendientes: estadisticasTareas[0]?.tareas_pendientes || 0
+    };
+
+    const estadisticas = {
+      resumen,
+      usuarios_por_rol: usuariosPorRol,
+      pacientes: estadisticasPacientes[0] || {},
+      sesiones: estadisticasSesiones[0] || {},
+      tareas: estadisticasTareas[0] || {},
+      sesiones_por_tipo: sesionesPorTipo,
+      tareas_por_tipo: tareasPorTipo,
+      actividad_reciente: actividadReciente,
+      psicologos_mas_activos: psicologosActivos,
+      fecha_consulta: new Date().toISOString()
+    };
+
+    console.log('✅ Estadísticas generales obtenidas exitosamente');
+
+    return ManejadorRespuestas.exito(
+      res,
+      'Estadísticas generales obtenidas exitosamente',
+      estadisticas,
+      'ADMIN_072'
+    );
+
+  } catch (error) {
+    log.error('Error en obtenerEstadisticasGenerales:', error);
+    return ManejadorRespuestas.errorInterno(
+      res,
+      'Error al obtener las estadísticas generales',
+      'ADMIN_073'
     );
   }
 }; 

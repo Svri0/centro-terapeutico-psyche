@@ -20,7 +20,7 @@ const CalendarioCitas: React.FC<CalendarioCitasProps> = ({ psicologoId }) => {
     try {
       setLoading(true);
       setError(null);
-      const citasData = await citasService.obtenerCitasPsicologo(psicologoId);
+      const citasData = await citasService.obtenerCitas();
       setCitas(citasData);
     } catch (err: any) {
       console.error('Error al cargar citas:', err);

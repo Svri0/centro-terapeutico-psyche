@@ -27,7 +27,7 @@ COPY . .
 RUN mkdir -p uploads logs
 
 # Exponer puerto
-EXPOSE 3001
+EXPOSE 3002
 
 # Comando por defecto para desarrollo
 CMD ["npm", "run", "dev"]
@@ -58,7 +58,7 @@ RUN chown -R nodejs:nodejs /app
 USER nodejs
 
 # Exponer puerto
-EXPOSE 3001
+EXPOSE 3002
 
 # Comando para producción
 CMD ["npm", "start"] 

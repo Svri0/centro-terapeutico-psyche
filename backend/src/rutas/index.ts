@@ -8,9 +8,10 @@ import disponibilidadMensualRoutes from './disponibilidadMensual.routes';
 import serviciosRoutes from './servicios.routes';
 import adminRoutes from './admin.routes';
 import recepcionistaRoutes from './recepcionista.routes';
-import chatRoutes from './chat.rutas';
+import sesionesTerapeuticasRoutes from './sesiones-terapeuticas.routes';
 import agendaPDFRoutes from './agendaPDF.routes';
 import reportesRoutes from './reportes.routes';
+import recordatoriosRoutes from './recordatorios.routes';
 
 const router = Router();
 
@@ -26,8 +27,11 @@ router.use('/pacientes', pacientesRoutes);
 // Rutas de tareas
 router.use('/tareas', tareasRoutes);
 
-// Rutas de sesiones
-router.use('/sesiones', sesionesRoutes);
+// Rutas de citas (usando sesiones como backend)
+router.use('/citas', sesionesRoutes);
+
+// Rutas de disponibilidad (semanal - legacy) -> redirigido a disponibilidad mensual para compatibilidad
+router.use('/disponibilidad', disponibilidadMensualRoutes);
 
 // Rutas de disponibilidad mensual
 router.use('/disponibilidad-mensual', disponibilidadMensualRoutes);
@@ -38,17 +42,19 @@ router.use('/servicios', serviciosRoutes);
 // Rutas de administración
 router.use('/admin', adminRoutes);
 
-
 // Rutas de recepcionista
 router.use('/recepcionista', recepcionistaRoutes);
 
-// Rutas de chat
-router.use('/chat', chatRoutes);
+// Rutas de sesiones terapéuticas
+router.use('/sesiones-terapeuticas', sesionesTerapeuticasRoutes);
 
 // Rutas de agenda PDF
 router.use('/agenda-pdf', agendaPDFRoutes);
 
 // Rutas de reportes de progreso
 router.use('/reportes', reportesRoutes);
+
+// Rutas de recordatorios
+router.use('/recordatorios', recordatoriosRoutes);
 
 export default router; 

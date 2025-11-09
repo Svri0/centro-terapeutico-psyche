@@ -2,25 +2,25 @@
 export const ESTADOS_CITAS = {
   programada: 'Programada',
   confirmada: 'Confirmada',
-  en_progreso: 'En Progreso',
+  en_progreso: 'En Sesión',
   completada: 'Completada',
   cancelada: 'Cancelada',
   no_show: 'No Asistió'
 } as const;
 
 export const COLORES_ESTADOS = {
-  programada: 'bg-blue-100 text-blue-800',
-  confirmada: 'bg-green-100 text-green-800',
-  en_progreso: 'bg-yellow-100 text-yellow-800',
-  completada: 'bg-gray-100 text-gray-800',
-  cancelada: 'bg-red-100 text-red-800',
-  no_show: 'bg-orange-100 text-orange-800'
+  programada: 'bg-blue-100 text-blue-800 border border-black',
+  confirmada: 'bg-green-100 text-green-800 border border-black',
+  en_progreso: 'bg-purple-100 text-purple-800 border border-black',
+  completada: 'bg-gray-100 text-gray-800 border border-black',
+  cancelada: 'bg-red-100 text-red-800 border border-black',
+  no_show: 'bg-orange-100 text-orange-800 border border-black'
 } as const;
 
 export const COLORES_ESTADOS_CALENDARIO = {
   programada: 'bg-blue-500',
   confirmada: 'bg-green-500',
-  en_progreso: 'bg-yellow-500',
+  en_progreso: 'bg-purple-500',
   completada: 'bg-gray-500',
   cancelada: 'bg-red-500',
   no_show: 'bg-orange-500'
@@ -79,4 +79,14 @@ export const obtenerTextoAccion = (estado: string): string => {
     default:
       return estado;
   }
+};
+
+// Colores para modalidades
+export const COLORES_MODALIDADES = {
+  presencial: 'bg-blue-100 text-blue-800 border border-black',
+  online: 'bg-green-100 text-green-800 border border-black'
+} as const;
+
+export const obtenerModalidadColor = (modalidad: string): string => {
+  return COLORES_MODALIDADES[modalidad as keyof typeof COLORES_MODALIDADES] || 'bg-gray-100 text-gray-800 border border-black';
 }; 

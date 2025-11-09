@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { recepcionistaService } from '../servicios/recepcionista.service';
+import { obtenerEstadoTexto, obtenerModalidadColor } from '../utilidades/estados-citas';
 
 interface Cita {
   id: string;
@@ -19,7 +20,7 @@ interface Cita {
   notas_paciente?: string;
   notas_psicologo?: string;
   recordatorio_enviado: boolean;
-  pago_estado: 'pendiente' | 'pagado' | 'parcial';
+  pago_estado: 'pendiente' | 'pagado';
   pago_monto?: number;
 }
 
@@ -231,22 +232,21 @@ const AgendaRecepcionista: React.FC = () => {
 
   const getEstadoColor = (estado: string) => {
     switch (estado) {
-      case 'confirmada': return 'bg-green-100 text-green-800';
-      case 'programada': return 'bg-blue-100 text-blue-800';
-      case 'en_curso': return 'bg-yellow-100 text-yellow-800';
-      case 'completada': return 'bg-gray-100 text-gray-800';
-      case 'cancelada': return 'bg-red-100 text-red-800';
-      case 'no_asistio': return 'bg-orange-100 text-orange-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'confirmada': return 'bg-green-100 text-green-800 border border-black';
+      case 'programada': return 'bg-blue-100 text-blue-800 border border-black';
+      case 'en_curso': return 'bg-yellow-100 text-yellow-800 border border-black';
+      case 'completada': return 'bg-gray-100 text-gray-800 border border-black';
+      case 'cancelada': return 'bg-red-100 text-red-800 border border-black';
+      case 'no_asistio': return 'bg-orange-100 text-orange-800 border border-black';
+      default: return 'bg-gray-100 text-gray-800 border border-black';
     }
   };
 
   const getPagoColor = (estado: string) => {
     switch (estado) {
-      case 'pagado': return 'bg-green-100 text-green-800';
-      case 'pendiente': return 'bg-yellow-100 text-yellow-800';
-      case 'parcial': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'pagado': return 'bg-green-100 text-green-800 border border-black';
+      case 'pendiente': return 'bg-yellow-100 text-yellow-800 border border-black';
+      default: return 'bg-gray-100 text-gray-800 border border-black';
     }
   };
 
@@ -471,22 +471,18 @@ const AgendaRecepcionista: React.FC = () => {
                     {cita.psicologo_nombre}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      cita.modalidad === 'presencial' 
-                        ? 'bg-blue-100 text-blue-800' 
-                        : 'bg-green-100 text-green-800'
-                    }`}>
-                      {cita.modalidad}
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${obtenerModalidadColor(cita.modalidad)}`}>
+                      {cita.modalidad?.charAt(0).toUpperCase() + cita.modalidad?.slice(1)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getEstadoColor(cita.estado)}`}>
-                      {cita.estado}
+                      {obtenerEstadoTexto(cita.estado)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPagoColor(cita.pago_estado)}`}>
-                      {cita.pago_estado}
+                      {cita.pago_estado?.charAt(0).toUpperCase() + cita.pago_estado?.slice(1)}
                     </span>
                     {cita.pago_monto && (
                       <div className="text-xs text-gray-500">
@@ -773,12 +769,8 @@ const AgendaRecepcionista: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Modalidad</label>
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      selectedCita.modalidad === 'presencial' 
-                        ? 'bg-blue-100 text-blue-800' 
-                        : 'bg-green-100 text-green-800'
-                    }`}>
-                      {selectedCita.modalidad}
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${obtenerModalidadColor(selectedCita.modalidad)}`}>
+                      {selectedCita.modalidad?.charAt(0).toUpperCase() + selectedCita.modalidad?.slice(1)}
                     </span>
                   </div>
                   <div>
@@ -792,7 +784,7 @@ const AgendaRecepcionista: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Estado de Pago</label>
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPagoColor(selectedCita.pago_estado)}`}>
-                    {selectedCita.pago_estado}
+                    {selectedCita.pago_estado?.charAt(0).toUpperCase() + selectedCita.pago_estado?.slice(1)}
                   </span>
                   {selectedCita.pago_monto && (
                     <p className="text-gray-900 mt-1">${selectedCita.pago_monto.toLocaleString()}</p>

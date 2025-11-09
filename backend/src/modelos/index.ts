@@ -9,6 +9,9 @@ import RespuestaTarea from './RespuestaTarea';
 import DisponibilidadMensual from './DisponibilidadMensual';
 import MensajeChat from './MensajeChat';
 import ReporteProgreso from './ReporteProgreso';
+import ContactoEmergencia from './ContactoEmergencia';
+import Etiqueta from './Etiqueta';
+import Diagnostico from './Diagnostico';
 
 // Configurar asociaciones
 
@@ -213,6 +216,47 @@ ReporteProgreso.belongsTo(Sesion, {
   as: 'sesion',
 });
 
+// Paciente - ContactoEmergencia (1:N)
+Paciente.hasMany(ContactoEmergencia, {
+  foreignKey: 'paciente_id',
+  as: 'contactos_emergencia',
+});
+
+ContactoEmergencia.belongsTo(Paciente, {
+  foreignKey: 'paciente_id',
+  as: 'paciente',
+});
+
+// Paciente - Etiqueta (N:M) a través de paciente_etiquetas
+Paciente.belongsToMany(Etiqueta, {
+  through: 'paciente_etiquetas',
+  foreignKey: 'paciente_id',
+  otherKey: 'etiqueta_id',
+  as: 'etiquetas_norm',
+});
+
+Etiqueta.belongsToMany(Paciente, {
+  through: 'paciente_etiquetas',
+  foreignKey: 'etiqueta_id',
+  otherKey: 'paciente_id',
+  as: 'pacientes',
+});
+
+// Paciente - Diagnostico (N:M) a través de paciente_diagnosticos
+Paciente.belongsToMany(Diagnostico, {
+  through: 'paciente_diagnosticos',
+  foreignKey: 'paciente_id',
+  otherKey: 'diagnostico_id',
+  as: 'diagnosticos_norm',
+});
+
+Diagnostico.belongsToMany(Paciente, {
+  through: 'paciente_diagnosticos',
+  foreignKey: 'diagnostico_id',
+  otherKey: 'paciente_id',
+  as: 'pacientes',
+});
+
 export {
   Rol,
   Usuario,
@@ -225,4 +269,7 @@ export {
   DisponibilidadMensual,
   MensajeChat,
   ReporteProgreso,
+  ContactoEmergencia,
+  Etiqueta,
+  Diagnostico,
 }; 
