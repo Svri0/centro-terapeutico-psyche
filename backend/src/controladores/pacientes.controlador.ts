@@ -18,23 +18,14 @@ export const obtenerTodos = async (req: Request, res: Response) => {
     }
 
     // Obtener pacientes del psicólogo autenticado
+    // Consulta simplificada que solo usa columnas básicas que siempre existen
     const [pacientes] = await sequelize.query(`
       SELECT 
         p.id,
         p.numero_ficha,
         p.rut,
-        p.direccion,
-        p.contacto_emergencia_nombre,
-        p.contacto_emergencia_telefono,
-        p.contacto_emergencia_relacion,
-        p.diagnosticos,
-        p.etiquetas,
-        p.estrategias_autorregulacion,
-        p.puntos_acumulados,
         p.estado,
         p.fecha_ingreso,
-        p.fecha_alta,
-        p.observaciones,
         u.nombres,
         u.apellidos,
         u.email,
@@ -49,22 +40,97 @@ export const obtenerTodos = async (req: Request, res: Response) => {
     `, {
       replacements: { psicologoId }
     }) as [any[], unknown];
+    
+    // Enriquecer los resultados con campos adicionales si existen
+    const pacientesEnriquecidos = pacientes.map((paciente: any) => ({
+      ...paciente,
+      direccion: paciente.direccion || null,
+      contacto_emergencia_nombre: paciente.contacto_emergencia_nombre || null,
+      contacto_emergencia_telefono: paciente.contacto_emergencia_telefono || null,
+      contacto_emergencia_relacion: paciente.contacto_emergencia_relacion || null,
+      diagnosticos: paciente.diagnosticos || [],
+      etiquetas: paciente.etiquetas || [],
+      estrategias_autorregulacion: paciente.estrategias_autorregulacion || [],
+      puntos_acumulados: paciente.puntos_acumulados || 0,
+      fecha_alta: paciente.fecha_alta || null,
+      observaciones: paciente.observaciones || null,
+    }));
 
     return ManejadorRespuestas.exito(
       res,
       MENSAJES_PACIENTES.LISTA_OBTENIDA,
       {
-        pacientes,
-        total: pacientes.length,
-        activos: pacientes.filter((p: any) => p.estado === 'activo').length
+        pacientes: pacientesEnriquecidos,
+        total: pacientesEnriquecidos.length,
+        activos: pacientesEnriquecidos.filter((p: any) => p.estado === 'activo').length
       },
       'PAC_002'
     );
-  } catch (error) {
+  } catch (error: any) {
+    // Logging exhaustivo del error
+    console.error('🔴 ========== ERROR EN OBTENER PACIENTES ==========');
+    console.error('Error completo:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+    console.error('Tipo de error (name):', error?.name);
+    console.error('Mensaje:', error?.message);
+    console.error('Stack:', error?.stack);
+    console.error('Original:', error?.original);
+    console.error('Parent:', error?.parent);
+    console.error('Código original:', error?.original?.code);
+    console.error('Código parent:', error?.parent?.code);
+    console.error('Mensaje original:', error?.original?.message);
+    console.error('===================================================');
+    
     log.error('Error en obtenerTodos:', error);
+    log.error('Tipo de error:', error?.name);
+    log.error('Código original:', error?.original?.code);
+    log.error('Mensaje:', error?.message);
+    
+    // Detectar errores de conexión a la base de datos (más exhaustivo)
+    const errorString = JSON.stringify(error).toLowerCase();
+    const isDbError = 
+      error?.name === 'SequelizeConnectionError' || 
+      error?.name === 'SequelizeConnectionRefusedError' ||
+      error?.name === 'SequelizeHostNotFoundError' ||
+      error?.name === 'SequelizeAccessDeniedError' ||
+      error?.name === 'ConnectionError' ||
+      error?.name?.includes('Connection') ||
+      error?.original?.code === '28P01' ||
+      error?.original?.code === 'ECONNREFUSED' ||
+      error?.original?.code === 'ENOTFOUND' ||
+      error?.parent?.code === '28P01' ||
+      error?.parent?.code === 'ECONNREFUSED' ||
+      error?.message?.toLowerCase().includes('password') ||
+      error?.message?.toLowerCase().includes('autentificación') ||
+      error?.message?.toLowerCase().includes('authentication') ||
+      error?.message?.toLowerCase().includes('connection') ||
+      error?.message?.toLowerCase().includes('connect econnrefused') ||
+      errorString.includes('password') ||
+      errorString.includes('autentificación') ||
+      errorString.includes('authentication') ||
+      errorString.includes('28p01') ||
+      errorString.includes('econnrefused') ||
+      (error?.original?.message && error.original.message.toLowerCase().includes('password'));
+    
+    if (isDbError) {
+      console.error('🔴 Error de base de datos DETECTADO');
+      log.error('🔴 Error de base de datos detectado');
+      return ManejadorRespuestas.errorInterno(
+        res,
+        'Error de conexión a la base de datos. Verifica que PostgreSQL esté corriendo y las credenciales sean correctas.',
+        'DB_001'
+      );
+    }
+    
+    console.error('⚠️ Error NO detectado como error de BD, usando mensaje genérico');
+    
+    // Incluir información del error en la respuesta si estamos en desarrollo
+    const mensajeError = process.env.NODE_ENV === 'development' 
+      ? `Error interno al obtener la lista de pacientes. Tipo: ${error?.name || 'Desconocido'}, Mensaje: ${error?.message || 'Sin mensaje'}`
+      : 'Error interno al obtener la lista de pacientes';
+    
     return ManejadorRespuestas.errorInterno(
       res,
-      'Error interno al obtener la lista de pacientes',
+      mensajeError,
       'PAC_003'
     );
   }

@@ -39,7 +39,21 @@ api.interceptors.response.use(
 
     // Error 500 - Error interno del servidor
     if (status === 500) {
+      const errorData = error.response?.data || {};
+      const errorDetails = errorData.data || {};
+      const url = error.config?.url || 'URL desconocida';
+      const method = error.config?.method?.toUpperCase() || 'UNKNOWN';
+      
       console.error('🚨 Error interno del servidor');
+      console.error('📍 URL:', method, url);
+      console.error('📝 Mensaje:', errorMessage || errorData.error || 'Error desconocido');
+      console.error('🔢 Código:', errorCode || 'Sin código');
+      if (errorDetails.detalleError) {
+        console.error('🔍 Detalle:', errorDetails.detalleError);
+      }
+      if (errorDetails.stack && process.env.NODE_ENV === 'development') {
+        console.error('📚 Stack:', errorDetails.stack);
+      }
       // NO redirigir automáticamente, dejar que el componente maneje el error
       return Promise.reject(error);
     }

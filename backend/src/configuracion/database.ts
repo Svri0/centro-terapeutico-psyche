@@ -12,8 +12,8 @@ dotenv.config({ path: path.join(__dirname, '..', '..', '..', '.env') });
 const dbConfig: Options = {
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '5432'),
-  username: process.env.DB_USER || 'psyche_user',
-  password: process.env.DB_PASSWORD || 'R4DiK_ToXiCx',
+  username: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || 'VMlover01!',
   database: process.env.DB_NAME || 'psyche_db',
   dialect: 'postgres',
   dialectOptions: {
@@ -48,8 +48,29 @@ export const testConnection = async (): Promise<void> => {
   try {
     await sequelize.authenticate();
     console.log('✅ Conexión a la base de datos establecida correctamente');
-  } catch (error) {
-    console.error('❌ Error al conectar con la base de datos:', error);
+  } catch (error: any) {
+    console.error('❌ Error al conectar con la base de datos');
+    
+    // Mensajes más específicos según el tipo de error
+    if (error.original?.code === '28P01') {
+      console.error('🔐 Error de autenticación: La contraseña del usuario PostgreSQL no coincide');
+      console.error(`   Usuario: ${dbConfig.username}`);
+      console.error('💡 Solución: Verifica la variable DB_PASSWORD en tu archivo .env');
+      console.error('   O cambia la contraseña del usuario en PostgreSQL');
+    } else if (error.original?.code === 'ECONNREFUSED') {
+      console.error('🔌 Error de conexión: PostgreSQL no está corriendo o no está accesible');
+      console.error(`   Host: ${dbConfig.host}:${dbConfig.port}`);
+      console.error('💡 Solución: Asegúrate de que PostgreSQL esté corriendo');
+    } else if (error.original?.code === 'ENOTFOUND') {
+      console.error('🌐 Error de DNS: No se puede encontrar el host de la base de datos');
+      console.error(`   Host: ${dbConfig.host}`);
+    } else if (error.message?.includes('password')) {
+      console.error('🔐 Error de autenticación: Contraseña incorrecta');
+      console.error('💡 Solución: Verifica la variable DB_PASSWORD en tu archivo .env');
+    } else {
+      console.error('📝 Detalles del error:', error.message || error);
+    }
+    
     throw error;
   }
 };

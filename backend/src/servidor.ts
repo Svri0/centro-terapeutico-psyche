@@ -527,6 +527,13 @@ app.use('/api/v1', rutas);
 // Middleware de manejo de errores personalizado
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('🚨 Error capturado por middleware:', err);
+  console.error('📍 Ruta:', _req.method, _req.originalUrl);
+  if (err.message) {
+    console.error('📝 Mensaje:', err.message);
+  }
+  if (err.stack && process.env.NODE_ENV === 'development') {
+    console.error('📚 Stack:', err.stack);
+  }
 
   // Determinar el tipo de error y mensaje apropiado
   let mensaje = MENSAJES_GENERALES.ERROR_INTERNO;
@@ -540,15 +547,25 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
     statusCode = 400;
   }
 
-  // Errores de base de datos
-  if (err.name === 'SequelizeError' || err.name === 'DatabaseError') {
-    mensaje = 'Error en la base de datos';
+  // Errores de base de datos (Sequelize)
+  if (err.name === 'SequelizeError' || 
+      err.name === 'DatabaseError' || 
+      err.name === 'SequelizeConnectionError' ||
+      err.name === 'SequelizeConnectionRefusedError' ||
+      err.name === 'SequelizeHostNotFoundError' ||
+      err.name === 'SequelizeAccessDeniedError' ||
+      err.original?.code === 'ECONNREFUSED' ||
+      err.original?.code === 'ENOTFOUND' ||
+      err.message?.includes('Connection') ||
+      err.message?.includes('database') ||
+      err.message?.includes('ECONNREFUSED')) {
+    mensaje = 'Error de conexión a la base de datos. Verifica que PostgreSQL esté corriendo.';
     codigo = 'DB_001';
     statusCode = 500;
   }
 
   // Errores de autenticación
-  if (err.name === 'UnauthorizedError' || err.message.includes('token')) {
+  if (err.name === 'UnauthorizedError' || err.message?.includes('token')) {
     mensaje = 'Token de acceso inválido o expirado';
     codigo = 'AUTH_100';
     statusCode = 401;
@@ -561,6 +578,8 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
     puerto: PUERTO,
     ...(process.env.NODE_ENV === 'development' && {
       detalleError: err.message,
+      nombreError: err.name,
+      codigoOriginal: err.original?.code,
       stack: err.stack
     })
   };
@@ -613,6 +632,18 @@ const encontrarPuertoDisponible = async (puertoInicial: number): Promise<number>
 const iniciarServidor = async () => {
   try {
     console.log('🔍 Verificando disponibilidad del puerto...');
+    
+    // Probar conexión a la base de datos
+    console.log('🔌 Probando conexión a la base de datos...');
+    try {
+      const { testConnection } = await import('./configuracion/database');
+      await testConnection();
+      console.log('✅ Conexión a la base de datos verificada correctamente');
+    } catch (error: any) {
+      console.error('❌ Error al conectar con la base de datos:', error.message);
+      console.error('⚠️  El servidor iniciará pero las peticiones a la base de datos fallarán');
+      console.error('💡 Verifica que PostgreSQL esté corriendo y las credenciales sean correctas');
+    }
     
     // Configurar modelos y asociaciones
     console.log('📦 Configurando modelos y asociaciones...');
