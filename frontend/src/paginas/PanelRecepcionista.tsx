@@ -13,6 +13,7 @@ const PanelRecepcionista: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'agenda' | 'pacientes' | 'pagos' | 'reportes' | 'chat'>('dashboard');
   const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [tieneMensajesNoLeidos, setTieneMensajesNoLeidos] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -24,6 +25,13 @@ const PanelRecepcionista: React.FC = () => {
 
   // Hook para timeout de sesión (15 minutos)
   useSessionTimeout(15); // 15 minutos
+
+  // Ocultar badge cuando se entra al chat
+  useEffect(() => {
+    if (activeTab === 'chat') {
+      setTieneMensajesNoLeidos(false);
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     const user = authService.getUser();
@@ -136,14 +144,24 @@ const PanelRecepcionista: React.FC = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors relative ${
                   activeTab === tab.id
                     ? 'border-amber-500 text-amber-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-amber-200'
                 }`}
               >
-                <span className="mr-2">{tab.icon}</span>
-                {tab.label}
+                <span className="flex items-center">
+                  <span className="mr-2">{tab.icon}</span>
+                  {tab.label}
+                  {tab.id === 'chat' && tieneMensajesNoLeidos && activeTab !== 'chat' && (
+                    <span className="ml-2 relative">
+                      <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                      </span>
+                    </span>
+                  )}
+                </span>
               </button>
             ))}
           </div>
@@ -171,7 +189,23 @@ const PanelRecepcionista: React.FC = () => {
           {activeTab === 'pacientes' && <GestionPacientesRecepcionista />}
           {activeTab === 'pagos' && <GestionPagos />}
           {activeTab === 'reportes' && <ReportesRecepcionista />}
-          {activeTab === 'chat' && <ChatRecepcionista recepcionistaId={userData?.id || ''} />}
+          {/* Chat - siempre montado para escuchar mensajes, pero oculto cuando no está activo */}
+          <div className={activeTab === 'chat' ? 'block' : 'hidden'}>
+            <ChatRecepcionista 
+              recepcionistaId={userData?.id || ''} 
+              onMensajesNoLeidosChange={(tieneMensajes) => {
+                // Usar función de actualización para obtener el valor actual de activeTab
+                setTieneMensajesNoLeidos(prev => {
+                  // Si estamos en el chat, siempre ocultar el badge
+                  if (activeTab === 'chat') {
+                    return false;
+                  }
+                  // Si no estamos en el chat, mostrar badge si hay mensajes
+                  return tieneMensajes;
+                });
+              }}
+            />
+          </div>
         </div>
       </main>
 

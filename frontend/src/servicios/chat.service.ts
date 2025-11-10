@@ -79,6 +79,19 @@ class ChatService {
     }
   }
 
+  // Obtener trabajadores (psicólogos y recepcionistas) para el chat del administrador
+  async obtenerTrabajadores(): Promise<PacienteChat[]> {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/v1/chat/trabajadores`, {
+        headers: this.getAuthHeaders()
+      });
+      return response.data.data;
+    } catch (error) {
+      console.error('Error al obtener trabajadores del chat:', error);
+      throw error;
+    }
+  }
+
   // Obtener psicólogo asignado para el paciente
   async obtenerPsicologoAsignado(): Promise<PacienteChat> {
     try {

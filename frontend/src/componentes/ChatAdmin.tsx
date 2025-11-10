@@ -5,9 +5,10 @@ import io, { Socket } from 'socket.io-client';
 
 interface ChatAdminProps {
   adminId: string;
+  onMensajesNoLeidosChange?: (tieneMensajesNoLeidos: boolean) => void;
 }
 
-const ChatAdmin: React.FC<ChatAdminProps> = ({ adminId }) => {
+const ChatAdmin: React.FC<ChatAdminProps> = ({ adminId, onMensajesNoLeidosChange }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [trabajadores, setTrabajadores] = useState<PacienteChat[]>([]);
   const [trabajadorSeleccionado, setTrabajadorSeleccionado] = useState<PacienteChat | null>(null);
@@ -112,25 +113,25 @@ const ChatAdmin: React.FC<ChatAdminProps> = ({ adminId }) => {
       ));
     });
 
-    newSocket.on('mensajes_cargados', (mensajesData: MensajeChat[]) => {
+    const handleMensajesCargados = (mensajesData: MensajeChat[]) => {
       console.log('📨 Mensajes cargados:', mensajesData);
       console.log('📨 Cantidad de mensajes:', mensajesData.length);
-      console.log('📨 Trabajador seleccionado:', trabajadorSeleccionado?.id);
       
       setMensajes(mensajesData);
       
       // Marcar mensajes como leídos y actualizar contador
-      if (trabajadorSeleccionado) {
-        console.log('📨 Marcando mensajes como leídos para:', trabajadorSeleccionado.id);
+      const trabajadorActual = trabajadorSeleccionadoRef.current;
+      if (trabajadorActual) {
+        console.log('📨 Marcando mensajes como leídos para:', trabajadorActual.id);
         newSocket.emit('marcar_como_leidos', {
-          trabajador_id: trabajadorSeleccionado.id,
+          trabajador_id: trabajadorActual.id,
           admin_id: adminId
         });
         
-        // Actualizar contador de mensajes no leídos a 0
+        // SIEMPRE actualizar contador de mensajes no leídos a 0 cuando se cargan los mensajes
         setTrabajadores(prev => {
           const updated = prev.map(t =>
-            t.id === trabajadorSeleccionado.id
+            t.id === trabajadorActual.id
               ? { ...t, mensajes_no_leidos: 0 }
               : t
           );
@@ -138,7 +139,9 @@ const ChatAdmin: React.FC<ChatAdminProps> = ({ adminId }) => {
           return updated;
         });
       }
-    });
+    };
+
+    newSocket.on('mensajes_cargados', handleMensajesCargados);
 
     newSocket.on('trabajadores_disponibles', (trabajadoresData: PacienteChat[]) => {
       setTrabajadores(trabajadoresData);
@@ -154,6 +157,7 @@ const ChatAdmin: React.FC<ChatAdminProps> = ({ adminId }) => {
     setSocket(newSocket);
 
     return () => {
+      newSocket.off('mensajes_cargados', handleMensajesCargados);
       newSocket.close();
     };
   }, []);
@@ -175,6 +179,14 @@ const ChatAdmin: React.FC<ChatAdminProps> = ({ adminId }) => {
     trabajadorSeleccionadoRef.current = trabajadorSeleccionado;
   }, [trabajadorSeleccionado]);
 
+  // Notificar al padre sobre mensajes no leídos
+  useEffect(() => {
+    if (onMensajesNoLeidosChange) {
+      const totalMensajesNoLeidos = trabajadores.reduce((sum, t) => sum + (t.mensajes_no_leidos || 0), 0);
+      onMensajesNoLeidosChange(totalMensajesNoLeidos > 0);
+    }
+  }, [trabajadores, onMensajesNoLeidosChange]);
+
   // Cargar mensajes cuando se selecciona un trabajador
   useEffect(() => {
     if (trabajadorSeleccionado && socket) {
@@ -185,27 +197,21 @@ const ChatAdmin: React.FC<ChatAdminProps> = ({ adminId }) => {
         trabajador_id: trabajadorSeleccionado.id,
         admin_id: adminId
       });
+      
+      // Inmediatamente actualizar el contador a 0 cuando se selecciona un trabajador
+      setTrabajadores(prev => prev.map(t =>
+        t.id === trabajadorSeleccionado.id
+          ? { ...t, mensajes_no_leidos: 0 }
+          : t
+      ));
     } else {
       // Si no hay trabajador seleccionado, limpiar mensajes
       setMensajes([]);
     }
   }, [trabajadorSeleccionado, socket, adminId]);
 
-  // Recargar datos cuando el componente se monta o se vuelve visible
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden && socket && conectado) {
-        console.log('🔄 Recargando datos por cambio de visibilidad');
-        cargarDatosIniciales();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [socket, conectado]);
+  // NO recargar datos automáticamente - esto causa que el contador se reinicie
+  // Los datos se actualizan en tiempo real a través de WebSocket
 
   // Enviar mensaje
   const enviarMensaje = () => {
@@ -256,22 +262,23 @@ const ChatAdmin: React.FC<ChatAdminProps> = ({ adminId }) => {
   }
 
   return (
-    <div className="flex h-[600px] bg-white rounded-lg shadow-sm border border-amber-100 overflow-hidden">
-      {/* Lista de trabajadores */}
-      <div className="w-1/3 border-r border-amber-200 bg-gray-50">
-        <div className="p-4 border-b border-amber-200 bg-white">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold text-gray-900">Trabajadores</h3>
-            <div className="flex items-center">
-              <div className={`w-2 h-2 rounded-full mr-2 ${conectado ? 'bg-green-500' : 'bg-red-500'}`}></div>
-              <span className="text-sm text-gray-600">
-                {conectado ? 'Conectado' : 'Desconectado'}
-              </span>
+    <div className="h-full flex flex-col bg-white rounded-lg shadow-sm border border-gray-200">
+      <div className="flex flex-1 overflow-hidden">
+        {/* Lista de trabajadores */}
+        <div className="w-1/3 border-r border-gray-200 bg-gray-50 flex flex-col">
+          <div className="p-4 border-b border-gray-200 bg-white">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-semibold text-gray-900">Trabajadores</h3>
+              <div className="flex items-center">
+                <div className={`w-2 h-2 rounded-full mr-2 ${conectado ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                <span className="text-sm text-gray-600">
+                  {conectado ? 'Conectado' : 'Desconectado'}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
-        
-        <div className="overflow-y-auto h-full">
+          
+          <div className="flex-1 overflow-y-auto">
           {trabajadores.length === 0 ? (
             <div className="p-4 text-center text-gray-500">
               <p>No hay trabajadores disponibles</p>
@@ -281,8 +288,8 @@ const ChatAdmin: React.FC<ChatAdminProps> = ({ adminId }) => {
               <div
                 key={trabajador.id}
                 onClick={() => setTrabajadorSeleccionado(trabajador)}
-                className={`p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors ${
-                  trabajadorSeleccionado?.id === trabajador.id ? 'bg-amber-50 border-amber-200' : ''
+                className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-100 transition-colors ${
+                  trabajadorSeleccionado?.id === trabajador.id ? 'bg-blue-50 border-blue-200' : ''
                 }`}
               >
                 <div className="flex items-center space-x-3">
@@ -304,11 +311,6 @@ const ChatAdmin: React.FC<ChatAdminProps> = ({ adminId }) => {
                       <h4 className="font-medium text-gray-900 truncate">
                         {trabajador.nombres} {trabajador.apellidos}
                       </h4>
-                      {trabajador.mensajes_no_leidos > 0 && (
-                        <div className="bg-amber-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                          {trabajador.mensajes_no_leidos}
-                        </div>
-                      )}
                     </div>
                     {(trabajador as any).rol && (
                       <p className="text-xs text-amber-600 font-medium">
@@ -335,10 +337,10 @@ const ChatAdmin: React.FC<ChatAdminProps> = ({ adminId }) => {
 
       {/* Área de chat */}
       <div className="flex-1 flex flex-col">
-        {trabajadorSeleccionado ? (
-          <>
-            {/* Header del chat */}
-            <div className="p-4 border-b border-amber-200 bg-white">
+          {trabajadorSeleccionado ? (
+            <>
+              {/* Header del chat */}
+              <div className="p-4 border-b border-gray-200 bg-white">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 rounded-full overflow-hidden bg-amber-200 flex items-center justify-center">
                   {trabajadorSeleccionado.avatar_url ? (
@@ -364,8 +366,14 @@ const ChatAdmin: React.FC<ChatAdminProps> = ({ adminId }) => {
               </div>
             </div>
 
-            {/* Mensajes */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ maxHeight: '400px' }}>
+              {/* Mensajes */}
+              <div 
+                className="flex-1 overflow-y-auto p-4 space-y-4" 
+                style={{ 
+                  maxHeight: '400px',
+                  scrollBehavior: 'smooth'
+                }}
+              >
               {(() => {
                 console.log('🎨 Renderizando mensajes. Cantidad:', mensajes.length);
                 console.log('🎨 Mensajes:', mensajes);
@@ -404,8 +412,8 @@ const ChatAdmin: React.FC<ChatAdminProps> = ({ adminId }) => {
               <div ref={mensajesEndRef} />
             </div>
 
-            {/* Input de mensaje */}
-            <div className="p-4 border-t border-amber-200 bg-white">
+              {/* Input de mensaje */}
+              <div className="p-4 border-t border-gray-200 bg-white">
               <div className="flex space-x-2">
                 <input
                   type="text"
@@ -426,21 +434,22 @@ const ChatAdmin: React.FC<ChatAdminProps> = ({ adminId }) => {
               </div>
             </div>
           </>
-        ) : (
-          <div className="flex-1 flex items-center justify-center bg-gray-50">
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-4 bg-purple-100 rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
+            ) : (
+              <div className="flex-1 flex items-center justify-center bg-gray-50">
+                <div className="text-center">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-purple-100 rounded-full flex items-center justify-center">
+                    <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Selecciona un trabajador</h3>
+                  <p className="text-gray-600">Elige un trabajador de la lista para comenzar a chatear</p>
+                </div>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Selecciona un trabajador</h3>
-              <p className="text-gray-600">Elige un trabajador de la lista para comenzar a chatear</p>
-            </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
-    </div>
   );
 };
 
