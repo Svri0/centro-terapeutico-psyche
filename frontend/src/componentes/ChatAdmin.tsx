@@ -11,6 +11,7 @@ const ChatAdmin: React.FC<ChatAdminProps> = ({ adminId }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [trabajadores, setTrabajadores] = useState<PacienteChat[]>([]);
   const [trabajadorSeleccionado, setTrabajadorSeleccionado] = useState<PacienteChat | null>(null);
+  const trabajadorSeleccionadoRef = useRef<PacienteChat | null>(null);
   const [mensajes, setMensajes] = useState<MensajeChat[]>([]);
   const [nuevoMensaje, setNuevoMensaje] = useState('');
   const [conectado, setConectado] = useState(false);
@@ -71,13 +72,21 @@ const ChatAdmin: React.FC<ChatAdminProps> = ({ adminId }) => {
         if (exists) return prev;
         return [...prev, mensaje];
       });
+      
+      // Solo incrementar contador si el chat NO está abierto actualmente
+      // Usar ref para obtener el valor actual sin depender de closures
+      const esChatAbierto = trabajadorSeleccionadoRef.current?.id === mensaje.remitente_id;
+      
       setTrabajadores(prev => prev.map(t =>
         t.id === mensaje.remitente_id
           ? {
               ...t,
               ultimo_mensaje: mensaje.contenido,
               ultimo_mensaje_timestamp: mensaje.created_at,
-              mensajes_no_leidos: mensaje.tipo === 'psicologo' || mensaje.tipo === 'recepcionista' ? t.mensajes_no_leidos + 1 : t.mensajes_no_leidos
+              // Solo incrementar si es mensaje de trabajador Y el chat no está abierto
+              mensajes_no_leidos: ((mensaje.tipo === 'psicologo' || mensaje.tipo === 'recepcionista') && !esChatAbierto)
+                ? t.mensajes_no_leidos + 1 
+                : t.mensajes_no_leidos
             }
           : t
       ));
@@ -160,6 +169,11 @@ const ChatAdmin: React.FC<ChatAdminProps> = ({ adminId }) => {
       console.error('Error al cargar trabajadores:', error);
     }
   };
+
+  // Actualizar ref cuando cambia el trabajador seleccionado
+  useEffect(() => {
+    trabajadorSeleccionadoRef.current = trabajadorSeleccionado;
+  }, [trabajadorSeleccionado]);
 
   // Cargar mensajes cuando se selecciona un trabajador
   useEffect(() => {

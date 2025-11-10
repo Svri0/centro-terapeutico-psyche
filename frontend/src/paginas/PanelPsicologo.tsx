@@ -44,6 +44,13 @@ const PanelPsicologo: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [activeTab, setActiveTab] = useState<'dashboard' | 'pacientes' | 'citas' | 'disponibilidad' | 'servicios' | 'tareas' | 'chat' | 'pdf' | 'perfil'>('dashboard');
+  
+  // Ocultar badge cuando se entra al chat
+  useEffect(() => {
+    if (activeTab === 'chat') {
+      setTieneMensajesNoLeidos(false);
+    }
+  }, [activeTab]);
   const [perfilData, setPerfilData] = useState({
     nombres: '',
     apellidos: '',
@@ -62,6 +69,7 @@ const PanelPsicologo: React.FC = () => {
   const [servicios, setServicios] = useState<ServicioPsicologo[]>([]);
   const [servicioSeleccionado, setServicioSeleccionado] = useState<TipoServicio | null>(null);
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string>('');
+  const [tieneMensajesNoLeidos, setTieneMensajesNoLeidos] = useState(false);
   
   // Estado para notificaciones
   const [notificacion, setNotificacion] = useState({
@@ -580,13 +588,23 @@ const PanelPsicologo: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveTab('chat')}
-                className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
+                className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap relative ${
                   activeTab === 'chat'
                     ? 'border-amber-500 text-amber-600'
                     : 'border-transparent text-gray-500 hover:text-amber-600 hover:border-amber-300'
                 }`}
               >
-                💬 Chat
+                <span className="flex items-center">
+                  💬 Chat
+                  {tieneMensajesNoLeidos && activeTab !== 'chat' && (
+                    <span className="ml-2 relative">
+                      <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                      </span>
+                    </span>
+                  )}
+                </span>
               </button>
               <button
                 onClick={() => setActiveTab('pdf')}
@@ -779,11 +797,25 @@ const PanelPsicologo: React.FC = () => {
           <GestionTareas />
         )}
 
-        {activeTab === 'chat' && (
+        {/* Chat - siempre montado para escuchar mensajes, pero oculto cuando no está activo */}
+        <div className={activeTab === 'chat' ? 'block' : 'hidden'}>
           <div className="bg-white rounded-lg shadow-sm border border-amber-100">
-            <ChatPsicologo psicologoId={user?.id || ''} />
+            <ChatPsicologo 
+              psicologoId={user?.id || ''} 
+              onMensajesNoLeidosChange={(tieneMensajes) => {
+                // Usar función de actualización para obtener el valor actual de activeTab
+                setTieneMensajesNoLeidos(prev => {
+                  // Si estamos en el chat, siempre ocultar el badge
+                  if (activeTab === 'chat') {
+                    return false;
+                  }
+                  // Si no estamos en el chat, mostrar badge si hay mensajes
+                  return tieneMensajes;
+                });
+              }}
+            />
           </div>
-        )}
+        </div>
 
         {activeTab === 'pdf' && (
           <div className="space-y-6">

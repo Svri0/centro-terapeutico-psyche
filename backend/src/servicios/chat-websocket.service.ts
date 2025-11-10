@@ -3,6 +3,8 @@ import jwt from 'jsonwebtoken';
 import MensajeChat from '../modelos/MensajeChat';
 import Usuario from '../modelos/Usuario';
 import Paciente from '../modelos/Paciente';
+import TokensMensajesPaciente from '../modelos/TokensMensajesPaciente';
+import ConfiguracionSistema from '../modelos/ConfiguracionSistema';
 import { Op } from 'sequelize';
 
 interface AuthenticatedSocket extends Socket {
@@ -26,7 +28,10 @@ export class ChatWebSocketService {
       // Middleware de autenticación
       socket.on('authenticate', async (data: { token: string }) => {
         try {
-          const decoded = jwt.verify(data.token, process.env.JWT_SECRET || 'secret') as any;
+          const decoded = jwt.verify(
+            data.token,
+            process.env.JWT_SECRET || 'tu_secreto_super_seguro_para_jwt_tokens_2024'
+          ) as any;
           console.log('🔍 Token decodificado:', decoded);
           socket.userId = decoded.id;
           
@@ -82,6 +87,118 @@ export class ChatWebSocketService {
             return;
           }
 
+          // Validaciones para pacientes
+          if (data.tipo === 'paciente') {
+            // Verificar si las respuestas de pacientes están desactivadas (tolerante a errores)
+            let respuestasDesactivadasFlag = false;
+            try {
+              const cfg = await ConfiguracionSistema.findOne({
+                where: { clave: 'chat.respuestas_pacientes_desactivadas', activo: true }
+              });
+              respuestasDesactivadasFlag = !!cfg && cfg.valor === 'true';
+            } catch (e) {
+              console.warn('⚠️ Configuración chat.respuestas_pacientes_desactivadas no disponible. Continuando por defecto (habilitado).');
+            }
+
+            if (respuestasDesactivadasFlag) {
+              socket.emit('error', { message: 'Las respuestas de pacientes están desactivadas' });
+              return;
+            }
+
+            // Verificar si el sistema de tokens está habilitado ANTES de tocar la tabla (tolerante a errores)
+            let tokensHabilitadosFlag = false;
+            try {
+              const cfgTokens = await ConfiguracionSistema.findOne({
+                where: { clave: 'chat.tokens_mensajes_habilitados', activo: true }
+              });
+              tokensHabilitadosFlag = !!cfgTokens && cfgTokens.valor === 'true';
+            } catch (e) {
+              console.warn('⚠️ Configuración chat.tokens_mensajes_habilitados no disponible. Continuando sin tokens.');
+            }
+
+            if (tokensHabilitadosFlag) {
+              try {
+                // Verificar tokens de mensajes
+                const paciente = await Paciente.findOne({
+                  where: { usuario_id: data.remitente_id }
+                });
+
+                if (paciente) {
+                  let tokensMensajes = await TokensMensajesPaciente.findOne({
+                    where: { paciente_id: paciente.id, activo: true }
+                  });
+
+                  // Crear registro si no existe
+                  if (!tokensMensajes) {
+                    const tokensPorDefectoCfg = await ConfiguracionSistema.findOne({
+                      where: { clave: 'chat.tokens_mensajes_por_defecto', activo: true }
+                    });
+                    const parsedDefault = Number(tokensPorDefectoCfg?.valor);
+                    const tokensDefault = Number.isFinite(parsedDefault) && parsedDefault >= 0 ? parsedDefault : 0;
+                    
+                    tokensMensajes = await TokensMensajesPaciente.create({
+                      paciente_id: paciente.id,
+                      tokens_disponibles: tokensDefault,
+                      tokens_usados: 0,
+                      periodo_reset: 'ilimitado',
+                      activo: true
+                    });
+                  }
+
+                // REGLA: si tokens_disponibles > 0, se limita por contador; 0 = ilimitado
+                // Reset por periodo (opcional) solo si no es 'ilimitado'
+                if (tokensMensajes.periodo_reset !== 'ilimitado') {
+                  const ahora = new Date();
+                  let necesitaReset = false;
+
+                  if (tokensMensajes.fecha_ultimo_reset) {
+                    const fechaReset = new Date(tokensMensajes.fecha_ultimo_reset);
+                    const diffDias = Math.floor((ahora.getTime() - fechaReset.getTime()) / (1000 * 60 * 60 * 24));
+
+                    switch (tokensMensajes.periodo_reset) {
+                      case 'diario':
+                        necesitaReset = diffDias >= 1;
+                        break;
+                      case 'semanal':
+                        necesitaReset = diffDias >= 7;
+                        break;
+                      case 'mensual':
+                        necesitaReset = diffDias >= 30;
+                        break;
+                    }
+                  } else {
+                    necesitaReset = true;
+                  }
+
+                  if (necesitaReset) {
+                    tokensMensajes.tokens_usados = 0;
+                    tokensMensajes.fecha_ultimo_reset = ahora;
+                    await tokensMensajes.save();
+                  }
+                }
+
+                // Enforzar límite fijo si tokens_disponibles > 0
+                if (tokensMensajes.tokens_disponibles > 0) {
+                  const tokensRestantes = tokensMensajes.tokens_disponibles - tokensMensajes.tokens_usados;
+                  if (tokensRestantes <= 0) {
+                    socket.emit('error', { message: 'No tienes tokens disponibles para enviar mensajes' });
+                    return;
+                  }
+                }
+
+                // Consumir token solo si hay límite (>0)
+                if (tokensMensajes.tokens_disponibles > 0) {
+                  tokensMensajes.tokens_usados += 1;
+                  await tokensMensajes.save();
+                }
+                }
+              } catch (tokenErr: any) {
+                console.error('⚠️ Error en validación de tokens, se permite el mensaje:', tokenErr?.message || tokenErr);
+                // Permitir el mensaje aunque falle la validación de tokens (tolerancia a migraciones/ausencias)
+              }
+            }
+          }
+
           // Crear mensaje en la base de datos
           const mensaje = await MensajeChat.create({
             contenido: data.contenido,
@@ -112,9 +229,9 @@ export class ChatWebSocketService {
 
           console.log(`📤 Mensaje enviado de ${data.remitente_id} a ${data.destinatario_id}`);
 
-        } catch (error) {
+        } catch (error: any) {
           console.error('❌ Error al enviar mensaje:', error);
-          socket.emit('error', { message: 'Error al enviar mensaje' });
+          socket.emit('error', { message: 'Error al enviar mensaje', detail: error?.message || String(error) });
         }
       });
 
@@ -291,6 +408,24 @@ export class ChatWebSocketService {
                 where: {
                   remitente_id: data.persona_id,
                   destinatario_id: data.recepcionista_id,
+                  leido: false
+                }
+              }
+            );
+          } else if (socket.userRole === 'paciente' && data.paciente_id && data.psicologo_id) {
+            // Chat del paciente - marcar mensajes del psicólogo como leídos
+            if (data.paciente_id !== socket.userId) {
+              socket.emit('error', { message: 'No autorizado' });
+              return;
+            }
+
+            // Marcar mensajes del psicólogo como leídos por el paciente
+            await MensajeChat.update(
+              { leido: true },
+              {
+                where: {
+                  remitente_id: data.psicologo_id,
+                  destinatario_id: data.paciente_id,
                   leido: false
                 }
               }

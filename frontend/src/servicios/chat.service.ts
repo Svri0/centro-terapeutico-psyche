@@ -145,6 +145,35 @@ class ChatService {
       throw error;
     }
   }
+
+  // Generar backup del chat (PDF) con un participante (usuario_id)
+  async generarBackupChat(participanteId: string): Promise<void> {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/api/v1/chat/backup`,
+        { participante_id: participanteId },
+        {
+          headers: this.getAuthHeaders(),
+          responseType: 'blob'
+        }
+      );
+
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const nombreArchivo = `backup_chat_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.pdf`;
+      link.download = nombreArchivo;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      console.error('Error al generar backup del chat:', error);
+      const msg = error?.response?.data?.mensaje || 'No se pudo generar el backup del chat';
+      throw new Error(msg);
+    }
+  }
 }
 
 export const chatService = new ChatService();

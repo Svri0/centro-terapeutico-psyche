@@ -11,6 +11,7 @@ const ChatRecepcionista: React.FC<ChatRecepcionistaProps> = ({ recepcionistaId }
   const [socket, setSocket] = useState<Socket | null>(null);
   const [personal, setPersonal] = useState<PacienteChat[]>([]);
   const [personaSeleccionada, setPersonaSeleccionada] = useState<PacienteChat | null>(null);
+  const personaSeleccionadaRef = useRef<PacienteChat | null>(null);
   const [mensajes, setMensajes] = useState<MensajeChat[]>([]);
   const [nuevoMensaje, setNuevoMensaje] = useState('');
   const [conectado, setConectado] = useState(false);
@@ -73,13 +74,21 @@ const ChatRecepcionista: React.FC<ChatRecepcionistaProps> = ({ recepcionistaId }
         if (exists) return prev;
         return [...prev, mensaje];
       });
+      
+      // Solo incrementar contador si el chat NO está abierto actualmente
+      // Usar ref para obtener el valor actual sin depender de closures
+      const esChatAbierto = personaSeleccionadaRef.current?.id === mensaje.remitente_id;
+      
       setPersonal(prev => prev.map(p =>
         p.id === mensaje.remitente_id
           ? {
               ...p,
               ultimo_mensaje: mensaje.contenido,
               ultimo_mensaje_timestamp: mensaje.created_at,
-              mensajes_no_leidos: mensaje.tipo !== 'recepcionista' ? p.mensajes_no_leidos + 1 : p.mensajes_no_leidos
+              // Solo incrementar si es mensaje de personal Y el chat no está abierto
+              mensajes_no_leidos: (mensaje.tipo !== 'recepcionista' && !esChatAbierto)
+                ? p.mensajes_no_leidos + 1 
+                : p.mensajes_no_leidos
             }
           : p
       ));
@@ -127,6 +136,11 @@ const ChatRecepcionista: React.FC<ChatRecepcionistaProps> = ({ recepcionistaId }
     }
   };
 
+  // Actualizar ref cuando cambia la persona seleccionada
+  useEffect(() => {
+    personaSeleccionadaRef.current = personaSeleccionada;
+  }, [personaSeleccionada]);
+
   // Cargar mensajes cuando se selecciona una persona
   useEffect(() => {
     if (personaSeleccionada && socket) {
@@ -136,6 +150,19 @@ const ChatRecepcionista: React.FC<ChatRecepcionistaProps> = ({ recepcionistaId }
         recepcionista_id: recepcionistaId,
         persona_id: personaSeleccionada.id
       });
+      
+      // Marcar mensajes como leídos y actualizar contador a 0
+      socket.emit('marcar_como_leidos', {
+        recepcionista_id: recepcionistaId,
+        persona_id: personaSeleccionada.id
+      });
+      
+      // Actualizar contador a 0 cuando se abre el chat
+      setPersonal(prev => prev.map(p =>
+        p.id === personaSeleccionada.id
+          ? { ...p, mensajes_no_leidos: 0 }
+          : p
+      ));
     }
   }, [personaSeleccionada, socket, recepcionistaId]);
 

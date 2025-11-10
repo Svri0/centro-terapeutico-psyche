@@ -34,4 +34,7 @@ router.put('/leidos/:pacienteId', ChatController.marcarComoLeidos);
 // Obtener estadísticas del chat
 router.get('/estadisticas', ChatController.obtenerEstadisticas);
 
+// Generar backup del chat en PDF
+router.post('/backup', ChatController.generarBackupChat);
+
 export default router;
