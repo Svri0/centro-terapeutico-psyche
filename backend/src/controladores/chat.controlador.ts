@@ -4,8 +4,169 @@ import Usuario from '../modelos/Usuario';
 import Paciente from '../modelos/Paciente';
 import { ManejadorRespuestas } from '../utilidades/respuestas';
 import { Op } from 'sequelize';
+import PDFDocument from 'pdfkit';
 
 export class ChatController {
+  // Generar backup del chat en PDF
+  static async generarBackupChat(req: Request, res: Response): Promise<void> {
+    try {
+      const usuarioId = req.usuario?.id;
+      const rolId = req.usuario?.rol_id;
+      const { participante_id } = req.body as { participante_id?: string };
+
+      if (!usuarioId) {
+        ManejadorRespuestas.noAutorizado(
+          res,
+          'Usuario no autenticado',
+          'AUTH_001'
+        );
+        return;
+      }
+
+      if (!participante_id) {
+        ManejadorRespuestas.errorValidacion(
+          res,
+          'Falta el participante_id',
+          'CHAT_BKP_001'
+        );
+        return;
+      }
+
+      // Si es psicólogo, validar que el participante sea su paciente
+      if (rolId === 2) {
+        const pertenece = await Paciente.findOne({
+          where: {
+            usuario_id: participante_id,
+            psicologo_id: usuarioId
+          }
+        });
+        if (!pertenece) {
+          ManejadorRespuestas.prohibido(
+            res,
+            'El paciente no pertenece a este psicólogo',
+            'CHAT_BKP_002'
+          );
+          return;
+        }
+      }
+
+      // Obtener usuarios para encabezado
+      const usuarioActual = await Usuario.findByPk(usuarioId, {
+        attributes: ['id', 'nombres', 'apellidos', 'email']
+      });
+      const usuarioParticipante = await Usuario.findByPk(participante_id, {
+        attributes: ['id', 'nombres', 'apellidos', 'email']
+      });
+
+      // Obtener mensajes de la conversación
+      const mensajes = await MensajeChat.findAll({
+        where: {
+          [Op.or]: [
+            { remitente_id: usuarioId, destinatario_id: participante_id },
+            { remitente_id: participante_id, destinatario_id: usuarioId }
+          ]
+        },
+        order: [['created_at', 'ASC']],
+        limit: 1000
+      });
+
+      // Generar PDF en memoria y esperar finalización
+      await new Promise<void>((resolve, reject) => {
+        try {
+          const buffers: Buffer[] = [];
+          const doc = new PDFDocument({
+            size: 'A4',
+            margins: { top: 50, bottom: 50, left: 50, right: 50 }
+          });
+          doc.on('data', buffers.push.bind(buffers));
+          doc.on('error', (e) => {
+            console.error('❌ Error PDF:', e);
+            reject(e);
+          });
+          doc.on('end', () => {
+            const pdfBuffer = Buffer.concat(buffers);
+            const nombreArchivo = `backup_chat_${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename="${nombreArchivo}"`);
+            res.setHeader('Content-Length', pdfBuffer.length);
+            res.send(pdfBuffer);
+            resolve();
+          });
+
+          // Encabezado
+          doc.fontSize(18)
+             .font('Helvetica-Bold')
+             .fillColor('#1f2937')
+             .text('Backup de Chat', { align: 'center' });
+
+          doc.moveDown(0.5);
+          doc.fontSize(10)
+             .font('Helvetica')
+             .fillColor('#6b7280')
+             .text(`Fecha de generación: ${new Date().toLocaleString('es-CL')}`, { align: 'center' });
+
+          doc.moveDown(1.5);
+          doc.fontSize(12)
+             .font('Helvetica-Bold')
+             .fillColor('#111827')
+             .text('Participantes');
+
+          const nombreA = usuarioActual ? `${usuarioActual.nombres} ${usuarioActual.apellidos}`.trim() : 'Usuario A';
+          const nombreB = usuarioParticipante ? `${usuarioParticipante.nombres} ${usuarioParticipante.apellidos}`.trim() : 'Usuario B';
+
+          doc.moveDown(0.5);
+          doc.fontSize(11).font('Helvetica').fillColor('#374151');
+          doc.text(`• ${nombreA} (${usuarioActual?.email || ''})`);
+          doc.text(`• ${nombreB} (${usuarioParticipante?.email || ''})`);
+
+          doc.moveDown(1);
+          doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke('#e5e7eb');
+          doc.moveDown(1);
+
+          // Contenido del chat
+          if (mensajes.length === 0) {
+            doc.fontSize(12).font('Helvetica').fillColor('#6b7280').text('No hay mensajes en esta conversación.');
+          } else {
+            for (const m of mensajes) {
+              const esRemitenteActual = m.remitente_id === usuarioId;
+              const nombreRemitente = esRemitenteActual ? nombreA : nombreB;
+              const fecha = new Date(m.created_at).toLocaleString('es-CL');
+
+              doc.fontSize(10)
+                 .font('Helvetica-Bold')
+                 .fillColor('#111827')
+                 .text(`${nombreRemitente} • ${fecha}`);
+
+              doc.moveDown(0.2);
+              doc.fontSize(11)
+                 .font('Helvetica')
+                 .fillColor('#111827')
+                 .text(m.contenido, { align: 'left' });
+
+              doc.moveDown(0.6);
+              doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke('#f3f4f6');
+              doc.moveDown(0.6);
+            }
+          }
+
+          doc.end();
+        } catch (err) {
+          reject(err);
+        }
+      });
+
+      return;
+    } catch (error) {
+      console.error('❌ Error al generar backup de chat:', error);
+      ManejadorRespuestas.errorInterno(
+        res,
+        'No se pudo generar el backup del chat',
+        'CHAT_BKP_999'
+      );
+      return;
+    }
+  }
+
   // Obtener pacientes del psicólogo para el chat
   static async obtenerPacientesChat(req: Request, res: Response) {
     try {

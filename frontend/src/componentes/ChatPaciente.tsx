@@ -5,17 +5,23 @@ import { chatService, MensajeChat, PacienteChat } from '../servicios/chat.servic
 
 interface ChatPacienteProps {
   pacienteId: string;
+  onMensajesNoLeidosChange?: (tieneMensajesNoLeidos: boolean) => void;
 }
 
-const ChatPaciente: React.FC<ChatPacienteProps> = ({ pacienteId }) => {
+const ChatPaciente: React.FC<ChatPacienteProps> = ({ pacienteId, onMensajesNoLeidosChange }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [psicologo, setPsicologo] = useState<PacienteChat | null>(null);
   const [mensajes, setMensajes] = useState<MensajeChat[]>([]);
   const [nuevoMensaje, setNuevoMensaje] = useState('');
   const [conectado, setConectado] = useState(false);
   const [cargando, setCargando] = useState(true);
+  const [autenticado, setAutenticado] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mensajesEndRef = useRef<HTMLDivElement>(null);
+  const psicologoRef = useRef<PacienteChat | null>(null);
+  const mensajesCargadosRef = useRef<string | null>(null); // Para evitar cargas repetidas
+  const socketRef = useRef<Socket | null>(null);
+  const autenticadoRef = useRef<boolean>(false);
 
   const scrollToBottom = () => {
     mensajesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -35,13 +41,15 @@ const ChatPaciente: React.FC<ChatPacienteProps> = ({ pacienteId }) => {
 
     console.log('🔄 Iniciando conexión WebSocket para paciente...');
     
-    const newSocket = io((import.meta as any).env.VITE_API_URL || 'http://localhost:3002', {
+    const newSocket = io(import.meta.env.VITE_API_URL || 'http://localhost:3002', {
       auth: {
         token: token
-      }
+      },
+      transports: ['websocket']
     });
 
     setSocket(newSocket);
+    socketRef.current = newSocket;
 
     newSocket.on('connect', () => {
       console.log('Conectado al chat como paciente');
@@ -53,11 +61,26 @@ const ChatPaciente: React.FC<ChatPacienteProps> = ({ pacienteId }) => {
 
     newSocket.on('authenticated', (data: any) => {
       console.log('✅ Autenticación exitosa:', data);
+      setError(null);
+      setAutenticado(true);
+      autenticadoRef.current = true;
+      
+      // Cargar mensajes cuando se autentica si ya tenemos el psicólogo
+      const psicologoActual = psicologoRef.current;
+      if (psicologoActual && psicologoActual.id && mensajesCargadosRef.current !== psicologoActual.id) {
+        console.log('🔍 Cargando mensajes después de autenticación...');
+        mensajesCargadosRef.current = psicologoActual.id;
+        newSocket.emit('cargar_mensajes', { 
+          paciente_id: pacienteId, 
+          psicologo_id: psicologoActual.id 
+        });
+      }
     });
 
     newSocket.on('authentication_error', (error: any) => {
-      console.error('❌ Error de autenticación:', error);
-      setError('Error de autenticación');
+      const errorMessage = error?.message || error?.error || (typeof error === 'string' ? error : 'Error de autenticación');
+      console.error('❌ Error de autenticación:', errorMessage, error);
+      setError(errorMessage);
       setCargando(false);
     });
 
@@ -67,8 +90,16 @@ const ChatPaciente: React.FC<ChatPacienteProps> = ({ pacienteId }) => {
     });
 
     newSocket.on('error', (error: any) => {
-      console.error('Error en WebSocket:', error);
-      setError(error.message || 'Error de conexión');
+      const errorMessage = error?.message || error?.error || (typeof error === 'string' ? error : 'Error de conexión');
+      console.error('Error en WebSocket:', errorMessage, error);
+      setError(errorMessage);
+    });
+
+    newSocket.on('connect_error', (error: any) => {
+      const errorMessage = error?.message || error?.error || (typeof error === 'string' ? error : 'Error al conectar');
+      console.error('Error de conexión WebSocket:', errorMessage, error);
+      setError(errorMessage);
+      setCargando(false);
     });
 
     newSocket.on('mensaje_recibido', (mensaje: MensajeChat) => {
@@ -79,6 +110,24 @@ const ChatPaciente: React.FC<ChatPacienteProps> = ({ pacienteId }) => {
         if (existe) return prev;
         return [...prev, mensaje];
       });
+      
+      // Si el mensaje es del psicólogo, actualizar contador y notificar al padre
+      if (mensaje.remitente_id !== pacienteId && mensaje.tipo === 'psicologo') {
+        setPsicologo(prev => {
+          if (prev) {
+            const actualizado = { ...prev, mensajes_no_leidos: (prev.mensajes_no_leidos || 0) + 1 };
+            psicologoRef.current = actualizado;
+            
+            // Notificar al padre sobre mensajes no leídos
+            if (onMensajesNoLeidosChange) {
+              onMensajesNoLeidosChange(actualizado.mensajes_no_leidos > 0);
+            }
+            
+            return actualizado;
+          }
+          return null;
+        });
+      }
     });
 
     newSocket.on('mensaje_enviado', (mensaje: MensajeChat) => {
@@ -95,11 +144,29 @@ const ChatPaciente: React.FC<ChatPacienteProps> = ({ pacienteId }) => {
       console.log('📨 Mensajes cargados:', mensajesData.length);
       setMensajes(mensajesData);
       
-      // Marcar mensajes como leídos
-      if (psicologo) {
+      // Marcar mensajes como leídos y actualizar contador a 0 INMEDIATAMENTE
+      const psicologoActual = psicologoRef.current;
+      if (psicologoActual) {
+        // SIEMPRE actualizar contador a 0 cuando se cargan los mensajes (el usuario está viendo el chat)
+        setPsicologo(prev => {
+          if (prev && prev.id === psicologoActual.id) {
+            const actualizado = { ...prev, mensajes_no_leidos: 0 };
+            psicologoRef.current = actualizado;
+            
+            // Notificar al padre que ya no hay mensajes no leídos
+            if (onMensajesNoLeidosChange) {
+              onMensajesNoLeidosChange(false);
+            }
+            
+            return actualizado;
+          }
+          return prev;
+        });
+        
+        // Luego marcar como leídos en el backend
         newSocket.emit('marcar_como_leidos', { 
           paciente_id: pacienteId, 
-          psicologo_id: psicologo.id 
+          psicologo_id: psicologoActual.id 
         });
       }
     });
@@ -108,7 +175,11 @@ const ChatPaciente: React.FC<ChatPacienteProps> = ({ pacienteId }) => {
     cargarDatosIniciales();
 
     return () => {
+      newSocket.off('mensajes_cargados');
       newSocket.disconnect();
+      mensajesCargadosRef.current = null; // Resetear al desmontar
+      socketRef.current = null;
+      autenticadoRef.current = false;
     };
   }, [pacienteId]);
 
@@ -119,6 +190,7 @@ const ChatPaciente: React.FC<ChatPacienteProps> = ({ pacienteId }) => {
       // Obtener información del psicólogo asignado
       const psicologoData = await chatService.obtenerPsicologoAsignado();
       setPsicologo(psicologoData);
+      psicologoRef.current = psicologoData;
       
       console.log('👨‍⚕️ Psicólogo asignado:', psicologoData);
     } catch (error) {
@@ -126,6 +198,29 @@ const ChatPaciente: React.FC<ChatPacienteProps> = ({ pacienteId }) => {
       setError('Error al cargar los datos del chat');
     }
   };
+
+  // Actualizar refs cuando cambian
+  useEffect(() => {
+    psicologoRef.current = psicologo;
+    // Resetear el flag de mensajes cargados cuando cambia el psicólogo
+    if (psicologo?.id !== mensajesCargadosRef.current) {
+      mensajesCargadosRef.current = null;
+    }
+    
+    // Notificar al padre sobre mensajes no leídos (solo si hay mensajes y no estamos en el chat)
+    if (onMensajesNoLeidosChange) {
+      const tieneMensajesNoLeidos = psicologo?.mensajes_no_leidos ? psicologo.mensajes_no_leidos > 0 : false;
+      onMensajesNoLeidosChange(tieneMensajesNoLeidos);
+    }
+  }, [psicologo, onMensajesNoLeidosChange]);
+
+  useEffect(() => {
+    socketRef.current = socket;
+  }, [socket]);
+
+  useEffect(() => {
+    autenticadoRef.current = autenticado;
+  }, [autenticado]);
 
   const enviarMensaje = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,15 +247,48 @@ const ChatPaciente: React.FC<ChatPacienteProps> = ({ pacienteId }) => {
 
   // Cargar mensajes cuando se selecciona el psicólogo
   useEffect(() => {
-    if (psicologo && socket) {
-      console.log('🔍 Cargando mensajes para psicólogo:', psicologo.id);
-      setMensajes([]); // Limpiar mensajes anteriores
-      socket.emit('cargar_mensajes', { 
-        paciente_id: pacienteId, 
-        psicologo_id: psicologo.id 
+    // Usar el ID del psicólogo como clave para evitar cargas repetidas
+    const psicologoId = psicologo?.id;
+    const socketActual = socketRef.current;
+    const estaAutenticado = autenticadoRef.current;
+    
+    if (!psicologoId || !socketActual || !estaAutenticado) {
+      return;
+    }
+
+    // Evitar cargar si ya se cargaron los mensajes para este psicólogo
+    if (mensajesCargadosRef.current === psicologoId) {
+      return;
+    }
+    
+    console.log('🔍 Cargando mensajes para psicólogo:', psicologoId);
+    mensajesCargadosRef.current = psicologoId;
+    setMensajes([]); // Limpiar mensajes anteriores
+    
+    // Actualizar contador a 0 inmediatamente al entrar al chat (feedback visual inmediato)
+    // El handler 'mensajes_cargados' también lo actualizará cuando lleguen los mensajes
+    if (psicologo && psicologo.mensajes_no_leidos > 0) {
+      setPsicologo(prev => {
+        if (prev && prev.id === psicologoId) {
+          const actualizado = { ...prev, mensajes_no_leidos: 0 };
+          psicologoRef.current = actualizado;
+          
+          // Notificar al padre que ya no hay mensajes no leídos
+          if (onMensajesNoLeidosChange) {
+            onMensajesNoLeidosChange(false);
+          }
+          
+          return actualizado;
+        }
+        return prev;
       });
     }
-  }, [psicologo, socket, pacienteId]);
+    
+    socketActual.emit('cargar_mensajes', { 
+      paciente_id: pacienteId, 
+      psicologo_id: psicologoId 
+    });
+  }, [psicologo?.id, pacienteId]); // Solo depender del ID del psicólogo y pacienteId
 
   if (cargando) {
     return (
@@ -223,12 +351,6 @@ const ChatPaciente: React.FC<ChatPacienteProps> = ({ pacienteId }) => {
             </p>
           </div>
         </div>
-        
-        {psicologo.mensajes_no_leidos > 0 && (
-          <div className="bg-red-500 text-white text-xs rounded-full px-2 py-1">
-            {psicologo.mensajes_no_leidos}
-          </div>
-        )}
       </div>
 
       {/* Área de mensajes */}

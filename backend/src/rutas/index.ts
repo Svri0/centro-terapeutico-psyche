@@ -13,6 +13,7 @@ import agendaPDFRoutes from './agendaPDF.routes';
 import reportesRoutes from './reportes.routes';
 import recordatoriosRoutes from './recordatorios.routes';
 import chatRoutes from './chat.rutas';
+import configuracionRoutes from './configuracion.rutas';
 
 const router = Router();
 
@@ -60,5 +61,8 @@ router.use('/recordatorios', recordatoriosRoutes);
 
 // Rutas de chat
 router.use('/chat', chatRoutes);
+
+// Rutas de configuración
+router.use('/configuracion', configuracionRoutes);
 
 export default router; 

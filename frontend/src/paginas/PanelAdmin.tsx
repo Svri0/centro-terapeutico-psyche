@@ -59,11 +59,19 @@ const PanelAdmin: React.FC = () => {
   const [confirmError, setConfirmError] = useState('');
   const [confirmCheckbox, setConfirmCheckbox] = useState(false);
   const [confirmEliminarCheckbox, setConfirmEliminarCheckbox] = useState(false);
+  const [tieneMensajesNoLeidos, setTieneMensajesNoLeidos] = useState(false);
 
   const user = authService.getCurrentUser();
 
   // Hook para timeout de sesión (15 minutos)
   useSessionTimeout(15); // 15 minutos
+
+  // Ocultar badge cuando se entra al chat
+  useEffect(() => {
+    if (activeTab === 'chat') {
+      setTieneMensajesNoLeidos(false);
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     if (activeTab === 'psicologos') {
@@ -608,13 +616,19 @@ const PanelAdmin: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveTab('chat')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors relative ${
                   activeTab === 'chat'
                     ? 'border-amber-500 text-amber-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
                 💬 Chat
+                {tieneMensajesNoLeidos && activeTab !== 'chat' && (
+                  <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                  </span>
+                )}
               </button>
               <button
                 onClick={() => setActiveTab('estadisticas')}
@@ -659,6 +673,20 @@ const PanelAdmin: React.FC = () => {
 
         {/* Content */}
         <div className="px-4 sm:px-6 lg:px-8 py-6">
+          {/* Chat siempre montado pero oculto cuando no está activo */}
+          <div className={activeTab === 'chat' ? 'block' : 'hidden'}>
+            <ChatAdmin 
+              adminId={user?.id || ''} 
+              onMensajesNoLeidosChange={(tieneMensajes) => {
+                setTieneMensajesNoLeidos(prev => {
+                  if (activeTab === 'chat') {
+                    return false;
+                  }
+                  return tieneMensajes;
+                });
+              }}
+            />
+          </div>
           {activeTab === 'psicologos' ? (
             loading ? (
               <div className="flex justify-center items-center py-12">
@@ -691,10 +719,6 @@ const PanelAdmin: React.FC = () => {
                 onEliminar={handleEliminarRecepcionista}
               />
             )
-          ) : activeTab === 'chat' ? (
-            <div className="space-y-6">
-              <ChatAdmin adminId={user?.id || ''} />
-            </div>
           ) : activeTab === 'estadisticas' ? (
             <EstadisticasGenerales />
           ) : activeTab === 'recordatorios' ? (

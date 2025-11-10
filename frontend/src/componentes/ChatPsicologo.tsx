@@ -2,22 +2,26 @@ import React, { useState, useEffect, useRef } from 'react';
 import { authService } from '../servicios/auth.service';
 import { chatService, PacienteChat, MensajeChat } from '../servicios/chat.service';
 import io, { Socket } from 'socket.io-client';
+import ConfiguracionChat from './ConfiguracionChat';
 
 interface ChatPsicologoProps {
   psicologoId: string;
+  onMensajesNoLeidosChange?: (tieneMensajesNoLeidos: boolean) => void;
 }
 
-const ChatPsicologo: React.FC<ChatPsicologoProps> = ({ psicologoId }) => {
+const ChatPsicologo: React.FC<ChatPsicologoProps> = ({ psicologoId, onMensajesNoLeidosChange }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [pacientes, setPacientes] = useState<PacienteChat[]>([]);
   const [personal, setPersonal] = useState<PacienteChat[]>([]);
   const [pacienteSeleccionado, setPacienteSeleccionado] = useState<PacienteChat | null>(null);
+  const pacienteSeleccionadoRef = useRef<PacienteChat | null>(null);
   const [mensajes, setMensajes] = useState<MensajeChat[]>([]);
   const [nuevoMensaje, setNuevoMensaje] = useState('');
   const [conectado, setConectado] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [filtroActivo, setFiltroActivo] = useState<'pacientes' | 'personal'>('pacientes');
   const mensajesEndRef = useRef<HTMLDivElement>(null);
+  const [mostrarConfig, setMostrarConfig] = useState(false);
 
   const user = authService.getUser();
 
@@ -63,6 +67,10 @@ const ChatPsicologo: React.FC<ChatPsicologoProps> = ({ psicologoId }) => {
     newSocket.on('mensaje_recibido', (mensaje: MensajeChat) => {
       setMensajes(prev => [...prev, mensaje]);
       
+      // Solo incrementar contador si el chat NO está abierto actualmente
+      // Usar ref para obtener el valor actual sin depender de closures
+      const esChatAbierto = pacienteSeleccionadoRef.current?.id === mensaje.remitente_id;
+      
       // Actualizar lista de pacientes con último mensaje
       setPacientes(prev => prev.map(p => 
         p.id === mensaje.remitente_id 
@@ -70,7 +78,10 @@ const ChatPsicologo: React.FC<ChatPsicologoProps> = ({ psicologoId }) => {
               ...p, 
               ultimo_mensaje: mensaje.contenido,
               ultimo_mensaje_timestamp: mensaje.created_at,
-              mensajes_no_leidos: mensaje.tipo === 'paciente' ? p.mensajes_no_leidos + 1 : p.mensajes_no_leidos
+              // Solo incrementar si es mensaje del paciente Y el chat no está abierto
+              mensajes_no_leidos: (mensaje.tipo === 'paciente' && !esChatAbierto) 
+                ? p.mensajes_no_leidos + 1 
+                : p.mensajes_no_leidos
             }
           : p
       ));
@@ -108,6 +119,20 @@ const ChatPsicologo: React.FC<ChatPsicologoProps> = ({ psicologoId }) => {
     }
   };
 
+  // Actualizar ref cuando cambia el paciente seleccionado
+  useEffect(() => {
+    pacienteSeleccionadoRef.current = pacienteSeleccionado;
+  }, [pacienteSeleccionado]);
+
+  // Notificar al padre sobre mensajes no leídos
+  useEffect(() => {
+    if (onMensajesNoLeidosChange) {
+      const totalMensajesNoLeidos = pacientes.reduce((sum, p) => sum + (p.mensajes_no_leidos || 0), 0) +
+                                   personal.reduce((sum, p) => sum + (p.mensajes_no_leidos || 0), 0);
+      onMensajesNoLeidosChange(totalMensajesNoLeidos > 0);
+    }
+  }, [pacientes, personal, onMensajesNoLeidosChange]);
+
   // Cargar mensajes cuando se selecciona un paciente
   useEffect(() => {
     if (pacienteSeleccionado && socket) {
@@ -116,15 +141,28 @@ const ChatPsicologo: React.FC<ChatPsicologoProps> = ({ psicologoId }) => {
         psicologo_id: psicologoId
       });
 
-      socket.on('mensajes_cargados', (mensajesData: MensajeChat[]) => {
+      const handleMensajesCargados = (mensajesData: MensajeChat[]) => {
         setMensajes(mensajesData);
         
-        // Marcar mensajes como leídos
+        // Marcar mensajes como leídos inmediatamente
         socket.emit('marcar_como_leidos', {
           paciente_id: pacienteSeleccionado.id,
           psicologo_id: psicologoId
         });
-      });
+        
+        // Actualizar contador a 0 inmediatamente cuando se abre el chat
+        setPacientes(prev => prev.map(p => 
+          p.id === pacienteSeleccionado.id
+            ? { ...p, mensajes_no_leidos: 0 }
+            : p
+        ));
+      };
+
+      socket.on('mensajes_cargados', handleMensajesCargados);
+
+      return () => {
+        socket.off('mensajes_cargados', handleMensajesCargados);
+      };
     }
   }, [pacienteSeleccionado, socket, psicologoId]);
 
@@ -140,6 +178,16 @@ const ChatPsicologo: React.FC<ChatPsicologoProps> = ({ psicologoId }) => {
 
     socket.emit('enviar_mensaje', mensaje);
     setNuevoMensaje('');
+  };
+
+  const exportarChatPDF = async () => {
+    try {
+      if (!pacienteSeleccionado) return;
+      await chatService.generarBackupChat(pacienteSeleccionado.id);
+    } catch (error) {
+      console.error('Error al exportar chat:', error);
+      alert('No se pudo exportar el chat');
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -256,11 +304,6 @@ const ChatPsicologo: React.FC<ChatPsicologoProps> = ({ psicologoId }) => {
                       <h4 className="font-medium text-gray-900 truncate">
                         {contacto.nombres} {contacto.apellidos}
                       </h4>
-                      {contacto.mensajes_no_leidos > 0 && (
-                        <div className="bg-amber-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                          {contacto.mensajes_no_leidos}
-                        </div>
-                      )}
                     </div>
                     {filtroActivo === 'personal' && (contacto as any).rol && (
                       <p className="text-xs text-amber-600 font-medium">
@@ -290,7 +333,7 @@ const ChatPsicologo: React.FC<ChatPsicologoProps> = ({ psicologoId }) => {
         {pacienteSeleccionado ? (
           <>
             {/* Header del chat */}
-            <div className="p-4 border-b border-amber-200 bg-white">
+            <div className="p-4 border-b border-amber-200 bg-white flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 rounded-full overflow-hidden bg-amber-200 flex items-center justify-center">
                   {pacienteSeleccionado.avatar_url ? (
@@ -313,6 +356,25 @@ const ChatPsicologo: React.FC<ChatPsicologoProps> = ({ psicologoId }) => {
                     {filtroActivo === 'pacientes' ? 'Paciente' : (pacienteSeleccionado as any).rol || 'Personal'}
                   </p>
                 </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={exportarChatPDF}
+                  className="px-3 py-2 bg-amber-100 text-amber-700 rounded-md hover:bg-amber-200"
+                  title="Exportar chat a PDF"
+                >
+                  Exportar PDF
+                </button>
+                <button
+                  onClick={() => setMostrarConfig(true)}
+                  className="p-2 rounded-md hover:bg-gray-100 text-gray-600"
+                  title="Configuración de chat"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.89 3.31.877 2.42 2.42a1.724 1.724 0 001.065 2.572c1.757.426 1.757 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.89 1.543-.877 3.31-2.42 2.42a1.724 1.724 0 00-2.572 1.065c-.426 1.757-2.924 1.757-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.89-3.31-.877-2.42-2.42a1.724 1.724 0 00-1.065-2.572c-1.757-.426-1.757-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.89-1.543.877-3.31 2.42-2.42.996.574 2.247.146 2.573-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </button>
               </div>
             </div>
 
@@ -388,6 +450,26 @@ const ChatPsicologo: React.FC<ChatPsicologoProps> = ({ psicologoId }) => {
           </div>
         )}
       </div>
+
+      {mostrarConfig && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white w-full max-w-xl rounded-lg shadow-lg border border-gray-200">
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-md font-semibold text-gray-800">Configuración de Chat</h3>
+              <button
+                onClick={() => setMostrarConfig(false)}
+                className="p-2 rounded-md hover:bg-gray-100 text-gray-600"
+                aria-label="Cerrar"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-4">
+              <ConfiguracionChat />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

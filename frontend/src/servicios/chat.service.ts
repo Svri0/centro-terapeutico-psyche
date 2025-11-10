@@ -79,6 +79,19 @@ class ChatService {
     }
   }
 
+  // Obtener trabajadores (psicólogos y recepcionistas) para el chat del administrador
+  async obtenerTrabajadores(): Promise<PacienteChat[]> {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/v1/chat/trabajadores`, {
+        headers: this.getAuthHeaders()
+      });
+      return response.data.data;
+    } catch (error) {
+      console.error('Error al obtener trabajadores del chat:', error);
+      throw error;
+    }
+  }
+
   // Obtener psicólogo asignado para el paciente
   async obtenerPsicologoAsignado(): Promise<PacienteChat> {
     try {
@@ -143,6 +156,35 @@ class ChatService {
     } catch (error) {
       console.error('Error al obtener estadísticas del chat:', error);
       throw error;
+    }
+  }
+
+  // Generar backup del chat (PDF) con un participante (usuario_id)
+  async generarBackupChat(participanteId: string): Promise<void> {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/api/v1/chat/backup`,
+        { participante_id: participanteId },
+        {
+          headers: this.getAuthHeaders(),
+          responseType: 'blob'
+        }
+      );
+
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const nombreArchivo = `backup_chat_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.pdf`;
+      link.download = nombreArchivo;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      console.error('Error al generar backup del chat:', error);
+      const msg = error?.response?.data?.mensaje || 'No se pudo generar el backup del chat';
+      throw new Error(msg);
     }
   }
 }

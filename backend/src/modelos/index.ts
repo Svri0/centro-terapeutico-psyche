@@ -12,6 +12,8 @@ import ReporteProgreso from './ReporteProgreso';
 import ContactoEmergencia from './ContactoEmergencia';
 import Etiqueta from './Etiqueta';
 import Diagnostico from './Diagnostico';
+import ConfiguracionSistema from './ConfiguracionSistema';
+import TokensMensajesPaciente from './TokensMensajesPaciente';
 
 // Configurar asociaciones
 
@@ -257,6 +259,17 @@ Diagnostico.belongsToMany(Paciente, {
   as: 'pacientes',
 });
 
+// Paciente - TokensMensajesPaciente (1:1)
+Paciente.hasOne(TokensMensajesPaciente, {
+  foreignKey: 'paciente_id',
+  as: 'tokens_mensajes',
+});
+
+TokensMensajesPaciente.belongsTo(Paciente, {
+  foreignKey: 'paciente_id',
+  as: 'paciente',
+});
+
 export {
   Rol,
   Usuario,
@@ -272,4 +285,6 @@ export {
   ContactoEmergencia,
   Etiqueta,
   Diagnostico,
+  ConfiguracionSistema,
+  TokensMensajesPaciente,
 }; 
