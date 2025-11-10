@@ -33,8 +33,7 @@ interface Sesion {
 
 const PanelPsicologo: React.FC = () => {
   const [sesionesHoy, setSesionesHoy] = useState<Sesion[]>([]);
-  const [sesionesRealizadas, setSesionesRealizadas] = useState<Sesion[]>([]);
-  const [totalSesiones, setTotalSesiones] = useState(0);
+  const [sesionesRecientes, setSesionesRecientes] = useState<Sesion[]>([]);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -179,8 +178,7 @@ const PanelPsicologo: React.FC = () => {
       if (!Array.isArray(citasData)) {
         console.warn('citasData no es un array:', citasData);
         setSesionesHoy([]);
-        setSesionesRealizadas([]);
-        setTotalSesiones(0);
+        setSesionesRecientes([]);
         return;
       }
       
@@ -190,10 +188,42 @@ const PanelPsicologo: React.FC = () => {
       // Filtrar citas de hoy
       const citasHoy = citasData.filter(cita => cita && cita.fecha === hoy);
       
-      // Filtrar citas realizadas (completadas o en progreso)
-      const citasRealizadas = citasData.filter(cita => 
-        cita && (cita.estado === 'completada' || cita.estado === 'en_progreso')
-      );
+      // Obtener sesiones recientes: todas las sesiones ordenadas por fecha (más recientes primero)
+      // Limitar a las últimas 15 sesiones
+      const sesionesOrdenadas = citasData
+        .filter(cita => cita && cita.fecha) // Filtrar sesiones válidas
+        .map(cita => {
+          const fechaStr = cita.fecha || '';
+          const horaStr = cita.hora_inicio || '00:00:00';
+          // Crear fecha completa para ordenamiento
+          let fechaCompleta: Date;
+          try {
+            fechaCompleta = new Date(`${fechaStr}T${horaStr}`);
+            // Validar que la fecha sea válida
+            if (isNaN(fechaCompleta.getTime())) {
+              fechaCompleta = new Date(fechaStr);
+            }
+          } catch (e) {
+            fechaCompleta = new Date(fechaStr);
+          }
+          
+          return {
+            id: cita.id,
+            paciente: `${cita.paciente_nombres || ''} ${cita.paciente_apellidos || ''}`.trim(),
+            fecha: fechaStr,
+            hora: horaStr,
+            estado: cita.estado || 'programada',
+            notas: cita.notas_psicologo || '',
+            fechaCompleta
+          };
+        })
+        .filter(sesion => !isNaN(sesion.fechaCompleta.getTime())) // Filtrar fechas inválidas
+        .sort((a, b) => {
+          // Ordenar por fecha y hora descendente (más recientes primero)
+          return b.fechaCompleta.getTime() - a.fechaCompleta.getTime();
+        })
+        .slice(0, 15) // Limitar a las últimas 15 sesiones
+        .map(({ fechaCompleta, ...sesion }) => sesion); // Remover fechaCompleta del resultado final
       
       setSesionesHoy(citasHoy.map(cita => ({
         id: cita.id,
@@ -204,21 +234,11 @@ const PanelPsicologo: React.FC = () => {
         notas: cita.notas_psicologo || ''
       })));
       
-      setSesionesRealizadas(citasRealizadas.map(cita => ({
-        id: cita.id,
-        paciente: `${cita.paciente_nombres || ''} ${cita.paciente_apellidos || ''}`.trim(),
-        fecha: cita.fecha || '',
-        hora: cita.hora_inicio || '',
-        estado: cita.estado || 'programada',
-        notas: cita.notas_psicologo || ''
-      })));
-      
-      setTotalSesiones(citasData.length);
+      setSesionesRecientes(sesionesOrdenadas);
     } catch (error) {
       console.error('Error al cargar datos:', error);
       setSesionesHoy([]);
-      setSesionesRealizadas([]);
-      setTotalSesiones(0);
+      setSesionesRecientes([]);
     }
   };
 
@@ -636,24 +656,6 @@ const PanelPsicologo: React.FC = () => {
             {/* Estadísticas detalladas */}
             <EstadisticasPsicologo psicologoId={user?.id || ''} />
             
-            {/* Estadísticas básicas */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              <div className="bg-white rounded-lg shadow-sm border border-amber-100 p-4 sm:p-6">
-                <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 mb-2">Sesiones Hoy</h3>
-                <p className="text-2xl sm:text-3xl font-bold text-amber-600">{sesionesHoy.length}</p>
-              </div>
-              <div className="bg-white rounded-lg shadow-sm border border-amber-100 p-4 sm:p-6">
-                <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 mb-2">Total Sesiones</h3>
-                <p className="text-2xl sm:text-3xl font-bold text-amber-600">{totalSesiones}</p>
-              </div>
-              <div className="bg-white rounded-lg shadow-sm border border-amber-100 p-4 sm:p-6 sm:col-span-2 lg:col-span-1">
-                <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 mb-2">Pacientes Activos</h3>
-                <p className="text-2xl sm:text-3xl font-bold text-amber-600">
-                  {new Set(sesionesHoy.map(s => s.paciente)).size + new Set(sesionesRealizadas.map(s => s.paciente)).size}
-                </p>
-              </div>
-            </div>
-
             {/* Sesiones de Hoy */}
             <div className="bg-white rounded-lg shadow-sm border border-amber-100">
               <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-amber-200">
@@ -684,23 +686,45 @@ const PanelPsicologo: React.FC = () => {
             <div className="bg-white rounded-lg shadow-sm border border-amber-100">
               <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-amber-200">
                 <h3 className="text-base sm:text-lg font-semibold text-gray-900">Sesiones Recientes</h3>
+                <p className="text-xs sm:text-sm text-gray-500 mt-1">Últimas 15 sesiones ordenadas por fecha</p>
               </div>
               <div className="p-4 sm:p-6">
-                {sesionesRealizadas.length > 0 ? (
+                {sesionesRecientes.length > 0 ? (
                   <div className="space-y-3 sm:space-y-4">
-                    {sesionesRealizadas.map((sesion) => (
+                    {sesionesRecientes.map((sesion) => (
                       <div key={sesion.id} className="border-b border-amber-200 pb-3 sm:pb-4 last:border-b-0">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 space-y-1 sm:space-y-0">
-                          <h4 className="font-medium text-gray-900 truncate">{sesion.paciente}</h4>
-                          <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${getEstadoColor(sesion.estado)} whitespace-nowrap`}>
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-medium text-gray-900 truncate">{sesion.paciente}</h4>
+                            <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                              {(() => {
+                                try {
+                                  const fecha = new Date(sesion.fecha);
+                                  if (!isNaN(fecha.getTime())) {
+                                    return fecha.toLocaleDateString('es-ES', { 
+                                      weekday: 'short', 
+                                      year: 'numeric', 
+                                      month: 'short', 
+                                      day: 'numeric' 
+                                    }) + (sesion.hora ? ` - ${sesion.hora}` : '');
+                                  }
+                                  return sesion.fecha + (sesion.hora ? ` - ${sesion.hora}` : '');
+                                } catch (e) {
+                                  return sesion.fecha + (sesion.hora ? ` - ${sesion.hora}` : '');
+                                }
+                              })()}
+                            </p>
+                          </div>
+                          <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${getEstadoColor(sesion.estado)} whitespace-nowrap ml-2`}>
                             {getEstadoText(sesion.estado)}
                           </span>
                         </div>
-                        <p className="text-xs sm:text-sm text-gray-600 mb-2">{sesion.fecha} - {sesion.hora}</p>
                         {sesion.notas && (
-                          <p className="text-xs sm:text-sm text-gray-700 bg-amber-50 p-2 sm:p-3 rounded border border-amber-200">
-                            <strong>Notas:</strong> {sesion.notas}
-                          </p>
+                          <div className="mt-2">
+                            <p className="text-xs sm:text-sm text-gray-700 bg-amber-50 p-2 sm:p-3 rounded border border-amber-200">
+                              <strong>Notas:</strong> {sesion.notas}
+                            </p>
+                          </div>
                         )}
                       </div>
                     ))}
