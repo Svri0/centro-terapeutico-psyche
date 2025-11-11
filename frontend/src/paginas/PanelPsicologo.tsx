@@ -6,6 +6,7 @@ import GestionPacientes from '../componentes/GestionPacientes';
 import AvatarSelector from '../componentes/AvatarSelector';
 import ImageUpload from '../componentes/ImageUpload';
 import GestionTareas from '../componentes/GestionTareas';
+import ReporteAdherenciaTerapeutica from '../componentes/ReporteAdherenciaTerapeutica';
 import CitasPsicologo from '../componentes/CitasPsicologo';
 import AgendaPsicologo from '../componentes/AgendaPsicologo';
 import EstadisticasPsicologo from '../componentes/EstadisticasPsicologo';
@@ -42,7 +43,7 @@ const PanelPsicologo: React.FC = () => {
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'pacientes' | 'citas' | 'disponibilidad' | 'servicios' | 'tareas' | 'chat' | 'pdf' | 'perfil'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'pacientes' | 'citas' | 'disponibilidad' | 'servicios' | 'tareas' | 'reportes' | 'adherencia' | 'chat' | 'pdf' | 'perfil'>('dashboard');
   
   // Ocultar badge cuando se entra al chat
   useEffect(() => {
@@ -520,6 +521,8 @@ const PanelPsicologo: React.FC = () => {
                 {activeTab === 'disponibilidad' && 'Disponibilidad'}
                 {activeTab === 'servicios' && 'Mis Servicios'}
                 {activeTab === 'tareas' && 'Gestión de Tareas'}
+                {activeTab === 'reportes' && 'Reportes de Progreso'}
+                {activeTab === 'adherencia' && 'Reporte de Adherencia'}
                 {activeTab === 'chat' && 'Chat'}
                 {activeTab === 'pdf' && 'Generar Agenda PDF'}
                 {activeTab === 'perfil' && 'Mi Perfil'}
@@ -531,6 +534,8 @@ const PanelPsicologo: React.FC = () => {
                 {activeTab === 'disponibilidad' && 'Configura tus horarios disponibles'}
                 {activeTab === 'servicios' && 'Configura los servicios que ofreces a los pacientes'}
                 {activeTab === 'tareas' && 'Asigna y gestiona tareas para tus pacientes'}
+                {activeTab === 'reportes' && 'Registra y consulta reportes de progreso por paciente'}
+                {activeTab === 'adherencia' && 'Evalúa la adherencia terapéutica de tus pacientes'}
                 {activeTab === 'chat' && 'Comunícate con tus pacientes y personal'}
                 {activeTab === 'pdf' && 'Descarga tu agenda en formato PDF'}
                 {activeTab === 'perfil' && 'Actualiza tu información personal y profesional'}
@@ -605,6 +610,26 @@ const PanelPsicologo: React.FC = () => {
                 }`}
               >
                 Tareas
+              </button>
+              <button
+                onClick={() => setActiveTab('reportes')}
+                className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
+                  activeTab === 'reportes'
+                    ? 'border-amber-500 text-amber-600'
+                    : 'border-transparent text-gray-500 hover:text-amber-600 hover:border-amber-300'
+                }`}
+              >
+                📊 Reportes
+              </button>
+              <button
+                onClick={() => setActiveTab('adherencia')}
+                className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
+                  activeTab === 'adherencia'
+                    ? 'border-amber-500 text-amber-600'
+                    : 'border-transparent text-gray-500 hover:text-amber-600 hover:border-amber-300'
+                }`}
+              >
+                📈 Adherencia
               </button>
               <button
                 onClick={() => setActiveTab('chat')}
@@ -819,6 +844,18 @@ const PanelPsicologo: React.FC = () => {
 
         {activeTab === 'tareas' && (
           <GestionTareas />
+        )}
+
+        {activeTab === 'reportes' && (
+          <div className="px-4 sm:px-6 lg:px-8">
+            <GestionReportesProgreso />
+          </div>
+        )}
+
+        {activeTab === 'adherencia' && (
+          <div className="px-4 sm:px-6 lg:px-8">
+            <ReporteAdherenciaTerapeutica />
+          </div>
         )}
 
         {/* Chat - siempre montado para escuchar mensajes, pero oculto cuando no está activo */}

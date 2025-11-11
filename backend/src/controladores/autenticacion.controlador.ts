@@ -28,16 +28,37 @@ export const iniciarSesion = async (req: Request, res: Response) => {
     log.info(`Intento de login para email: ${email.substring(0, 3)}***@${email.split('@')[1]}`);
 
     // Buscar usuario en la base de datos usando parámetros preparados
-    const usuarios = await sequelize.query(
-      `SELECT u.id, u.nombres, u.apellidos, u.email, u.telefono, u.especialidad, u.descripcion, u.avatar_url, u.password_hash, u.activo, u.rol_id, r.nombre as rol_nombre
-       FROM usuarios u
-       INNER JOIN roles r ON u.rol_id = r.id
-       WHERE u.email = :email AND u.deleted_at IS NULL`,
-      {
-        replacements: { email },
-        type: QueryTypes.SELECT
+    // Intentar con JOIN primero, si falla intentar sin JOIN
+    let usuarios: any[] = [];
+    try {
+      usuarios = await sequelize.query(
+        `SELECT u.id, u.nombres, u.apellidos, u.email, u.telefono, u.especialidad, u.descripcion, u.avatar_url, u.password_hash, u.activo, u.rol_id, r.nombre as rol_nombre
+         FROM usuarios u
+         INNER JOIN roles r ON u.rol_id = r.id
+         WHERE u.email = :email AND u.deleted_at IS NULL`,
+        {
+          replacements: { email },
+          type: QueryTypes.SELECT
+        }
+      ) as any[];
+    } catch (joinError: any) {
+      // Si falla el JOIN (tabla roles no existe), intentar sin JOIN
+      log.warn('Error en JOIN con roles, intentando sin JOIN:', joinError?.message);
+      try {
+        usuarios = await sequelize.query(
+          `SELECT u.id, u.nombres, u.apellidos, u.email, u.telefono, u.especialidad, u.descripcion, u.avatar_url, u.password_hash, u.activo, u.rol_id, 'psicologo' as rol_nombre
+           FROM usuarios u
+           WHERE u.email = :email AND u.deleted_at IS NULL`,
+          {
+            replacements: { email },
+            type: QueryTypes.SELECT
+          }
+        ) as any[];
+      } catch (queryError: any) {
+        log.error('Error en consulta de usuarios:', queryError);
+        throw queryError;
       }
-    ) as any[];
+    }
 
     if (!Array.isArray(usuarios) || usuarios.length === 0) {
       // Log de intento fallido
@@ -107,18 +128,23 @@ export const iniciarSesion = async (req: Request, res: Response) => {
     // Log de login exitoso
     log.info(`Login exitoso para usuario: ${usuario.nombres} ${usuario.apellidos} (${usuario.rol_nombre})`);
 
-    // Registrar log de auditoría para login exitoso
-    await AuditoriaService.crearLog({
-      usuario_id: usuario.id,
-      accion: 'LOGIN',
-      metadatos: {
-        email: usuario.email,
-        rol: usuario.rol_nombre,
-        nombres: usuario.nombres,
-        apellidos: usuario.apellidos
-      },
-      req
-    });
+    // Registrar log de auditoría para login exitoso (no crítico, no debe romper el flujo)
+    try {
+      await AuditoriaService.crearLog({
+        usuario_id: usuario.id,
+        accion: 'LOGIN',
+        metadatos: {
+          email: usuario.email,
+          rol: usuario.rol_nombre,
+          nombres: usuario.nombres,
+          apellidos: usuario.apellidos
+        },
+        req
+      });
+    } catch (auditError) {
+      // Log del error pero no interrumpir el flujo
+      log.warn('Error al registrar log de auditoría (no crítico):', auditError);
+    }
 
     const respuesta = {
       usuario: {
@@ -140,11 +166,50 @@ export const iniciarSesion = async (req: Request, res: Response) => {
 
     return ManejadorRespuestas.exito(res, MENSAJES_AUTH.LOGIN_EXITOSO, respuesta, 'AUTH_005');
 
-  } catch (error) {
+  } catch (error: any) {
+    // Log detallado del error
     log.error('Error en iniciarSesion:', error);
+    console.error('❌ ========== ERROR EN LOGIN ==========');
+    console.error('❌ Mensaje:', error?.message);
+    console.error('❌ Código:', error?.code || error?.original?.code);
+    console.error('❌ Stack:', error?.stack);
+    if (error?.original) {
+      console.error('❌ Error original:', error.original);
+      console.error('❌ Código original:', error.original.code);
+      console.error('❌ Mensaje original:', error.original.message);
+    }
+    console.error('❌ ====================================');
+    
+    // Mensaje más específico según el tipo de error
+    let mensajeError = 'Error interno del servidor. Por favor, intenta nuevamente.';
+    
+    // Errores de conexión
+    if (error?.message?.includes('ECONNREFUSED') || 
+        error?.message?.includes('connection') ||
+        error?.original?.code === 'ECONNREFUSED') {
+      mensajeError = 'Error de conexión con la base de datos. Verifica que PostgreSQL esté corriendo.';
+    } 
+    // Errores de autenticación PostgreSQL
+    else if (error?.message?.includes('password') || 
+             error?.original?.code === '28P01' ||
+             error?.code === '28P01') {
+      mensajeError = 'Error de autenticación con la base de datos. Verifica las credenciales en el archivo .env.';
+    } 
+    // Errores de tablas/estructura
+    else if (error?.message?.includes('relation') || 
+             error?.message?.includes('table') ||
+             error?.message?.includes('does not exist')) {
+      mensajeError = 'Error en la estructura de la base de datos. Ejecuta: npm run db:migrate';
+    }
+    // Errores de sintaxis SQL
+    else if (error?.message?.includes('syntax') || 
+             error?.message?.includes('SQL')) {
+      mensajeError = 'Error en la consulta a la base de datos. Contacta al administrador.';
+    }
+    
     return ManejadorRespuestas.errorInterno(
       res,
-      'Error interno del servidor',
+      mensajeError,
       'AUTH_006'
     );
   }

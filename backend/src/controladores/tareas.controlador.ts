@@ -1,9 +1,239 @@
 // Controlador de tareas
 import { Request, Response } from 'express';
 import sequelize from '../configuracion/database';
+import { QueryTypes } from 'sequelize';
 import { ManejadorRespuestas } from '../utilidades/respuestas';
 import { log } from '../utilidades/logger';
 import { RespuestaTarea } from '../modelos/RespuestaTarea';
+
+// Generar reporte de adherencia terapéutica
+export const generarReporteAdherencia = async (req: Request, res: Response) => {
+  try {
+    const psicologoId = req.usuario?.id;
+    const { paciente_id, fecha_inicio, fecha_fin } = req.query;
+
+    if (!psicologoId) {
+      return ManejadorRespuestas.noAutorizado(
+        res,
+        'Usuario no autenticado',
+        'TAR_ADH_001'
+      );
+    }
+
+    let whereClause = 't.psicologo_id = :psicologoId AND t.deleted_at IS NULL';
+    let replacements: any = { psicologoId };
+
+    if (paciente_id) {
+      whereClause += ' AND t.paciente_id = :paciente_id';
+      replacements.paciente_id = paciente_id;
+    }
+
+    if (fecha_inicio) {
+      whereClause += ' AND t.fecha_asignacion >= :fecha_inicio';
+      replacements.fecha_inicio = fecha_inicio;
+    }
+
+    if (fecha_fin) {
+      whereClause += ' AND t.fecha_asignacion <= :fecha_fin';
+      replacements.fecha_fin = fecha_fin;
+    }
+
+    // Obtener estadísticas generales
+    const [estadisticas] = await sequelize.query(`
+      SELECT 
+        COUNT(*) as total_tareas,
+        COUNT(CASE WHEN t.estado = 'completada' THEN 1 END) as tareas_cumplidas,
+        COUNT(CASE WHEN t.estado = 'vencida' THEN 1 END) as tareas_vencidas,
+        COUNT(CASE WHEN t.estado = 'pendiente' AND t.fecha_vencimiento < NOW() THEN 1 END) as tareas_pendientes_vencidas,
+        COUNT(CASE WHEN t.estado = 'pendiente' AND (t.fecha_vencimiento IS NULL OR t.fecha_vencimiento >= NOW()) THEN 1 END) as tareas_pendientes,
+        COUNT(CASE WHEN t.estado = 'en_progreso' THEN 1 END) as tareas_en_progreso,
+        COUNT(CASE WHEN t.estado = 'cancelada' THEN 1 END) as tareas_canceladas,
+        AVG(CASE WHEN t.estado = 'completada' AND t.fecha_vencimiento IS NOT NULL 
+          THEN EXTRACT(EPOCH FROM (t.fecha_completada - t.fecha_vencimiento)) / 86400 
+          ELSE NULL END) as dias_promedio_retraso
+      FROM tareas t
+      WHERE ${whereClause}
+    `, {
+      replacements,
+      type: QueryTypes.SELECT
+    }) as [any[], unknown];
+
+    const stats = estadisticas[0] as any;
+    const totalTareas = parseInt(stats.total_tareas) || 0;
+    const tareasCumplidas = parseInt(stats.tareas_cumplidas) || 0;
+    const tareasVencidas = parseInt(stats.tareas_vencidas) || 0;
+    const tareasPendientesVencidas = parseInt(stats.tareas_pendientes_vencidas) || 0;
+    const tareasIncumplidas = tareasVencidas + tareasPendientesVencidas;
+    const porcentajeAdherencia = totalTareas > 0 
+      ? Math.round((tareasCumplidas / totalTareas) * 100) 
+      : 0;
+
+    // Obtener estadísticas por paciente
+    const [estadisticasPorPaciente] = await sequelize.query(`
+      SELECT 
+        p.id as paciente_id,
+        u.nombres as paciente_nombres,
+        u.apellidos as paciente_apellidos,
+        p.numero_ficha,
+        COUNT(*) as total_tareas,
+        COUNT(CASE WHEN t.estado = 'completada' THEN 1 END) as tareas_cumplidas,
+        COUNT(CASE WHEN t.estado = 'vencida' THEN 1 END) as tareas_vencidas,
+        COUNT(CASE WHEN t.estado = 'pendiente' AND t.fecha_vencimiento < NOW() THEN 1 END) as tareas_pendientes_vencidas,
+        COUNT(CASE WHEN t.estado = 'pendiente' AND (t.fecha_vencimiento IS NULL OR t.fecha_vencimiento >= NOW()) THEN 1 END) as tareas_pendientes,
+        COUNT(CASE WHEN t.estado = 'en_progreso' THEN 1 END) as tareas_en_progreso,
+        ROUND(
+          CASE 
+            WHEN COUNT(*) > 0 
+            THEN (COUNT(CASE WHEN t.estado = 'completada' THEN 1 END)::FLOAT / COUNT(*)::FLOAT) * 100
+            ELSE 0
+          END, 
+          2
+        ) as porcentaje_adherencia,
+        AVG(CASE WHEN t.estado = 'completada' AND t.fecha_vencimiento IS NOT NULL 
+          THEN EXTRACT(EPOCH FROM (t.fecha_completada - t.fecha_vencimiento)) / 86400 
+          ELSE NULL END) as dias_promedio_retraso
+      FROM tareas t
+      INNER JOIN pacientes p ON t.paciente_id = p.id
+      INNER JOIN usuarios u ON p.usuario_id = u.id
+      WHERE ${whereClause}
+      GROUP BY p.id, u.nombres, u.apellidos, p.numero_ficha
+      ORDER BY porcentaje_adherencia DESC, total_tareas DESC
+    `, {
+      replacements,
+      type: QueryTypes.SELECT
+    }) as [any[], unknown];
+
+    // Obtener detalle de tareas incumplidas
+    const [tareasIncumplidasDetalle] = await sequelize.query(`
+      SELECT 
+        t.id,
+        t.titulo,
+        t.descripcion,
+        t.prioridad,
+        t.fecha_asignacion,
+        t.fecha_vencimiento,
+        t.estado,
+        p.id as paciente_id,
+        u.nombres as paciente_nombres,
+        u.apellidos as paciente_apellidos,
+        p.numero_ficha,
+        CASE 
+          WHEN t.estado = 'vencida' THEN 'Vencida'
+          WHEN t.estado = 'pendiente' AND t.fecha_vencimiento < NOW() THEN 'Pendiente Vencida'
+          ELSE t.estado
+        END as tipo_incumplimiento,
+        CASE 
+          WHEN t.fecha_vencimiento IS NOT NULL 
+          THEN EXTRACT(EPOCH FROM (NOW() - t.fecha_vencimiento)) / 86400
+          ELSE NULL
+        END as dias_vencida
+      FROM tareas t
+      INNER JOIN pacientes p ON t.paciente_id = p.id
+      INNER JOIN usuarios u ON p.usuario_id = u.id
+      WHERE ${whereClause}
+        AND (
+          t.estado = 'vencida' 
+          OR (t.estado = 'pendiente' AND t.fecha_vencimiento < NOW())
+        )
+      ORDER BY t.fecha_vencimiento ASC, t.prioridad DESC
+      LIMIT 50
+    `, {
+      replacements,
+      type: QueryTypes.SELECT
+    }) as [any[], unknown];
+
+    // Obtener detalle de tareas cumplidas recientes
+    const [tareasCumplidasDetalle] = await sequelize.query(`
+      SELECT 
+        t.id,
+        t.titulo,
+        t.descripcion,
+        t.prioridad,
+        t.fecha_asignacion,
+        t.fecha_vencimiento,
+        t.fecha_completada,
+        t.estado,
+        p.id as paciente_id,
+        u.nombres as paciente_nombres,
+        u.apellidos as paciente_apellidos,
+        p.numero_ficha,
+        CASE 
+          WHEN t.fecha_vencimiento IS NOT NULL AND t.fecha_completada <= t.fecha_vencimiento
+          THEN 'A tiempo'
+          WHEN t.fecha_vencimiento IS NOT NULL AND t.fecha_completada > t.fecha_vencimiento
+          THEN 'Con retraso'
+          ELSE 'Sin fecha límite'
+        END as cumplimiento_tipo,
+        CASE 
+          WHEN t.fecha_vencimiento IS NOT NULL 
+          THEN EXTRACT(EPOCH FROM (t.fecha_completada - t.fecha_vencimiento)) / 86400
+          ELSE NULL
+        END as dias_retraso
+      FROM tareas t
+      INNER JOIN pacientes p ON t.paciente_id = p.id
+      INNER JOIN usuarios u ON p.usuario_id = u.id
+      WHERE ${whereClause}
+        AND t.estado = 'completada'
+      ORDER BY t.fecha_completada DESC
+      LIMIT 50
+    `, {
+      replacements,
+      type: QueryTypes.SELECT
+    }) as [any[], unknown];
+
+    const reporte = {
+      resumen: {
+        total_tareas: totalTareas,
+        tareas_cumplidas: tareasCumplidas,
+        tareas_incumplidas: tareasIncumplidas,
+        tareas_vencidas: tareasVencidas,
+        tareas_pendientes_vencidas: tareasPendientesVencidas,
+        tareas_pendientes: parseInt(stats.tareas_pendientes) || 0,
+        tareas_en_progreso: parseInt(stats.tareas_en_progreso) || 0,
+        tareas_canceladas: parseInt(stats.tareas_canceladas) || 0,
+        porcentaje_adherencia: porcentajeAdherencia,
+        dias_promedio_retraso: stats.dias_promedio_retraso ? parseFloat(stats.dias_promedio_retraso).toFixed(2) : null
+      },
+      por_paciente: estadisticasPorPaciente.map((p: any) => ({
+        paciente_id: p.paciente_id,
+        paciente_nombres: p.paciente_nombres,
+        paciente_apellidos: p.paciente_apellidos,
+        numero_ficha: p.numero_ficha,
+        total_tareas: parseInt(p.total_tareas),
+        tareas_cumplidas: parseInt(p.tareas_cumplidas),
+        tareas_vencidas: parseInt(p.tareas_vencidas),
+        tareas_pendientes_vencidas: parseInt(p.tareas_pendientes_vencidas),
+        tareas_incumplidas: parseInt(p.tareas_vencidas) + parseInt(p.tareas_pendientes_vencidas),
+        tareas_pendientes: parseInt(p.tareas_pendientes),
+        tareas_en_progreso: parseInt(p.tareas_en_progreso),
+        porcentaje_adherencia: parseFloat(p.porcentaje_adherencia),
+        dias_promedio_retraso: p.dias_promedio_retraso ? parseFloat(p.dias_promedio_retraso).toFixed(2) : null
+      })),
+      tareas_incumplidas: tareasIncumplidasDetalle,
+      tareas_cumplidas_recientes: tareasCumplidasDetalle,
+      filtros_aplicados: {
+        paciente_id: paciente_id || null,
+        fecha_inicio: fecha_inicio || null,
+        fecha_fin: fecha_fin || null
+      },
+      fecha_generacion: new Date().toISOString()
+    };
+
+    return ManejadorRespuestas.exito(
+      res,
+      'Reporte de adherencia terapéutica generado exitosamente',
+      reporte,
+      'TAR_ADH_002'
+    );
+  } catch (error: any) {
+    log.error('Error en generarReporteAdherencia:', error);
+    return ManejadorRespuestas.errorInterno(
+      res,
+      'Error interno al generar el reporte de adherencia',
+      'TAR_ADH_003'
+    );
+  }
+};
 
 // Obtener todas las tareas del psicólogo
 export const obtenerTodas = async (req: Request, res: Response) => {
@@ -67,7 +297,8 @@ export const obtenerTodas = async (req: Request, res: Response) => {
       WHERE ${whereClause}
       ORDER BY t.fecha_asignacion DESC
     `, {
-      replacements
+      replacements,
+      type: QueryTypes.SELECT
     }) as [any[], unknown];
 
     return ManejadorRespuestas.exito(
@@ -482,7 +713,8 @@ export const obtenerTareasPaciente = async (req: Request, res: Response) => {
       WHERE ${whereClause}
       ORDER BY t.fecha_asignacion DESC
     `, {
-      replacements
+      replacements,
+      type: QueryTypes.SELECT
     }) as [any[], unknown];
 
     return ManejadorRespuestas.exito(

@@ -34,13 +34,19 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      '@psyche/shared': path.resolve(__dirname, '../shared/src')
-    }
+      '@psyche/shared': path.resolve(__dirname, '../shared/src'),
+      'recharts': path.resolve(__dirname, '../node_modules/recharts'),
+      'jspdf': path.resolve(__dirname, '../node_modules/jspdf')
+    },
+    preserveSymlinks: true
   },
   server: {
     port: 3000,
     host: true,
-    strictPort: false
+    strictPort: false,
+    fs: {
+      allow: ['..']
+    }
   },
   build: {
     outDir: 'dist',
