@@ -242,6 +242,25 @@ class TareasService {
       throw new Error('Error al obtener estadísticas de tareas');
     }
   }
+
+  // Obtener reporte de adherencia terapéutica
+  async obtenerReporteAdherencia(filtros?: {
+    paciente_id?: string;
+    fecha_inicio?: string;
+    fecha_fin?: string;
+  }): Promise<any> {
+    try {
+      const params = new URLSearchParams();
+      if (filtros?.paciente_id) params.append('paciente_id', filtros.paciente_id);
+      if (filtros?.fecha_inicio) params.append('fecha_inicio', filtros.fecha_inicio);
+      if (filtros?.fecha_fin) params.append('fecha_fin', filtros.fecha_fin);
+
+      const response = await api.get(`/tareas/reporte-adherencia?${params.toString()}`);
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.mensaje || 'Error al obtener reporte de adherencia');
+    }
+  }
 }
 
 export const tareasService = new TareasService();

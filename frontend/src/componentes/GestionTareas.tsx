@@ -61,12 +61,16 @@ const GestionTareas: React.FC = () => {
         pacientesService.obtenerPacientes()
       ]);
 
-      console.log('Tareas recibidas:', tareasData);
-      console.log('Pacientes recibidos:', pacientesData);
+      console.log('📋 Tareas recibidas del backend:', tareasData);
+      console.log('👥 Pacientes recibidos:', pacientesData);
 
       // Asegurar que los datos son arrays
-      setTareas(Array.isArray(tareasData) ? tareasData : []);
-      setPacientes(Array.isArray(pacientesData) ? pacientesData : []);
+      const tareasArray = Array.isArray(tareasData) ? tareasData : [];
+      const pacientesArray = Array.isArray(pacientesData) ? pacientesData : [];
+      
+      console.log(`✅ Estableciendo ${tareasArray.length} tareas y ${pacientesArray.length} pacientes`);
+      setTareas(tareasArray);
+      setPacientes(pacientesArray);
     } catch (err: any) {
       console.error('Error al cargar datos:', err);
       setError(err.message || 'Error al cargar los datos');
@@ -92,11 +96,18 @@ const GestionTareas: React.FC = () => {
 
   const handleCrearTarea = async (tareaData: CrearTareaData) => {
     try {
-      await tareasService.crearTareaAvanzada(tareaData);
+      console.log('📝 Creando tarea con datos:', tareaData);
+      const tareaCreada = await tareasService.crearTareaAvanzada(tareaData);
+      console.log('✅ Tarea creada exitosamente:', tareaCreada);
+      
+      // Recargar datos después de crear
+      console.log('🔄 Recargando lista de tareas...');
       await cargarDatos();
+      
       setShowModal(false);
       mostrarNotificacion('Tarea creada exitosamente', 'exito');
     } catch (err: any) {
+      console.error('❌ Error al crear tarea:', err);
       mostrarNotificacion(err.message || 'Error al crear la tarea', 'error');
     }
   };
@@ -190,6 +201,15 @@ const GestionTareas: React.FC = () => {
     if (filtroPaciente && tarea.paciente_id !== filtroPaciente) return false;
     return true;
   });
+
+  // Log para depuración
+  useEffect(() => {
+    console.log(`🔍 Tareas totales: ${tareas.length}, Tareas filtradas: ${tareasFiltradas.length}`);
+    console.log('🔍 Filtros activos:', { filtroEstado, filtroTipo, filtroPaciente });
+    if (tareas.length > 0) {
+      console.log('📋 Primera tarea:', tareas[0]);
+    }
+  }, [tareas, tareasFiltradas, filtroEstado, filtroTipo, filtroPaciente]);
 
   if (loading) {
     return (

@@ -10,7 +10,8 @@ import {
   crearTareaAvanzada,
   guardarRespuesta,
   obtenerRespuestas,
-  evaluarRespuesta
+  evaluarRespuesta,
+  generarReporteAdherencia
 } from '../controladores/tareas.controlador';
 import { verificarToken, verificarRol } from '../middleware/auth.middleware';
 
@@ -24,6 +25,7 @@ router.get('/paciente/mis-tareas', verificarRol(['paciente']), obtenerTareasPaci
 router.put('/paciente/mis-tareas/:id', verificarRol(['paciente']), actualizarTareaPaciente);
 
 // Rutas para psicólogos
+router.get('/reporte-adherencia', verificarRol(['psicologo', 'admin']), generarReporteAdherencia);
 router.get('/', verificarRol(['psicologo', 'admin']), obtenerTodas);
 router.get('/:id', verificarRol(['psicologo', 'admin']), obtenerPorId);
 router.post('/', verificarRol(['psicologo', 'admin']), crear);

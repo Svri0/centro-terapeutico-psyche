@@ -2,8 +2,8 @@ import { Sequelize, Options } from 'sequelize';
 import dotenv from 'dotenv';
 import path from 'path';
 
-// Cargar variables de entorno desde la raíz del proyecto
-dotenv.config({ path: path.join(__dirname, '..', '..', '..', '.env') });
+// Cargar variables de entorno desde el directorio backend
+dotenv.config({ path: path.join(__dirname, '..', '..', '.env') });
 
 // Importar modelos para configurar asociaciones
 // Los modelos se importan desde servidor.ts para evitar importación circular
