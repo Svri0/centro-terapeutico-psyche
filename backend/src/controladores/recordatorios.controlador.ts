@@ -3,6 +3,7 @@ import { ManejadorRespuestas } from '../utilidades/respuestas';
 import { log } from '../utilidades/logger';
 import ConfiguracionRecordatorio from '../modelos/ConfiguracionRecordatorio';
 import { Op } from 'sequelize';
+import { RecordatoriosTareasService } from '../servicios/recordatorios-tareas.service';
 
 // ==================== CONFIGURACIONES DE RECORDATORIOS ====================
 
@@ -250,5 +251,95 @@ export const obtenerConfiguracionesPorCanal = async () => {
   } catch (error) {
     log.error('Error en obtenerConfiguracionesPorCanal:', error);
     return {};
+  }
+};
+
+// ==================== RECORDATORIOS DE TAREAS ====================
+
+// Ejecutar recordatorios de tareas para todos los pacientes
+export const ejecutarRecordatoriosTareas = async (req: Request, res: Response) => {
+  try {
+    const usuarioId = req.usuario?.id;
+    const rolId = req.usuario?.rol_id;
+    
+    // Solo administradores (rol_id 1) y psicólogos (rol_id 2) pueden ejecutar recordatorios
+    if (!usuarioId || (rolId !== 1 && rolId !== 2)) {
+      return ManejadorRespuestas.noAutorizado(
+        res,
+        'No tienes permisos para ejecutar recordatorios de tareas',
+        'RECORDATORIO_TAREAS_001'
+      );
+    }
+
+    console.log('📧 Ejecutando recordatorios de tareas manualmente...');
+
+    const resultado = await RecordatoriosTareasService.enviarRecordatoriosTareas();
+
+    return ManejadorRespuestas.exito(
+      res,
+      'Recordatorios de tareas ejecutados exitosamente',
+      resultado,
+      'RECORDATORIO_TAREAS_002'
+    );
+  } catch (error) {
+    log.error('Error en ejecutarRecordatoriosTareas:', error);
+    return ManejadorRespuestas.errorInterno(
+      res,
+      'Error al ejecutar recordatorios de tareas',
+      'RECORDATORIO_TAREAS_003'
+    );
+  }
+};
+
+// Ejecutar recordatorio de tareas para un paciente específico
+export const ejecutarRecordatorioTareasPaciente = async (req: Request, res: Response) => {
+  try {
+    const usuarioId = req.usuario?.id;
+    const rolId = req.usuario?.rol_id;
+    const { pacienteId } = req.params;
+    
+    // Solo administradores (rol_id 1) y psicólogos (rol_id 2) pueden ejecutar recordatorios
+    if (!usuarioId || (rolId !== 1 && rolId !== 2)) {
+      return ManejadorRespuestas.noAutorizado(
+        res,
+        'No tienes permisos para ejecutar recordatorios de tareas',
+        'RECORDATORIO_TAREAS_004'
+      );
+    }
+
+    if (!pacienteId) {
+      return ManejadorRespuestas.errorValidacion(
+        res,
+        'ID de paciente es requerido',
+        'RECORDATORIO_TAREAS_005'
+      );
+    }
+
+    console.log(`📧 Ejecutando recordatorio de tareas para paciente ${pacienteId}...`);
+
+    const enviado = await RecordatoriosTareasService.enviarRecordatorioPaciente(pacienteId);
+
+    if (enviado) {
+      return ManejadorRespuestas.exito(
+        res,
+        'Recordatorio de tareas enviado exitosamente al paciente',
+        { pacienteId, enviado },
+        'RECORDATORIO_TAREAS_006'
+      );
+    } else {
+      return ManejadorRespuestas.exito(
+        res,
+        'No se pudo enviar el recordatorio (paciente sin email o sin tareas pendientes)',
+        { pacienteId, enviado },
+        'RECORDATORIO_TAREAS_007'
+      );
+    }
+  } catch (error) {
+    log.error('Error en ejecutarRecordatorioTareasPaciente:', error);
+    return ManejadorRespuestas.errorInterno(
+      res,
+      'Error al ejecutar recordatorio de tareas para el paciente',
+      'RECORDATORIO_TAREAS_008'
+    );
   }
 };

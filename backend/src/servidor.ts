@@ -13,6 +13,7 @@ import { Server as SocketIOServer } from 'socket.io';
 import { MENSAJES_GENERALES } from './utilidades/mensajes';
 import { ManejadorRespuestas } from './utilidades/respuestas';
 import { ChatWebSocketService } from './servicios/chat-websocket.service';
+import * as cron from 'node-cron';
 
 // Cargar variables de entorno desde la raíz del proyecto
 dotenv.config({ path: path.join(__dirname, '..', '..', '.env') });
@@ -656,6 +657,16 @@ const iniciarServidor = async () => {
       console.log('   Los modelos JavaScript seguirán funcionando normalmente');
     }
 
+    // Configurar cron job para recordatorios de tareas
+    console.log('⏰ Configurando tareas programadas (cron jobs)...');
+    try {
+      await configurarCronJobs();
+      console.log('✅ Tareas programadas configuradas correctamente');
+    } catch (error) {
+      console.log('⚠️  Advertencia: No se pudieron configurar las tareas programadas');
+      console.log('   Los recordatorios automáticos no estarán disponibles');
+    }
+
     const servidor = httpServer
       .listen(PUERTO, () => {
         console.log('\n🎉 ═══════════════════════════════════════════════════════');
@@ -705,6 +716,58 @@ const iniciarServidor = async () => {
     console.error('🚨 Error:', error);
     console.log('═══════════════════════════════════════════════════════\n');
     process.exit(1);
+  }
+};
+
+// Configurar cron jobs para tareas programadas
+const configurarCronJobs = async () => {
+  try {
+    // Recordatorios de tareas pendientes - Se ejecuta diariamente a las 9:00 AM (hora local)
+    // Formato cron: minuto hora día mes día-semana
+    // '0 9 * * *' = todos los días a las 9:00 AM
+    const recordatoriosTareasJob = cron.schedule('0 9 * * *', async () => {
+      try {
+        console.log('📧 [CRON] Iniciando envío de recordatorios de tareas pendientes...');
+        const { RecordatoriosTareasService } = await import('./servicios/recordatorios-tareas.service');
+        const resultado = await RecordatoriosTareasService.enviarRecordatoriosTareas();
+        console.log('📧 [CRON] Recordatorios enviados:', {
+          exitosos: resultado.exitosos,
+          fallidos: resultado.fallidos,
+          pacientesNotificados: resultado.pacientesNotificados,
+          totalTareas: resultado.totalTareas
+        });
+      } catch (error) {
+        console.error('❌ [CRON] Error al enviar recordatorios de tareas:', error);
+      }
+    }, {
+      timezone: 'America/Santiago' // Zona horaria de Chile
+    });
+
+    // Verificar si el cron job está activo
+    if (recordatoriosTareasJob) {
+      console.log('✅ [CRON] Recordatorios de tareas configurados: diariamente a las 9:00 AM (Chile)');
+    }
+
+    // En desarrollo, también podemos ejecutar cada hora para pruebas
+    // Descomentar la siguiente línea si quieres pruebas más frecuentes
+    /*
+    const recordatoriosTareasTestJob = cron.schedule('0 * * * *', async () => {
+      try {
+        console.log('📧 [CRON TEST] Enviando recordatorios de tareas (modo prueba - cada hora)...');
+        const { RecordatoriosTareasService } = await import('./servicios/recordatorios-tareas.service');
+        const resultado = await RecordatoriosTareasService.enviarRecordatoriosTareas();
+        console.log('📧 [CRON TEST] Resultado:', resultado);
+      } catch (error) {
+        console.error('❌ [CRON TEST] Error:', error);
+      }
+    }, {
+      scheduled: process.env.NODE_ENV === 'development', // Solo en desarrollo
+      timezone: 'America/Santiago'
+    });
+    */
+  } catch (error) {
+    console.error('❌ Error al configurar cron jobs:', error);
+    throw error;
   }
 };
 
