@@ -10,6 +10,7 @@ import morgan from 'morgan';
 import path from 'path';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
+import * as cron from 'node-cron';
 import { MENSAJES_GENERALES } from './utilidades/mensajes';
 import { ManejadorRespuestas } from './utilidades/respuestas';
 import { ChatWebSocketService } from './servicios/chat-websocket.service';
@@ -651,6 +652,7 @@ const iniciarServidor = async () => {
       // Importar modelos para configurar asociaciones
       await import('./modelos');
       console.log('✅ Modelos y asociaciones configurados correctamente');
+      configurarCronJobs();
     } catch (error) {
       console.log('⚠️  Advertencia: No se pudieron configurar los modelos TypeScript');
       console.log('   Los modelos JavaScript seguirán funcionando normalmente');
@@ -705,6 +707,31 @@ const iniciarServidor = async () => {
     console.error('🚨 Error:', error);
     console.log('═══════════════════════════════════════════════════════\n');
     process.exit(1);
+  }
+};
+
+const configurarCronJobs = () => {
+  try {
+    cron.schedule(
+      '0 9 * * *',
+      async () => {
+        try {
+          console.log('📧 [CRON] Iniciando envío de recordatorios de tareas pendientes...');
+          const { RecordatoriosTareasService } = await import('./servicios/recordatorios-tareas.service');
+          const resultado = await RecordatoriosTareasService.enviarRecordatoriosTareas();
+          console.log('📧 [CRON] Recordatorios enviados:', resultado);
+        } catch (error) {
+          console.error('❌ [CRON] Error al enviar recordatorios de tareas:', error);
+        }
+      },
+      {
+        timezone: 'America/Santiago'
+      }
+    );
+
+    console.log('✅ [CRON] Recordatorios de tareas configurados: diariamente a las 9:00 AM (Chile)');
+  } catch (error) {
+    console.error('❌ Error al configurar cron jobs:', error);
   }
 };
 
