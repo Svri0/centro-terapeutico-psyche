@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import './App.css';
 import Inicio from './paginas/Inicio';
 import LoginNuevo from './paginas/LoginNuevo';
@@ -19,6 +19,17 @@ import PanelPsicologoProtegido from './componentes/PanelPsicologoProtegido';
 import { authService } from './servicios/auth.service';
 import { useErrorHandler } from './hooks/useErrorHandler';
 import SessionTimeoutWrapper from './componentes/SessionTimeoutWrapper';
+import { markRouteChange } from './utilidades/performanceLogger';
+
+const RouteChangeTracker: React.FC = () => {
+  const location = useLocation();
+
+  React.useEffect(() => {
+    markRouteChange(location.pathname);
+  }, [location.pathname]);
+
+  return null;
+};
 
 // Componente para rutas protegidas
 function ProtectedRoutes() {
@@ -61,6 +72,7 @@ function App() {
   return (
     <SessionTimeoutWrapper>
       <Router>
+        <RouteChangeTracker />
         <Routes>
           {/* Ruta principal - Página de inicio PÚBLICA */}
           <Route path="/" element={<Inicio />} />

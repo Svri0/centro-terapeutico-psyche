@@ -22,6 +22,7 @@ import { PacienteCreado } from '../servicios/pacientes.service';
 import { actualizarPerfilPsicologo, subirImagenReal } from '../servicios/usuarios.service';
 import Logo from '../componentes/Logo';
 import { getAvatarById, AVATARS_ANIMALES } from '../assets/avatars/default-avatars';
+import { useLogViewPerformance } from '../utilidades/performanceLogger';
 
 interface Sesion {
   id: string;
@@ -33,6 +34,7 @@ interface Sesion {
 }
 
 const PanelPsicologo: React.FC = () => {
+  useLogViewPerformance('PanelPsicologo');
   const [sesionesHoy, setSesionesHoy] = useState<Sesion[]>([]);
   const [sesionesRecientes, setSesionesRecientes] = useState<Sesion[]>([]);
   const [showChangePassword, setShowChangePassword] = useState(false);

@@ -892,11 +892,11 @@ export const obtenerTodosPacientes = async (req: Request, res: Response) => {
         p.diagnosticos,
         p.etiquetas,
         p.estrategias_autorregulacion,
-        p.puntos_acumulados,
         p.estado,
         p.fecha_ingreso,
         p.fecha_alta,
         p.observaciones,
+        p.puntos_acumulados,
         u.nombres,
         u.apellidos,
         u.email,
@@ -906,8 +906,9 @@ export const obtenerTodosPacientes = async (req: Request, res: Response) => {
         u.activo,
         u.created_at,
         u.updated_at,
-        ps.nombres as psicologo_nombres,
-        ps.apellidos as psicologo_apellidos
+        ps.nombres AS psicologo_nombres,
+        ps.apellidos AS psicologo_apellidos,
+        ps.email AS psicologo_email
       FROM pacientes p
       INNER JOIN usuarios u ON p.usuario_id = u.id
       LEFT JOIN usuarios ps ON p.psicologo_id = ps.id

@@ -15,8 +15,11 @@ import ChatAdmin from '../componentes/ChatAdmin';
 import EstadisticasGenerales from '../componentes/EstadisticasGenerales';
 import ConfiguracionRecordatorios from '../componentes/ConfiguracionRecordatorios';
 import { useSessionTimeout } from '../hooks/useSessionTimeout';
+import { useLogViewPerformance } from '../utilidades/performanceLogger';
 
 const PanelAdmin: React.FC = () => {
+  useLogViewPerformance('PanelAdmin');
+
   const [activeTab, setActiveTab] = useState<'psicologos' | 'pacientes' | 'recepcionistas' | 'chat' | 'auditoria' | 'estadisticas' | 'recordatorios'>('psicologos');
   const [psicologos, setPsicologos] = useState<Psicologo[]>([]);
   const [recepcionistas, setRecepcionistas] = useState<any[]>([]);

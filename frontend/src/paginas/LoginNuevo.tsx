@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { authService, LoginData } from '../servicios/auth.service';
 import { validateLoginForm, getFieldError, sanitizeInput, ValidationError } from '../utilidades/validation';
+import { useLogViewPerformance } from '../utilidades/performanceLogger';
 
 const LoginNuevo: React.FC = () => {
+  useLogViewPerformance('Login');
   const [formData, setFormData] = useState<LoginData>({
     email: '',
     password: ''

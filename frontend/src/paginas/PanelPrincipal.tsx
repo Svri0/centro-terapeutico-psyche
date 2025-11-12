@@ -1,7 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useLogViewPerformance } from '../utilidades/performanceLogger';
 
 const PanelPrincipal: React.FC = () => {
+  useLogViewPerformance('PanelPrincipal');
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
       {/* Header */}
