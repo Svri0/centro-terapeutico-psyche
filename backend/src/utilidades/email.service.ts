@@ -394,3 +394,198 @@ export const enviarEmailCancelacionCitaPsicologo = async (
     return false;
   }
 };
+
+export interface TareaPendiente {
+  id: string;
+  titulo: string;
+  instrucciones?: string;
+  fecha_vencimiento?: Date | string;
+  prioridad: 'baja' | 'media' | 'alta' | 'urgente';
+  puntos_asignados: number;
+}
+
+export const enviarEmailRecordatorioTareas = async (
+  emailPaciente: string,
+  nombrePaciente: string,
+  tareasPendientes: TareaPendiente[]
+): Promise<boolean> => {
+  try {
+    if (!emailPaciente || !nombrePaciente || tareasPendientes.length === 0) {
+      logger.warn('No se puede enviar recordatorio: datos incompletos', {
+        emailPaciente,
+        nombrePaciente,
+        tareasCount: tareasPendientes?.length || 0
+      });
+      return false;
+    }
+
+    const subject = '📋 Recordatorio de Tareas Pendientes - Centro Terapéutico Psyche';
+
+    const formatearFecha = (fecha?: Date | string): string => {
+      if (!fecha) return 'Sin fecha límite';
+      const fechaObj = typeof fecha === 'string' ? new Date(fecha) : fecha;
+      return fechaObj.toLocaleDateString('es-CL', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    };
+
+    const calcularDiasRestantes = (fecha?: Date | string): string => {
+      if (!fecha) return '';
+      const fechaObj = typeof fecha === 'string' ? new Date(fecha) : fecha;
+      const ahora = new Date();
+      const diffTime = fechaObj.getTime() - ahora.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays < 0) {
+        return `<span style="color: #ef4444; font-weight: bold;">⚠️ Vencida (${Math.abs(diffDays)} día(s) de retraso)</span>`;
+      } else if (diffDays === 0) {
+        return '<span style="color: #f59e0b; font-weight: bold;">⚠️ Vence hoy</span>';
+      } else if (diffDays === 1) {
+        return '<span style="color: #f59e0b; font-weight: bold;">⚠️ Vence mañana</span>';
+      } else if (diffDays <= 3) {
+        return `<span style="color: #f59e0b; font-weight: bold;">⚠️ Vence en ${diffDays} días</span>`;
+      }
+      return `<span style="color: #10b981;">✅ ${diffDays} días restantes</span>`;
+    };
+
+    const obtenerColorPrioridad = (prioridad: string): string => {
+      switch (prioridad) {
+        case 'urgente':
+          return '#ef4444';
+        case 'alta':
+          return '#f59e0b';
+        case 'media':
+          return '#3b82f6';
+        case 'baja':
+          return '#10b981';
+        default:
+          return '#6b7280';
+      }
+    };
+
+    const tareasHTML = tareasPendientes
+      .map((tarea, index) => {
+        const diasRestantes = calcularDiasRestantes(tarea.fecha_vencimiento);
+        const colorPrioridad = obtenerColorPrioridad(tarea.prioridad);
+
+        return `
+        <div style="background-color: #f9fafb; border-left: 4px solid ${colorPrioridad}; padding: 20px; margin-bottom: 20px; border-radius: 0 8px 8px 0; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);">
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+            <h3 style="color: #1f2937; margin: 0; font-size: 18px; font-weight: 600;">
+              📌 Tarea ${index + 1}: ${tarea.titulo}
+            </h3>
+            <span style="background-color: ${colorPrioridad}; color: #ffffff; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; text-transform: uppercase;">
+              ${tarea.prioridad}
+            </span>
+          </div>
+          
+          ${
+            tarea.instrucciones
+              ? `
+            <div style="background-color: #ffffff; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+              <p style="color: #374151; margin: 0 0 8px 0; font-weight: 600;">📝 Instrucciones:</p>
+              <p style="color: #6b7280; margin: 0; line-height: 1.6; white-space: pre-wrap;">${tarea.instrucciones}</p>
+            </div>
+          `
+              : ''
+          }
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 10px;">
+            <div>
+              <p style="color: #374151; margin: 5px 0; font-weight: 500;"><strong>📅 Fecha Límite:</strong></p>
+              <p style="color: #6b7280; margin: 5px 0;">${formatearFecha(tarea.fecha_vencimiento)}</p>
+            </div>
+            <div>
+              <p style="color: #374151; margin: 5px 0; font-weight: 500;"><strong>⭐ Puntos:</strong></p>
+              <p style="color: #6b7280; margin: 5px 0;">${tarea.puntos_asignados} puntos</p>
+            </div>
+          </div>
+          
+          ${
+            diasRestantes
+              ? `
+            <div style="margin-top: 10px;">
+              <p style="margin: 0;">${diasRestantes}</p>
+            </div>
+          `
+              : ''
+          }
+        </div>
+      `;
+      })
+      .join('');
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: visible; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">🧠 Centro Terapéutico Psyche</h1>
+          <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Recordatorio de Tareas Pendientes</p>
+        </div>
+        
+        <div style="padding: 40px 30px;">
+          <div style="text-align: center; margin-bottom: 30px; padding: 20px; background-color: #fef3c7; border-radius: 15px; border: 3px solid #f59e0b;">
+            <div style="width: 80px; height: 80px; border-radius: 50%; background-color: #f59e0b; display: flex; align-items: center; justify-content: center; margin: 0 auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);">
+              <span style="font-size: 40px; color: #ffffff;">📋</span>
+            </div>
+            <p style="margin-top: 15px; color: #92400e; font-weight: bold; font-size: 18px;">Tienes ${tareasPendientes.length} tarea(s) pendiente(s)</p>
+          </div>
+          
+          <h2 style="color: #1f2937; margin-top: 0; font-size: 24px;">¡Hola ${nombrePaciente}!</h2>
+          <p style="color: #374151; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+            Te recordamos que tienes <strong>${tareasPendientes.length} tarea(s) pendiente(s)</strong> que aún no has completado. 
+            Es importante que las completes para continuar con tu proceso terapéutico.
+          </p>
+          
+          <div style="margin: 30px 0;">
+            <h3 style="color: #1f2937; margin-bottom: 20px; font-size: 20px;">📝 Tus Tareas Pendientes:</h3>
+            ${tareasHTML}
+          </div>
+          
+          <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 25px; border-radius: 12px; margin: 25px 0;">
+            <h3 style="color: #92400e; margin-top: 0; font-size: 18px;">💡 Recordatorio Importante</h3>
+            <ul style="color: #92400e; line-height: 1.8; margin: 0; padding-left: 20px;">
+              <li>Completa tus tareas antes de la fecha límite para obtener los puntos asignados</li>
+              <li>Las tareas completadas te ayudan a avanzar en tu proceso terapéutico</li>
+              <li>Si tienes dudas sobre alguna tarea, contacta a tu psicólogo</li>
+              <li>Accede al sistema para completar tus tareas y ver tu progreso</li>
+            </ul>
+          </div>
+          
+          <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+            <h3 style="color: #1e40af; margin-top: 0; font-size: 18px;">🚀 Completa tus Tareas Ahora</h3>
+            <p style="color: #1e40af; margin: 10px 0; line-height: 1.6;">
+              Accede al sistema para ver y completar tus tareas pendientes:
+            </p>
+            <div style="margin-top: 15px;">
+              <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/login" style="display: inline-block; background-color: #3b82f6; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 500; transition: background-color 0.3s;">
+                🔐 Acceder al Sistema
+              </a>
+            </div>
+          </div>
+          
+          <div style="text-align: center; margin-top: 30px; padding: 20px; background-color: #f9fafb; border-radius: 12px;">
+            <p style="color: #6b7280; font-size: 14px; margin: 0;">
+              <strong>Centro Terapéutico Psyche</strong><br>
+              📧 info@psyche.cl | 📱 +56 9 1234 5678<br>
+              <span style="font-size: 12px;">Este es un mensaje automático. Si tienes alguna pregunta, contacta a tu psicólogo.</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    return await enviarEmail({
+      to: emailPaciente,
+      subject,
+      html
+    });
+  } catch (error) {
+    logger.error('Error al enviar email de recordatorio de tareas', { error, emailPaciente });
+    return false;
+  }
+};
