@@ -8,8 +8,10 @@ import ReportesRecepcionista from '../componentes/ReportesRecepcionista';
 import ChatRecepcionista from '../componentes/ChatRecepcionista';
 import Logo from '../componentes/Logo';
 import { useSessionTimeout } from '../hooks/useSessionTimeout';
+import { useLogViewPerformance } from '../utilidades/performanceLogger';
 
 const PanelRecepcionista: React.FC = () => {
+  useLogViewPerformance('PanelRecepcionista');
   const [activeTab, setActiveTab] = useState<'dashboard' | 'agenda' | 'pacientes' | 'pagos' | 'reportes' | 'chat'>('dashboard');
   const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(true);

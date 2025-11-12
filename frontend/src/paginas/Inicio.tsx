@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Chatbot from '../componentes/Chatbot';
+import { useLogViewPerformance } from '../utilidades/performanceLogger';
 
 interface FormData {
   nombreCompleto: string;
@@ -21,6 +22,7 @@ interface FormErrors {
 }
 
 const Inicio: React.FC = () => {
+  useLogViewPerformance('Inicio');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     nombreCompleto: '',

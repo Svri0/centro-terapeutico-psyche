@@ -10,8 +10,10 @@ import { authService } from '../servicios/auth.service';
 import { actualizarPerfilPaciente, subirImagenReal } from '../servicios/usuarios.service';
 import { AVATARS_ANIMALES } from '../assets/avatars/default-avatars';
 import { useSessionTimeout } from '../hooks/useSessionTimeout';
+import { useLogViewPerformance } from '../utilidades/performanceLogger';
 
 const PanelPaciente: React.FC = () => {
+  useLogViewPerformance('PanelPaciente');
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
