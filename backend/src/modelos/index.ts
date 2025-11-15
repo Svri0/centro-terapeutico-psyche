@@ -1,21 +1,44 @@
+// ============================================
+// ÍNDICE DE MODELOS - REESTRUCTURACIÓN COMPLETA
+// ============================================
+
+// Modelos base (sin cambios estructurales)
 import Rol from './Rol';
 import Usuario from './Usuario';
-import Paciente from './Paciente';
-import Sesion from './Sesion';
-import Tarea from './Tarea';
 import LogAuditoria from './LogAuditoria';
-import ServicioPsicologo from './ServicioPsicologo';
-import RespuestaTarea from './RespuestaTarea';
-import DisponibilidadMensual from './DisponibilidadMensual';
+import ConfiguracionRecordatorio from './ConfiguracionRecordatorio';
+import ConfiguracionSistema from './ConfiguracionSistema';
 import MensajeChat from './MensajeChat';
-import ReporteProgreso from './ReporteProgreso';
+import TokensMensajesPaciente from './TokensMensajesPaciente';
 import ContactoEmergencia from './ContactoEmergencia';
 import Etiqueta from './Etiqueta';
 import Diagnostico from './Diagnostico';
-import ConfiguracionSistema from './ConfiguracionSistema';
-import TokensMensajesPaciente from './TokensMensajesPaciente';
+import RespuestaTarea from './RespuestaTarea';
+import ReporteProgreso from './ReporteProgreso';
 
-// Configurar asociaciones
+// Modelos actualizados
+import Paciente from './Paciente';
+import Sesion from './Sesion';
+import Tarea from './Tarea';
+import ServicioPsicologo from './ServicioPsicologo';
+import HorarioDisponible from './HorarioDisponible';
+
+// Modelos nuevos
+import TipoServicio from './TipoServicio';
+import ObjetivoTerapeutico from './ObjetivoTerapeutico';
+import TecnicaTerapeutica from './TecnicaTerapeutica';
+import SesionObjetivo from './SesionObjetivo';
+import SesionTecnica from './SesionTecnica';
+import EvaluacionSesion from './EvaluacionSesion';
+import Archivo from './Archivo';
+
+// ============================================
+// CONFIGURAR ASOCIACIONES
+// ============================================
+
+// ----------------------------------------
+// MÓDULO: AUTENTICACIÓN Y PERMISOS
+// ----------------------------------------
 
 // Rol - Usuario (1:N)
 Rol.hasMany(Usuario, {
@@ -152,13 +175,13 @@ ServicioPsicologo.belongsTo(Usuario, {
   as: 'psicologo',
 });
 
-// Usuario - DisponibilidadMensual (1:N)
-Usuario.hasMany(DisponibilidadMensual, {
+// Usuario - HorarioDisponible (1:N)
+Usuario.hasMany(HorarioDisponible, {
   foreignKey: 'psicologo_id',
-  as: 'disponibilidad_mensual',
+  as: 'horarios_disponibles',
 });
 
-DisponibilidadMensual.belongsTo(Usuario, {
+HorarioDisponible.belongsTo(Usuario, {
   foreignKey: 'psicologo_id',
   as: 'psicologo',
 });
@@ -270,21 +293,145 @@ TokensMensajesPaciente.belongsTo(Paciente, {
   as: 'paciente',
 });
 
+// ----------------------------------------
+// MÓDULO: SESIONES TERAPÉUTICAS (NORMALIZADO)
+// ----------------------------------------
+
+// Sesion - ObjetivoTerapeutico (N:M) a través de sesion_objetivos
+Sesion.belongsToMany(ObjetivoTerapeutico, {
+  through: SesionObjetivo,
+  foreignKey: 'sesion_id',
+  otherKey: 'objetivo_id',
+  as: 'objetivos',
+});
+
+ObjetivoTerapeutico.belongsToMany(Sesion, {
+  through: SesionObjetivo,
+  foreignKey: 'objetivo_id',
+  otherKey: 'sesion_id',
+  as: 'sesiones',
+});
+
+// Sesion - TecnicaTerapeutica (N:M) a través de sesion_tecnicas
+Sesion.belongsToMany(TecnicaTerapeutica, {
+  through: SesionTecnica,
+  foreignKey: 'sesion_id',
+  otherKey: 'tecnica_id',
+  as: 'tecnicas',
+});
+
+TecnicaTerapeutica.belongsToMany(Sesion, {
+  through: SesionTecnica,
+  foreignKey: 'tecnica_id',
+  otherKey: 'sesion_id',
+  as: 'sesiones',
+});
+
+// Sesion - SesionObjetivo (1:N) para acceso directo
+Sesion.hasMany(SesionObjetivo, {
+  foreignKey: 'sesion_id',
+  as: 'sesion_objetivos',
+});
+
+SesionObjetivo.belongsTo(Sesion, {
+  foreignKey: 'sesion_id',
+  as: 'sesion',
+});
+
+SesionObjetivo.belongsTo(ObjetivoTerapeutico, {
+  foreignKey: 'objetivo_id',
+  as: 'objetivo',
+});
+
+// Sesion - SesionTecnica (1:N) para acceso directo
+Sesion.hasMany(SesionTecnica, {
+  foreignKey: 'sesion_id',
+  as: 'sesion_tecnicas',
+});
+
+SesionTecnica.belongsTo(Sesion, {
+  foreignKey: 'sesion_id',
+  as: 'sesion',
+});
+
+SesionTecnica.belongsTo(TecnicaTerapeutica, {
+  foreignKey: 'tecnica_id',
+  as: 'tecnica',
+});
+
+// Sesion - EvaluacionSesion (1:1)
+Sesion.hasOne(EvaluacionSesion, {
+  foreignKey: 'sesion_id',
+  as: 'evaluacion',
+});
+
+EvaluacionSesion.belongsTo(Sesion, {
+  foreignKey: 'sesion_id',
+  as: 'sesion',
+});
+
+// ----------------------------------------
+// MÓDULO: SERVICIOS Y DISPONIBILIDAD
+// ----------------------------------------
+
+// TipoServicio - ServicioPsicologo (1:N)
+TipoServicio.hasMany(ServicioPsicologo, {
+  foreignKey: 'tipo_servicio_id',
+  as: 'servicios',
+});
+
+ServicioPsicologo.belongsTo(TipoServicio, {
+  foreignKey: 'tipo_servicio_id',
+  as: 'tipo_servicio',
+});
+
+// ----------------------------------------
+// MÓDULO: ARCHIVOS CENTRALIZADOS
+// ----------------------------------------
+
+// Usuario - Archivo (1:N) - Subido por
+Usuario.hasMany(Archivo, {
+  foreignKey: 'subido_por',
+  as: 'archivos_subidos',
+});
+
+Archivo.belongsTo(Usuario, {
+  foreignKey: 'subido_por',
+  as: 'usuario',
+});
+
+// ============================================
+// EXPORTAR MODELOS
+// ============================================
+
 export {
+  // Modelos base
   Rol,
   Usuario,
-  Paciente,
-  Sesion,
-  Tarea,
   LogAuditoria,
-  ServicioPsicologo,
-  RespuestaTarea,
-  DisponibilidadMensual,
+  ConfiguracionRecordatorio,
+  ConfiguracionSistema,
   MensajeChat,
-  ReporteProgreso,
+  TokensMensajesPaciente,
   ContactoEmergencia,
   Etiqueta,
   Diagnostico,
-  ConfiguracionSistema,
-  TokensMensajesPaciente,
+  RespuestaTarea,
+  ReporteProgreso,
+  
+  // Modelos actualizados
+  Paciente,
+  Sesion,
+  Tarea,
+  ServicioPsicologo,
+  HorarioDisponible,
+  
+  // Modelos nuevos
+  TipoServicio,
+  ObjetivoTerapeutico,
+  TecnicaTerapeutica,
+  SesionObjetivo,
+  SesionTecnica,
+  EvaluacionSesion,
+  Archivo,
 }; 

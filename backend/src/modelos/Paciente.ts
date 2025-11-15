@@ -6,12 +6,8 @@ export interface PacienteAttributes {
   id: string;
   usuario_id: string;
   psicologo_id: string;
-  nombres?: string;
-  apellidos?: string;
-  email?: string;
-  telefono?: string;
-  fecha_nacimiento?: Date;
-  genero?: 'masculino' | 'femenino' | 'no_binario' | 'prefiero_no_decir';
+  // ✅ CAMPOS PERSONALES ELIMINADOS (se obtienen de usuarios via JOIN)
+  // Eliminados: nombres, apellidos, email, telefono, fecha_nacimiento, genero
   numero_ficha: string;
   rut?: string;
   direccion?: string;
@@ -39,12 +35,7 @@ class Paciente extends Model<PacienteAttributes, PacienteCreationAttributes> imp
   public id!: string;
   public usuario_id!: string;
   public psicologo_id!: string;
-  public nombres?: string;
-  public apellidos?: string;
-  public email?: string;
-  public telefono?: string;
-  public fecha_nacimiento?: Date;
-  public genero?: 'masculino' | 'femenino' | 'no_binario' | 'prefiero_no_decir';
+  // ✅ Campos personales eliminados (vienen de usuarios)
   public numero_ficha!: string;
   public rut?: string;
   public direccion?: string;
@@ -80,6 +71,7 @@ Paciente.init(
     usuario_id: {
       type: DataTypes.UUID,
       allowNull: false,
+      unique: true,
       references: {
         model: 'usuarios',
         key: 'id',
@@ -92,30 +84,6 @@ Paciente.init(
         model: 'usuarios',
         key: 'id',
       },
-    },
-    nombres: {
-      type: DataTypes.STRING(100),
-      allowNull: true,
-    },
-    apellidos: {
-      type: DataTypes.STRING(100),
-      allowNull: true,
-    },
-    email: {
-      type: DataTypes.STRING(255),
-      allowNull: true,
-    },
-    telefono: {
-      type: DataTypes.STRING(20),
-      allowNull: true,
-    },
-    fecha_nacimiento: {
-      type: DataTypes.DATEONLY,
-      allowNull: true,
-    },
-    genero: {
-      type: DataTypes.ENUM('masculino', 'femenino', 'no_binario', 'prefiero_no_decir'),
-      allowNull: true,
     },
     numero_ficha: {
       type: DataTypes.STRING(20),

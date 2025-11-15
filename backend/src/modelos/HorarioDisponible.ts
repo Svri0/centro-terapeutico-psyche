@@ -1,7 +1,8 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configuracion/database';
 
-export interface DisponibilidadMensualAttributes {
+// ✅ RENOMBRADO: DisponibilidadMensual → HorarioDisponible
+export interface HorarioDisponibleAttributes {
   id?: number;
   psicologo_id: string;
   fecha: string; // YYYY-MM-DD
@@ -14,9 +15,10 @@ export interface DisponibilidadMensualAttributes {
   deleted_at?: Date;
 }
 
-export interface DisponibilidadMensualCreationAttributes extends Omit<DisponibilidadMensualAttributes, 'id' | 'created_at' | 'updated_at'> {}
+export interface HorarioDisponibleCreationAttributes
+  extends Omit<HorarioDisponibleAttributes, 'id' | 'created_at' | 'updated_at'> {}
 
-class DisponibilidadMensual extends Model<DisponibilidadMensualAttributes, DisponibilidadMensualCreationAttributes> {
+class HorarioDisponible extends Model<HorarioDisponibleAttributes, HorarioDisponibleCreationAttributes> {
   public id!: number;
   public psicologo_id!: string;
   public fecha!: string;
@@ -29,7 +31,7 @@ class DisponibilidadMensual extends Model<DisponibilidadMensualAttributes, Dispo
   public deleted_at?: Date;
 }
 
-DisponibilidadMensual.init(
+HorarioDisponible.init(
   {
     id: {
       type: DataTypes.INTEGER,
@@ -41,75 +43,76 @@ DisponibilidadMensual.init(
       allowNull: false,
       references: {
         model: 'usuarios',
-        key: 'id'
+        key: 'id',
       },
       onUpdate: 'CASCADE',
-      onDelete: 'CASCADE'
+      onDelete: 'CASCADE',
     },
     fecha: {
       type: DataTypes.DATEONLY,
       allowNull: false,
-      comment: 'Fecha específica (YYYY-MM-DD)'
+      comment: 'Fecha específica (YYYY-MM-DD)',
     },
     hora_inicio: {
       type: DataTypes.TIME,
-      allowNull: false
+      allowNull: false,
     },
     hora_fin: {
       type: DataTypes.TIME,
-      allowNull: false
+      allowNull: false,
     },
     activo: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
-      defaultValue: true
+      defaultValue: true,
     },
     tipo_disponibilidad: {
       type: DataTypes.ENUM('individual', 'recurrente'),
       allowNull: false,
       defaultValue: 'individual',
-      comment: 'individual: fecha específica, recurrente: se repite semanalmente'
+      comment: 'individual: fecha específica, recurrente: se repite semanalmente',
     },
     created_at: {
       type: DataTypes.DATE,
       allowNull: false,
-      defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
+      defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
     },
     updated_at: {
       type: DataTypes.DATE,
       allowNull: false,
-      defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
+      defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
     },
     deleted_at: {
       type: DataTypes.DATE,
-      allowNull: true
-    }
+      allowNull: true,
+    },
   },
   {
     sequelize,
-    tableName: 'disponibilidad_mensual',
+    tableName: 'horarios_disponibles', // ✅ NUEVA TABLA (renombrada)
     timestamps: true,
-    paranoid: true, // Soft deletes
+    paranoid: true,
     underscored: true,
     indexes: [
       {
-        fields: ['psicologo_id']
+        fields: ['psicologo_id'],
       },
       {
-        fields: ['psicologo_id', 'fecha'],
-        unique: true
+        fields: ['psicologo_id', 'fecha', 'hora_inicio'],
+        unique: true,
       },
       {
-        fields: ['fecha']
+        fields: ['fecha'],
       },
       {
-        fields: ['activo']
+        fields: ['activo'],
       },
       {
-        fields: ['tipo_disponibilidad']
-      }
-    ]
+        fields: ['tipo_disponibilidad'],
+      },
+    ],
   }
 );
 
-export default DisponibilidadMensual;
+export default HorarioDisponible;
+
