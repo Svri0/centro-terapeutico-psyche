@@ -323,14 +323,65 @@ async function poblarConSesiones() {
     });
 
     // OBTENER PSICÓLOGOS EXISTENTES
-    const [psicologosExistentes] = await sequelize.query(`
+    let [psicologosExistentes] = await sequelize.query(`
       SELECT id, nombres, apellidos FROM usuarios WHERE rol_id = :rol_id
     `, {
       replacements: { rol_id: rolesMap['psicologo'] },
       transaction
     });
 
-    console.log(`✅ ${psicologosExistentes.length} psicólogos encontrados\n`);
+    // Si no hay psicólogos, crearlos
+    if (psicologosExistentes.length === 0) {
+      console.log('👨‍⚕️ No se encontraron psicólogos. Creando psicólogos...');
+      console.log('━'.repeat(60));
+      
+      for (const psicologo of psicologos) {
+        const passwordHash = await bcrypt.hash(psicologo.password, 12);
+        
+        const [usuarioCreado] = await sequelize.query(`
+          INSERT INTO usuarios (
+            id, email, password_hash, nombres, apellidos, telefono,
+            fecha_nacimiento, genero, rol_id, activo, email_verificado,
+            configuracion, codigo_sbs, especialidad, descripcion, avatar_url,
+            created_at, updated_at
+          ) VALUES (
+            gen_random_uuid(), :email, :passwordHash, :nombres, :apellidos, :telefono,
+            :fecha_nacimiento, :genero, :rol_id, true, true,
+            '{}', :codigo_sbs, :especialidad, :descripcion, :avatar_url,
+            NOW(), NOW()
+          ) RETURNING id, nombres, apellidos
+        `, {
+          replacements: {
+            email: psicologo.email,
+            passwordHash,
+            nombres: psicologo.nombres,
+            apellidos: psicologo.apellidos,
+            telefono: psicologo.telefono,
+            fecha_nacimiento: psicologo.fecha_nacimiento,
+            genero: psicologo.genero,
+            rol_id: rolesMap['psicologo'],
+            codigo_sbs: psicologo.codigo_sbs,
+            especialidad: psicologo.especialidad,
+            descripcion: psicologo.descripcion,
+            avatar_url: psicologo.avatar_url
+          },
+          transaction
+        });
+        
+        psicologosExistentes.push({
+          id: usuarioCreado[0].id,
+          nombres: usuarioCreado[0].nombres,
+          apellidos: usuarioCreado[0].apellidos
+        });
+        
+        console.log(`✅ ${psicologo.nombres} ${psicologo.apellidos} creado`);
+      }
+      
+      console.log('');
+      console.log(`✅ ${psicologosExistentes.length} psicólogos creados\n`);
+    } else {
+      console.log(`✅ ${psicologosExistentes.length} psicólogos encontrados\n`);
+    }
 
     // ====================
     // CREAR 50 PACIENTES
