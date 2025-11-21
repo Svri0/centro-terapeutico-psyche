@@ -55,6 +55,7 @@ export const obtenerPsicologos = async (_req: Request, res: Response) => {
         u.genero,
         u.especialidad,
         u.descripcion,
+        u.codigo_sbs,
         u.avatar_url,
         u.activo,
         u.email_verificado,

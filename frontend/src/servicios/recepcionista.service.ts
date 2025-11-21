@@ -75,7 +75,9 @@ class RecepcionistaService {
           contacto_emergencia_nombre: paciente.contacto_emergencia_nombre,
           contacto_emergencia_telefono: paciente.contacto_emergencia_telefono,
           contacto_emergencia_relacion: paciente.contacto_emergencia_relacion,
-          observaciones: paciente.observaciones
+          observaciones: paciente.observaciones,
+          psicologo_nombres: paciente.psicologo_nombres,
+          psicologo_apellidos: paciente.psicologo_apellidos
         }));
       } else {
         return [];

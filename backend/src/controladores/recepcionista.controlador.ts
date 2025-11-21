@@ -127,9 +127,12 @@ export const obtenerPacientesRecepcionista = async (req: Request, res: Response)
         u.nombres,
         u.apellidos,
         u.email,
-        u.telefono
+        u.telefono,
+        ps.nombres AS psicologo_nombres,
+        ps.apellidos AS psicologo_apellidos
       FROM pacientes p
       INNER JOIN usuarios u ON p.usuario_id = u.id
+      LEFT JOIN usuarios ps ON p.psicologo_id = ps.id
       WHERE p.deleted_at IS NULL
     `;
 
@@ -158,7 +161,9 @@ export const obtenerPacientesRecepcionista = async (req: Request, res: Response)
       nombres: paciente.nombres,
       apellidos: paciente.apellidos,
       email: paciente.email,
-      telefono: paciente.telefono
+      telefono: paciente.telefono,
+      psicologo_nombres: paciente.psicologo_nombres,
+      psicologo_apellidos: paciente.psicologo_apellidos
     }));
 
     return ManejadorRespuestas.exito(
