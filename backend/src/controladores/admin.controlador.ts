@@ -880,24 +880,16 @@ export const eliminarPsicologo = async (req: Request, res: Response) => {
 // Obtener todos los pacientes (para administradores)
 export const obtenerTodosPacientes = async (req: Request, res: Response) => {
   try {
-    // Obtener todos los pacientes del sistema
+    console.log('🔍 Admin solicitando lista de pacientes...');
+    
+    // Consulta simplificada usando solo columnas básicas que siempre existen
     const [pacientes] = await sequelize.query(`
       SELECT 
         p.id,
         p.numero_ficha,
         p.rut,
-        p.direccion,
-        p.contacto_emergencia_nombre,
-        p.contacto_emergencia_telefono,
-        p.contacto_emergencia_relacion,
-        p.diagnosticos,
-        p.etiquetas,
-        p.estrategias_autorregulacion,
         p.estado,
         p.fecha_ingreso,
-        p.fecha_alta,
-        p.observaciones,
-        p.puntos_acumulados,
         u.nombres,
         u.apellidos,
         u.email,
@@ -917,17 +909,40 @@ export const obtenerTodosPacientes = async (req: Request, res: Response) => {
       ORDER BY p.fecha_ingreso DESC
     `) as [any[], unknown];
 
+    console.log(`✅ Se encontraron ${pacientes.length} pacientes`);
+
+    // Enriquecer los resultados con campos adicionales si existen (opcionales)
+    const pacientesEnriquecidos = pacientes.map((paciente: any) => {
+      // Intentar obtener campos adicionales de forma segura
+      return {
+        ...paciente,
+        direccion: paciente.direccion || null,
+        contacto_emergencia_nombre: paciente.contacto_emergencia_nombre || null,
+        contacto_emergencia_telefono: paciente.contacto_emergencia_telefono || null,
+        contacto_emergencia_relacion: paciente.contacto_emergencia_relacion || null,
+        diagnosticos: paciente.diagnosticos || null,
+        etiquetas: paciente.etiquetas || null,
+        estrategias_autorregulacion: paciente.estrategias_autorregulacion || null,
+        fecha_alta: paciente.fecha_alta || null,
+        observaciones: paciente.observaciones || null,
+        puntos_acumulados: paciente.puntos_acumulados || 0
+      };
+    });
+
     return ManejadorRespuestas.exito(
       res,
       'Lista de pacientes obtenida exitosamente',
       {
-        pacientes,
-        total: pacientes.length,
-        activos: pacientes.filter((p: any) => p.activo).length
+        pacientes: pacientesEnriquecidos,
+        total: pacientesEnriquecidos.length,
+        activos: pacientesEnriquecidos.filter((p: any) => p.activo).length
       },
       'ADMIN_030'
     );
-  } catch (error) {
+  } catch (error: any) {
+    console.error('❌ Error en obtenerTodosPacientes:', error);
+    console.error('❌ Error message:', error?.message);
+    console.error('❌ Error stack:', error?.stack);
     log.error('Error en obtenerTodosPacientes:', error);
     return ManejadorRespuestas.errorInterno(
       res,
@@ -2103,6 +2118,24 @@ export const obtenerRecepcionistas = async (_req: Request, res: Response) => {
   try {
     console.log('🔍 Admin solicitando lista de recepcionistas...');
     
+    // Obtener el rol_id de recepcionista dinámicamente
+    const [roles] = await sequelize.query(`
+      SELECT id FROM roles WHERE nombre = 'recepcionista' LIMIT 1
+    `) as [any[], unknown];
+    
+    if (!roles || roles.length === 0) {
+      console.error('❌ No se encontró el rol de recepcionista');
+      return ManejadorRespuestas.exito(
+        res,
+        'Recepcionistas obtenidos exitosamente',
+        [],
+        'ADMIN_052'
+      );
+    }
+    
+    const recepcionistaRolId = roles[0].id;
+    console.log(`🔍 Rol ID de recepcionista: ${recepcionistaRolId}`);
+    
     const query = `
       SELECT 
         u.id,
@@ -2118,11 +2151,13 @@ export const obtenerRecepcionistas = async (_req: Request, res: Response) => {
         u.updated_at,
         u.ultimo_acceso
       FROM usuarios u
-      WHERE u.rol_id = 3
+      WHERE u.rol_id = :rol_id AND u.deleted_at IS NULL
       ORDER BY u.created_at DESC
     `;
 
-    const [recepcionistas] = await sequelize.query(query) as [any[], unknown];
+    const [recepcionistas] = await sequelize.query(query, {
+      replacements: { rol_id: recepcionistaRolId }
+    }) as [any[], unknown];
 
     console.log(`✅ Se encontraron ${recepcionistas.length} recepcionistas`);
 

@@ -146,11 +146,18 @@ const PanelAdmin: React.FC = () => {
   const cargarPacientes = async () => {
     try {
       setLoading(true);
+      console.log('🔍 PanelAdmin - Cargando pacientes...');
       const data = await adminService.obtenerTodosPacientes();
+      console.log('🔍 PanelAdmin - Pacientes recibidos:', data);
+      console.log('🔍 PanelAdmin - Cantidad de pacientes:', data.length);
       setPacientes(data);
+      if (data.length === 0) {
+        console.warn('⚠️ PanelAdmin - No se recibieron pacientes del servicio');
+      }
     } catch (error: any) {
       console.error('❌ Error al cargar pacientes:', error);
       setError(error.message || 'Error al cargar pacientes');
+      setPacientes([]);
     } finally {
       setLoading(false);
     }

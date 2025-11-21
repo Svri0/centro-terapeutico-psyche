@@ -324,11 +324,21 @@ async function poblarConSesiones() {
 
     // OBTENER PSICÓLOGOS EXISTENTES
     let [psicologosExistentes] = await sequelize.query(`
-      SELECT id, nombres, apellidos FROM usuarios WHERE rol_id = :rol_id
+      SELECT id, nombres, apellidos FROM usuarios WHERE rol_id = :rol_id AND deleted_at IS NULL
     `, {
       replacements: { rol_id: rolesMap['psicologo'] },
       transaction
     });
+    
+    // OBTENER RECEPCIONISTAS EXISTENTES
+    let [recepcionistasExistentes] = await sequelize.query(`
+      SELECT id, nombres, apellidos FROM usuarios WHERE rol_id = :rol_id AND deleted_at IS NULL
+    `, {
+      replacements: { rol_id: rolesMap['recepcionista'] },
+      transaction
+    });
+    
+    console.log(`✅ ${recepcionistasExistentes.length} recepcionistas encontrados\n`);
 
     // Si no hay psicólogos, crearlos
     if (psicologosExistentes.length === 0) {
@@ -381,6 +391,53 @@ async function poblarConSesiones() {
       console.log(`✅ ${psicologosExistentes.length} psicólogos creados\n`);
     } else {
       console.log(`✅ ${psicologosExistentes.length} psicólogos encontrados\n`);
+    }
+    
+    // Si no hay recepcionistas, crearlos
+    if (recepcionistasExistentes.length === 0) {
+      console.log('👨‍💼 No se encontraron recepcionistas. Creando recepcionistas...');
+      console.log('━'.repeat(60));
+      
+      for (const recepcionista of recepcionistas) {
+        const passwordHash = await bcrypt.hash(recepcionista.password, 12);
+        
+        const [usuarioCreado] = await sequelize.query(`
+          INSERT INTO usuarios (
+            id, email, password_hash, nombres, apellidos, telefono,
+            fecha_nacimiento, genero, rol_id, activo, email_verificado,
+            configuracion, created_at, updated_at
+          ) VALUES (
+            gen_random_uuid(), :email, :passwordHash, :nombres, :apellidos, :telefono,
+            :fecha_nacimiento, :genero, :rol_id, true, true,
+            '{}', NOW(), NOW()
+          ) RETURNING id, nombres, apellidos
+        `, {
+          replacements: {
+            email: recepcionista.email,
+            passwordHash,
+            nombres: recepcionista.nombres,
+            apellidos: recepcionista.apellidos,
+            telefono: recepcionista.telefono,
+            fecha_nacimiento: recepcionista.fecha_nacimiento,
+            genero: recepcionista.genero,
+            rol_id: rolesMap['recepcionista']
+          },
+          transaction
+        });
+        
+        recepcionistasExistentes.push({
+          id: usuarioCreado[0].id,
+          nombres: usuarioCreado[0].nombres,
+          apellidos: usuarioCreado[0].apellidos
+        });
+        
+        console.log(`✅ ${recepcionista.nombres} ${recepcionista.apellidos} creado`);
+      }
+      
+      console.log('');
+      console.log(`✅ ${recepcionistasExistentes.length} recepcionistas creados\n`);
+    } else {
+      console.log(`✅ ${recepcionistasExistentes.length} recepcionistas encontrados\n`);
     }
 
     // ====================

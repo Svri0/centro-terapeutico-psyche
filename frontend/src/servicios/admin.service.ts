@@ -314,7 +314,22 @@ class AdminService {
   async obtenerRecepcionistas(): Promise<Recepcionista[]> {
     try {
       const response = await api.get('/admin/recepcionistas');
-      return response.data?.data || [];
+      const recepcionistas = response.data?.data || [];
+      
+      // Transformar los datos para que coincidan con la estructura esperada por el componente
+      return recepcionistas.map((recepcionista: any) => ({
+        id: recepcionista.id,
+        nombres: recepcionista.nombres,
+        apellidos: recepcionista.apellidos,
+        email: recepcionista.email,
+        telefono: recepcionista.telefono,
+        activo: recepcionista.activo,
+        fecha_creacion: recepcionista.created_at,
+        avatar_url: recepcionista.avatar_url,
+        fecha_nacimiento: recepcionista.fecha_nacimiento,
+        genero: recepcionista.genero,
+        ultimo_acceso: recepcionista.ultimo_acceso
+      }));
     } catch (error: any) {
       console.error('Error al obtener recepcionistas:', error);
       return [];
@@ -406,10 +421,62 @@ class AdminService {
   // Funciones para Pacientes (para administradores)
   async obtenerTodosPacientes(): Promise<any[]> {
     try {
+      console.log('🔍 AdminService - Obteniendo pacientes...');
       const response = await api.get('/admin/pacientes');
-      return response.data?.data?.pacientes || [];
+      console.log('🔍 AdminService - Respuesta completa:', response.data);
+      console.log('🔍 AdminService - response.data.data:', response.data?.data);
+      console.log('🔍 AdminService - response.data.data.pacientes:', response.data?.data?.pacientes);
+      
+      // La respuesta puede estar en response.data.data.pacientes o directamente en response.data.data
+      let pacientes = response.data?.data?.pacientes || response.data?.data || [];
+      
+      // Si pacientes es un objeto con una propiedad pacientes, extraerla
+      if (pacientes && typeof pacientes === 'object' && !Array.isArray(pacientes) && pacientes.pacientes) {
+        pacientes = pacientes.pacientes;
+      }
+      
+      console.log('🔍 AdminService - Pacientes extraídos:', pacientes);
+      console.log('🔍 AdminService - Cantidad de pacientes:', Array.isArray(pacientes) ? pacientes.length : 0);
+      
+      if (!Array.isArray(pacientes)) {
+        console.error('❌ AdminService - Los pacientes no son un array:', pacientes);
+        return [];
+      }
+      
+      // Transformar los datos para que coincidan con la estructura esperada por el componente
+      const pacientesTransformados = pacientes.map((paciente: any) => {
+        const transformado = {
+          id: paciente.id,
+          nombres: paciente.nombres,
+          apellidos: paciente.apellidos,
+          email: paciente.email,
+          telefono: paciente.telefono,
+          rut: paciente.rut,
+          activo: paciente.activo !== undefined ? paciente.activo : true,
+          fecha_creacion: paciente.created_at || paciente.fecha_ingreso || new Date().toISOString(),
+          avatar_url: undefined, // Los pacientes no tienen avatar_url en la respuesta actual
+          direccion: paciente.direccion,
+          contacto_emergencia_nombre: paciente.contacto_emergencia_nombre,
+          contacto_emergencia_telefono: paciente.contacto_emergencia_telefono,
+          contacto_emergencia_relacion: paciente.contacto_emergencia_relacion,
+          observaciones: paciente.observaciones,
+          psicologo_asignado: paciente.psicologo_nombres && paciente.psicologo_apellidos
+            ? `${paciente.psicologo_nombres} ${paciente.psicologo_apellidos}`
+            : undefined,
+          // Campos adicionales que pueden ser útiles
+          numero_ficha: paciente.numero_ficha,
+          fecha_nacimiento: paciente.fecha_nacimiento,
+          genero: paciente.genero,
+          estado: paciente.estado
+        };
+        return transformado;
+      });
+      
+      console.log('🔍 AdminService - Pacientes transformados:', pacientesTransformados.length);
+      return pacientesTransformados;
     } catch (error: any) {
-      console.error('Error al obtener pacientes:', error);
+      console.error('❌ Error al obtener pacientes:', error);
+      console.error('❌ Error response:', error.response?.data);
       return [];
     }
   }
