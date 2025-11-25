@@ -1,19 +1,52 @@
 import nodemailer from 'nodemailer';
 import { logger } from './logger';
 
-// Configuración del transportador de correo
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false, // true for 465, false for other ports
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD?.replace(/\s/g, '') // Usar contraseña de aplicación de Gmail sin espacios
-  },
-  tls: {
-    rejectUnauthorized: false
+// Verificar configuración de email al inicio
+const verificarConfiguracionEmail = () => {
+  const emailUser = process.env.EMAIL_USER;
+  const emailPassword = process.env.EMAIL_PASSWORD;
+  
+  if (!emailUser || !emailPassword) {
+    console.error('❌ ========== ERROR CONFIGURACIÓN EMAIL ==========');
+    console.error('❌ EMAIL_USER:', emailUser ? '✅ Configurado' : '❌ NO CONFIGURADO');
+    console.error('❌ EMAIL_PASSWORD:', emailPassword ? '✅ Configurado' : '❌ NO CONFIGURADO');
+    console.error('❌ ================================================');
+    logger.error('Configuración de email incompleta', {
+      emailUser: !!emailUser,
+      emailPassword: !!emailPassword
+    });
+    return false;
   }
-});
+  
+  console.log('✅ ========== CONFIGURACIÓN EMAIL ==========');
+  console.log('✅ EMAIL_USER:', emailUser);
+  console.log('✅ EMAIL_PASSWORD:', emailPassword.substring(0, 4) + '****');
+  console.log('✅ ==========================================');
+  
+  return true;
+};
+
+// Configuración del transportador de correo
+const crearTransporter = () => {
+  const config = {
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD?.replace(/\s/g, '')
+    },
+    tls: {
+      rejectUnauthorized: false
+    }
+  };
+  
+  return nodemailer.createTransport(config);
+};
+
+// Verificar al cargar el módulo
+const configuracionValida = verificarConfiguracionEmail();
+const transporter = crearTransporter();
 
 export interface EmailData {
   to: string;
@@ -23,18 +56,46 @@ export interface EmailData {
 
 export const enviarEmail = async (emailData: EmailData): Promise<boolean> => {
   try {
+    // Verificar configuración antes de enviar
+    if (!configuracionValida) {
+      console.error('❌ No se puede enviar email: configuración de email incompleta');
+      logger.error('No se puede enviar email: configuración de email incompleta');
+      return false;
+    }
+
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: `"${process.env.EMAIL_FROM_NAME || 'Centro Terapéutico Psyche'}" <${process.env.EMAIL_USER}>`,
       to: emailData.to,
       subject: emailData.subject,
       html: emailData.html
     };
 
+    console.log('📧 Intentando enviar email a:', emailData.to);
+    console.log('📧 Asunto:', emailData.subject);
+    
     const info = await transporter.sendMail(mailOptions);
+    
+    console.log('✅ Email enviado exitosamente!');
+    console.log('✅ MessageId:', info.messageId);
+    console.log('✅ Destinatario:', emailData.to);
+    
     logger.info(`Email enviado exitosamente a ${emailData.to}`, { messageId: info.messageId });
     return true;
-  } catch (error) {
-    logger.error('Error al enviar email', { error, to: emailData.to });
+  } catch (error: any) {
+    console.error('❌ ========== ERROR AL ENVIAR EMAIL ==========');
+    console.error('❌ Destinatario:', emailData.to);
+    console.error('❌ Error:', error?.message);
+    console.error('❌ Código:', error?.code);
+    console.error('❌ Respuesta:', error?.response);
+    console.error('❌ Stack:', error?.stack);
+    console.error('❌ ============================================');
+    
+    logger.error('Error al enviar email', { 
+      error: error?.message, 
+      code: error?.code,
+      response: error?.response,
+      to: emailData.to 
+    });
     return false;
   }
 };
@@ -102,18 +163,6 @@ export const enviarEmailBienvenidaPsicologo = async (
       
       <!-- Contenido principal -->
       <div style="padding: 40px 30px;">
-        <div style="text-align: center; margin-bottom: 30px; padding: 20px; background-color: #fef3c7; border-radius: 15px; border: 3px solid #f59e0b;">
-          ${avatarUrl && avatarUrl.trim() !== '' ? `
-            <div style="width: 200px; height: 200px; border-radius: 50%; border: 6px solid #f59e0b; overflow: hidden; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); margin: 0 auto; position: relative; background-color: #fde68a;">
-              <img src="${avatarUrl}" alt="Tu avatar" style="width: 100%; height: 100%; object-fit: contain; object-position: center; display: block;">
-            </div>
-          ` : `
-            <div style="width: 200px; height: 200px; border-radius: 50%; border: 6px solid #f59e0b; background-color: #fde68a; display: flex; align-items: center; justify-content: center; margin: 0 auto; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);">
-              <span style="font-size: 80px; color: #f59e0b;">👤</span>
-            </div>
-          `}
-          <p style="margin-top: 15px; color: #92400e; font-weight: bold; font-size: 16px;">Tu Avatar</p>
-        </div>
         <h2 style="color: #1f2937; margin-top: 0; font-size: 24px;">¡Hola ${nombrePsicologo}! 👋</h2>
         
         <p style="color: #374151; font-size: 16px; line-height: 1.6;">

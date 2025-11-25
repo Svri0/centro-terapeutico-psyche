@@ -80,21 +80,22 @@ export const crearPacienteBasico = async (req: Request, res: Response) => {
 
     const rolId = rolPaciente[0].id;
 
-    // Generar password temporal
+    // Generar password temporal y token de activación
     const passwordTemporal = Math.random().toString(36).slice(-8);
+    const tokenActivacion = require('crypto').randomBytes(32).toString('hex');
     const saltRounds = 12;
     const bcrypt = require('bcrypt');
     const hashedPassword = await bcrypt.hash(passwordTemporal, saltRounds);
 
-    // Crear usuario
+    // Crear usuario con token de activación
     const [usuarioCreado] = await sequelize.query(`
       INSERT INTO usuarios (
         id, nombres, apellidos, email, password_hash, telefono, 
-        fecha_nacimiento, genero, rol_id, activo, created_at, updated_at
+        fecha_nacimiento, genero, rol_id, activo, token_activacion, created_at, updated_at
       ) VALUES (
         gen_random_uuid(), :nombres, :apellidos, :email, :password_hash, :telefono,
-        :fecha_nacimiento, :genero, :rol_id, true, NOW(), NOW()
-      ) RETURNING id, nombres, apellidos, email, telefono, fecha_nacimiento, genero
+        :fecha_nacimiento, :genero, :rol_id, true, :token_activacion, NOW(), NOW()
+      ) RETURNING id, nombres, apellidos, email, telefono, fecha_nacimiento, genero, token_activacion
     `, {
       replacements: {
         nombres,
@@ -104,7 +105,8 @@ export const crearPacienteBasico = async (req: Request, res: Response) => {
         telefono: telefono || null,
         fecha_nacimiento: fecha_nacimiento || null,
         genero: genero || null,
-        rol_id: rolId
+        rol_id: rolId,
+        token_activacion: tokenActivacion
       }
     }) as [any[], unknown];
 
@@ -117,6 +119,11 @@ export const crearPacienteBasico = async (req: Request, res: Response) => {
     }
 
     const usuario = usuarioCreado[0];
+    
+    console.log('✅ Usuario creado con token de activación:', {
+      email: usuario.email,
+      token: usuario.token_activacion
+    });
 
     // Generar número de ficha usando un contador
     const [ultimoPaciente] = await sequelize.query(`
@@ -203,6 +210,13 @@ export const crearPacienteBasico = async (req: Request, res: Response) => {
     }
 
     // Enviar email de bienvenida al paciente
+    console.log('📧 ========== PREPARANDO ENVÍO DE EMAIL ==========');
+    console.log('📧 Destinatario:', email);
+    console.log('📧 Nombre completo:', `${nombres} ${apellidos}`);
+    console.log('📧 Password temporal:', passwordTemporal);
+    console.log('📧 Token activación:', usuario.token_activacion);
+    console.log('📧 ==============================================');
+    
     const nombreCompleto = `${nombres} ${apellidos}`;
     const emailEnviado = await enviarEmailRegistroPaciente(
       email,
@@ -213,8 +227,10 @@ export const crearPacienteBasico = async (req: Request, res: Response) => {
     );
 
     if (emailEnviado) {
+      console.log('✅ Email de bienvenida enviado exitosamente al paciente:', email);
       log.info(`Email de bienvenida enviado exitosamente al paciente: ${email}`);
     } else {
+      console.error('❌ NO SE PUDO ENVIAR el email de bienvenida al paciente:', email);
       log.warn(`No se pudo enviar el email de bienvenida al paciente: ${email}`);
     }
 
