@@ -29,6 +29,7 @@ interface CrearTareaSimple {
   descripcion: string;
   instrucciones?: string;
   tipo_tarea: string;
+  tipo_tarea_avanzado?: string;
   prioridad?: string;
   fecha_vencimiento?: string;
   puntos_asignados?: number;
@@ -72,16 +73,44 @@ class TareasService {
       if (filtros?.tipo_tarea) params.append('tipo_tarea', filtros.tipo_tarea);
 
       const response = await api.get(`/tareas?${params.toString()}`);
-      console.log('Respuesta del backend para tareas:', response.data);
+      console.log('🔍 Respuesta completa del backend:', response);
+      console.log('🔍 response.data:', response.data);
+      console.log('🔍 response.data.data:', response.data?.data);
+      console.log('🔍 response.data.data.tareas:', response.data?.data?.tareas);
+      console.log('🔍 Tipo de response.data.data.tareas:', typeof response.data?.data?.tareas);
+      console.log('🔍 Es array?', Array.isArray(response.data?.data?.tareas));
       
       // Manejar diferentes estructuras de respuesta
-      if (response.data.data && Array.isArray(response.data.data.tareas)) {
-        return response.data.data.tareas;
-      } else if (Array.isArray(response.data.data)) {
-        return response.data.data;
-      } else {
-        return [];
+      const tareas = response.data?.data?.tareas;
+      
+      if (tareas) {
+        if (Array.isArray(tareas)) {
+          console.log('✅ Retornando tareas desde response.data.data.tareas (array):', tareas.length);
+          return tareas;
+        } else if (typeof tareas === 'object') {
+          // Si es un objeto, intentar convertirlo a array
+          console.log('⚠️ tareas es un objeto, intentando convertir a array');
+          const tareasArray = Object.values(tareas);
+          if (Array.isArray(tareasArray) && tareasArray.length > 0) {
+            console.log('✅ Convertido a array:', tareasArray.length);
+            return tareasArray;
+          }
+        }
       }
+      
+      if (Array.isArray(response.data?.data)) {
+        console.log('✅ Retornando tareas desde response.data.data (array directo):', response.data.data.length);
+        return response.data.data;
+      }
+      
+      if (Array.isArray(response.data?.tareas)) {
+        console.log('✅ Retornando tareas desde response.data.tareas:', response.data.tareas.length);
+        return response.data.tareas;
+      }
+      
+      console.warn('⚠️ No se encontraron tareas en la respuesta, retornando array vacío');
+      console.warn('⚠️ Estructura completa:', JSON.stringify(response.data, null, 2));
+      return [];
     } catch (error: any) {
       console.error('Error al obtener tareas:', error);
       throw new Error(error.response?.data?.mensaje || 'Error al obtener tareas');
@@ -148,8 +177,43 @@ class TareasService {
       if (filtros?.tipo_tarea) params.append('tipo_tarea', filtros.tipo_tarea);
 
       const response = await api.get(`/tareas/paciente/mis-tareas?${params.toString()}`);
-      return response.data.data.tareas || [];
+      console.log('🔍 Respuesta del backend para tareas del paciente:', response.data);
+      console.log('🔍 response.data.data.tareas:', response.data?.data?.tareas);
+      console.log('🔍 Tipo de response.data.data.tareas:', typeof response.data?.data?.tareas);
+      console.log('🔍 Es array?', Array.isArray(response.data?.data?.tareas));
+      
+      // Manejar diferentes estructuras de respuesta
+      const tareas = response.data?.data?.tareas;
+      
+      if (tareas) {
+        if (Array.isArray(tareas)) {
+          console.log('✅ Retornando tareas del paciente (array):', tareas.length);
+          return tareas;
+        } else if (typeof tareas === 'object') {
+          // Si es un objeto, intentar convertirlo a array
+          console.log('⚠️ tareas es un objeto, intentando convertir a array');
+          const tareasArray = Object.values(tareas);
+          if (Array.isArray(tareasArray) && tareasArray.length > 0) {
+            console.log('✅ Convertido a array:', tareasArray.length);
+            return tareasArray;
+          }
+        }
+      }
+      
+      if (Array.isArray(response.data?.data)) {
+        console.log('✅ Retornando tareas desde response.data.data (array directo):', response.data.data.length);
+        return response.data.data;
+      }
+      
+      if (Array.isArray(response.data?.tareas)) {
+        console.log('✅ Retornando tareas desde response.data.tareas:', response.data.tareas.length);
+        return response.data.tareas;
+      }
+      
+      console.warn('⚠️ No se encontraron tareas del paciente en la respuesta, retornando array vacío');
+      return [];
     } catch (error: any) {
+      console.error('❌ Error al obtener mis tareas:', error);
       throw new Error(error.response?.data?.mensaje || 'Error al obtener mis tareas');
     }
   }
@@ -255,9 +319,20 @@ class TareasService {
       if (filtros?.fecha_inicio) params.append('fecha_inicio', filtros.fecha_inicio);
       if (filtros?.fecha_fin) params.append('fecha_fin', filtros.fecha_fin);
 
+      console.log('📊 Obteniendo reporte de adherencia con params:', params.toString());
       const response = await api.get(`/tareas/reporte-adherencia?${params.toString()}`);
-      return response.data.data;
+      console.log('🔍 Respuesta del reporte de adherencia:', response.data);
+      console.log('🔍 response.data.data:', response.data?.data);
+      
+      // Asegurar que siempre retornemos un objeto válido
+      if (response.data?.data) {
+        return response.data.data;
+      }
+      
+      console.warn('⚠️ No se encontró data en la respuesta del reporte');
+      return null;
     } catch (error: any) {
+      console.error('❌ Error al obtener reporte de adherencia:', error);
       throw new Error(error.response?.data?.mensaje || 'Error al obtener reporte de adherencia');
     }
   }

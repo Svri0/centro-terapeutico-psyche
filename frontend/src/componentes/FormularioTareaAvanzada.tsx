@@ -32,6 +32,7 @@ const FormularioTareaAvanzada: React.FC<FormularioTareaAvanzadaProps> = ({
     prioridad: 'media',
     puntos_asignados: 2,
     es_borrador: false,
+    fecha_publicacion: undefined,
     contenido_tarea: {},
     configuracion_tarea: {}
   });
@@ -73,7 +74,28 @@ const FormularioTareaAvanzada: React.FC<FormularioTareaAvanzadaProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    console.log('📝 FormularioTareaAvanzada - handleSubmit llamado');
+    console.log('📝 formData antes de procesar:', formData);
+    console.log('📝 contenidoTarea:', contenidoTarea);
+    console.log('📝 configuracionTarea:', configuracionTarea);
+    
+    // Asegurar que tipo_tarea_avanzado esté presente
+    // Asegurar que es_borrador sea false si no está marcado
+    // Si no es borrador y no hay fecha de publicación, no enviar fecha_publicacion (NULL = publicar inmediatamente)
+    const dataToSubmit = {
+      ...formData,
+      tipo_tarea_avanzado: formData.tipo_tarea,
+      contenido_tarea: contenidoTarea,
+      configuracion_tarea: configuracionTarea,
+      es_borrador: formData.es_borrador === true,
+      // Solo enviar fecha_publicacion si está definida y no es vacía
+      fecha_publicacion: formData.fecha_publicacion && formData.fecha_publicacion.trim() !== '' 
+        ? formData.fecha_publicacion 
+        : undefined
+    };
+    
+    console.log('📝 dataToSubmit final:', dataToSubmit);
+    onSubmit(dataToSubmit);
   };
 
   const renderContenidoTarea = () => {

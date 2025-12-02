@@ -39,7 +39,7 @@ export const generarReporteAdherencia = async (req: Request, res: Response) => {
     }
 
     // Obtener estadísticas generales
-    const [estadisticas] = await sequelize.query(`
+    const resultadoEstadisticas = await sequelize.query(`
       SELECT 
         COUNT(*) as total_tareas,
         COUNT(CASE WHEN t.estado = 'completada' THEN 1 END) as tareas_cumplidas,
@@ -56,20 +56,30 @@ export const generarReporteAdherencia = async (req: Request, res: Response) => {
     `, {
       replacements,
       type: QueryTypes.SELECT
-    }) as [any[], unknown];
+    });
 
-    const stats = estadisticas[0] as any;
-    const totalTareas = parseInt(stats.total_tareas) || 0;
-    const tareasCumplidas = parseInt(stats.tareas_cumplidas) || 0;
-    const tareasVencidas = parseInt(stats.tareas_vencidas) || 0;
-    const tareasPendientesVencidas = parseInt(stats.tareas_pendientes_vencidas) || 0;
+    // Manejar resultado de la query
+    let estadisticasArray: any[] = [];
+    if (Array.isArray(resultadoEstadisticas) && resultadoEstadisticas.length > 0) {
+      estadisticasArray = Array.isArray(resultadoEstadisticas[0]) ? resultadoEstadisticas[0] : resultadoEstadisticas;
+    } else if (Array.isArray(resultadoEstadisticas)) {
+      estadisticasArray = resultadoEstadisticas;
+    }
+
+    const stats = (estadisticasArray && estadisticasArray.length > 0) ? estadisticasArray[0] as any : {};
+    
+    // Convertir valores a números de forma segura
+    const totalTareas = parseInt(String(stats.total_tareas || '0'), 10) || 0;
+    const tareasCumplidas = parseInt(String(stats.tareas_cumplidas || '0'), 10) || 0;
+    const tareasVencidas = parseInt(String(stats.tareas_vencidas || '0'), 10) || 0;
+    const tareasPendientesVencidas = parseInt(String(stats.tareas_pendientes_vencidas || '0'), 10) || 0;
     const tareasIncumplidas = tareasVencidas + tareasPendientesVencidas;
     const porcentajeAdherencia = totalTareas > 0 
       ? Math.round((tareasCumplidas / totalTareas) * 100) 
       : 0;
 
     // Obtener estadísticas por paciente
-    const [estadisticasPorPaciente] = await sequelize.query(`
+    const resultadoPorPaciente = await sequelize.query(`
       SELECT 
         p.id as paciente_id,
         u.nombres as paciente_nombres,
@@ -81,14 +91,11 @@ export const generarReporteAdherencia = async (req: Request, res: Response) => {
         COUNT(CASE WHEN t.estado = 'pendiente' AND t.fecha_vencimiento < NOW() THEN 1 END) as tareas_pendientes_vencidas,
         COUNT(CASE WHEN t.estado = 'pendiente' AND (t.fecha_vencimiento IS NULL OR t.fecha_vencimiento >= NOW()) THEN 1 END) as tareas_pendientes,
         COUNT(CASE WHEN t.estado = 'en_progreso' THEN 1 END) as tareas_en_progreso,
-        ROUND(
-          CASE 
-            WHEN COUNT(*) > 0 
-            THEN (COUNT(CASE WHEN t.estado = 'completada' THEN 1 END)::FLOAT / COUNT(*)::FLOAT) * 100
-            ELSE 0
-          END, 
-          2
-        ) as porcentaje_adherencia,
+        CASE 
+          WHEN COUNT(*) > 0 
+          THEN ROUND((COUNT(CASE WHEN t.estado = 'completada' THEN 1 END)::NUMERIC / COUNT(*)::NUMERIC) * 100, 2)
+          ELSE 0
+        END as porcentaje_adherencia,
         AVG(CASE WHEN t.estado = 'completada' AND t.fecha_vencimiento IS NOT NULL 
           THEN EXTRACT(EPOCH FROM (t.fecha_completada - t.fecha_vencimiento)) / 86400 
           ELSE NULL END) as dias_promedio_retraso
@@ -101,10 +108,18 @@ export const generarReporteAdherencia = async (req: Request, res: Response) => {
     `, {
       replacements,
       type: QueryTypes.SELECT
-    }) as [any[], unknown];
+    });
+
+    // Manejar resultado de la query
+    let estadisticasPorPaciente: any[] = [];
+    if (Array.isArray(resultadoPorPaciente) && resultadoPorPaciente.length > 0) {
+      estadisticasPorPaciente = Array.isArray(resultadoPorPaciente[0]) ? resultadoPorPaciente[0] : resultadoPorPaciente;
+    } else if (Array.isArray(resultadoPorPaciente)) {
+      estadisticasPorPaciente = resultadoPorPaciente;
+    }
 
     // Obtener detalle de tareas incumplidas
-    const [tareasIncumplidasDetalle] = await sequelize.query(`
+    const resultadoIncumplidas = await sequelize.query(`
       SELECT 
         t.id,
         t.titulo,
@@ -120,7 +135,7 @@ export const generarReporteAdherencia = async (req: Request, res: Response) => {
         CASE 
           WHEN t.estado = 'vencida' THEN 'Vencida'
           WHEN t.estado = 'pendiente' AND t.fecha_vencimiento < NOW() THEN 'Pendiente Vencida'
-          ELSE t.estado
+          ELSE t.estado::TEXT
         END as tipo_incumplimiento,
         CASE 
           WHEN t.fecha_vencimiento IS NOT NULL 
@@ -140,10 +155,18 @@ export const generarReporteAdherencia = async (req: Request, res: Response) => {
     `, {
       replacements,
       type: QueryTypes.SELECT
-    }) as [any[], unknown];
+    });
+
+    // Manejar resultado de la query
+    let tareasIncumplidasDetalle: any[] = [];
+    if (Array.isArray(resultadoIncumplidas) && resultadoIncumplidas.length > 0) {
+      tareasIncumplidasDetalle = Array.isArray(resultadoIncumplidas[0]) ? resultadoIncumplidas[0] : resultadoIncumplidas;
+    } else if (Array.isArray(resultadoIncumplidas)) {
+      tareasIncumplidasDetalle = resultadoIncumplidas;
+    }
 
     // Obtener detalle de tareas cumplidas recientes
-    const [tareasCumplidasDetalle] = await sequelize.query(`
+    const resultadoCumplidas = await sequelize.query(`
       SELECT 
         t.id,
         t.titulo,
@@ -179,7 +202,24 @@ export const generarReporteAdherencia = async (req: Request, res: Response) => {
     `, {
       replacements,
       type: QueryTypes.SELECT
-    }) as [any[], unknown];
+    });
+
+    // Manejar resultado de la query
+    let tareasCumplidasDetalle: any[] = [];
+    if (Array.isArray(resultadoCumplidas) && resultadoCumplidas.length > 0) {
+      tareasCumplidasDetalle = Array.isArray(resultadoCumplidas[0]) ? resultadoCumplidas[0] : resultadoCumplidas;
+    } else if (Array.isArray(resultadoCumplidas)) {
+      tareasCumplidasDetalle = resultadoCumplidas;
+    }
+
+    log.info('Datos del reporte:', {
+      totalTareas,
+      tareasCumplidas,
+      tareasIncumplidas,
+      cantidadPorPaciente: Array.isArray(estadisticasPorPaciente) ? estadisticasPorPaciente.length : 0,
+      cantidadIncumplidas: Array.isArray(tareasIncumplidasDetalle) ? tareasIncumplidasDetalle.length : 0,
+      cantidadCumplidas: Array.isArray(tareasCumplidasDetalle) ? tareasCumplidasDetalle.length : 0
+    });
 
     const reporte = {
       resumen: {
@@ -188,29 +228,29 @@ export const generarReporteAdherencia = async (req: Request, res: Response) => {
         tareas_incumplidas: tareasIncumplidas,
         tareas_vencidas: tareasVencidas,
         tareas_pendientes_vencidas: tareasPendientesVencidas,
-        tareas_pendientes: parseInt(stats.tareas_pendientes) || 0,
-        tareas_en_progreso: parseInt(stats.tareas_en_progreso) || 0,
-        tareas_canceladas: parseInt(stats.tareas_canceladas) || 0,
+        tareas_pendientes: parseInt(String(stats.tareas_pendientes || '0'), 10) || 0,
+        tareas_en_progreso: parseInt(String(stats.tareas_en_progreso || '0'), 10) || 0,
+        tareas_canceladas: parseInt(String(stats.tareas_canceladas || '0'), 10) || 0,
         porcentaje_adherencia: porcentajeAdherencia,
-        dias_promedio_retraso: stats.dias_promedio_retraso ? parseFloat(stats.dias_promedio_retraso).toFixed(2) : null
+        dias_promedio_retraso: stats.dias_promedio_retraso ? parseFloat(String(stats.dias_promedio_retraso)).toFixed(2) : null
       },
-      por_paciente: estadisticasPorPaciente.map((p: any) => ({
+      por_paciente: (Array.isArray(estadisticasPorPaciente) ? estadisticasPorPaciente : []).map((p: any) => ({
         paciente_id: p.paciente_id,
-        paciente_nombres: p.paciente_nombres,
-        paciente_apellidos: p.paciente_apellidos,
-        numero_ficha: p.numero_ficha,
-        total_tareas: parseInt(p.total_tareas),
-        tareas_cumplidas: parseInt(p.tareas_cumplidas),
-        tareas_vencidas: parseInt(p.tareas_vencidas),
-        tareas_pendientes_vencidas: parseInt(p.tareas_pendientes_vencidas),
-        tareas_incumplidas: parseInt(p.tareas_vencidas) + parseInt(p.tareas_pendientes_vencidas),
-        tareas_pendientes: parseInt(p.tareas_pendientes),
-        tareas_en_progreso: parseInt(p.tareas_en_progreso),
-        porcentaje_adherencia: parseFloat(p.porcentaje_adherencia),
-        dias_promedio_retraso: p.dias_promedio_retraso ? parseFloat(p.dias_promedio_retraso).toFixed(2) : null
+        paciente_nombres: p.paciente_nombres || '',
+        paciente_apellidos: p.paciente_apellidos || '',
+        numero_ficha: p.numero_ficha || '',
+        total_tareas: parseInt(String(p.total_tareas || '0'), 10) || 0,
+        tareas_cumplidas: parseInt(String(p.tareas_cumplidas || '0'), 10) || 0,
+        tareas_vencidas: parseInt(String(p.tareas_vencidas || '0'), 10) || 0,
+        tareas_pendientes_vencidas: parseInt(String(p.tareas_pendientes_vencidas || '0'), 10) || 0,
+        tareas_incumplidas: (parseInt(String(p.tareas_vencidas || '0'), 10) || 0) + (parseInt(String(p.tareas_pendientes_vencidas || '0'), 10) || 0),
+        tareas_pendientes: parseInt(String(p.tareas_pendientes || '0'), 10) || 0,
+        tareas_en_progreso: parseInt(String(p.tareas_en_progreso || '0'), 10) || 0,
+        porcentaje_adherencia: parseFloat(String(p.porcentaje_adherencia || '0')) || 0,
+        dias_promedio_retraso: p.dias_promedio_retraso ? parseFloat(String(p.dias_promedio_retraso)).toFixed(2) : null
       })),
-      tareas_incumplidas: tareasIncumplidasDetalle,
-      tareas_cumplidas_recientes: tareasCumplidasDetalle,
+      tareas_incumplidas: Array.isArray(tareasIncumplidasDetalle) ? tareasIncumplidasDetalle : [],
+      tareas_cumplidas_recientes: Array.isArray(tareasCumplidasDetalle) ? tareasCumplidasDetalle : [],
       filtros_aplicados: {
         paciente_id: paciente_id || null,
         fecha_inicio: fecha_inicio || null,
@@ -226,10 +266,14 @@ export const generarReporteAdherencia = async (req: Request, res: Response) => {
       'TAR_ADH_002'
     );
   } catch (error: any) {
-    log.error('Error en generarReporteAdherencia:', error);
+    log.error('Error en generarReporteAdherencia:', {
+      message: error?.message,
+      stack: error?.stack,
+      error: error
+    });
     return ManejadorRespuestas.errorInterno(
       res,
-      'Error interno al generar el reporte de adherencia',
+      `Error interno al generar el reporte de adherencia: ${error?.message || 'Error desconocido'}`,
       'TAR_ADH_003'
     );
   }
@@ -252,6 +296,11 @@ export const obtenerTodas = async (req: Request, res: Response) => {
     let whereClause = 't.psicologo_id = :psicologoId AND t.deleted_at IS NULL';
     let replacements: any = { psicologoId };
 
+    // TEMPORALMENTE: Quitar filtros para debug
+    // TODO: Restaurar filtros cuando se confirme que las tareas se crean correctamente
+    // whereClause += ' AND COALESCE(t.es_borrador, false) = false';
+    // whereClause += ' AND (t.fecha_publicacion IS NULL OR t.fecha_publicacion <= NOW())';
+
     if (paciente_id) {
       whereClause += ' AND t.paciente_id = :paciente_id';
       replacements.paciente_id = paciente_id;
@@ -267,13 +316,14 @@ export const obtenerTodas = async (req: Request, res: Response) => {
       replacements.tipo_tarea = tipo_tarea;
     }
 
-    const [tareas] = await sequelize.query(`
+    const query = `
       SELECT 
         t.id,
         t.titulo,
         t.descripcion,
         t.instrucciones,
         t.tipo_tarea,
+        t.tipo_tarea_avanzado,
         t.prioridad,
         t.fecha_asignacion,
         t.fecha_vencimiento,
@@ -284,6 +334,10 @@ export const obtenerTodas = async (req: Request, res: Response) => {
         t.respuesta_paciente,
         t.archivos_respuesta,
         t.evaluacion_psicologo,
+        t.es_borrador,
+        t.fecha_publicacion,
+        t.contenido_tarea,
+        t.configuracion_tarea,
         t.created_at,
         t.updated_at,
         p.id as paciente_id,
@@ -296,15 +350,43 @@ export const obtenerTodas = async (req: Request, res: Response) => {
       INNER JOIN usuarios u ON p.usuario_id = u.id
       WHERE ${whereClause}
       ORDER BY t.fecha_asignacion DESC
-    `, {
+    `;
+
+    log.info('Query para obtener tareas:', { 
+      psicologoId,
+      query: query.substring(0, 200) + '...',
+      replacements 
+    });
+
+    const resultado = await sequelize.query(query, {
       replacements,
       type: QueryTypes.SELECT
-    }) as [any[], unknown];
+    });
+
+    // Sequelize.query con SELECT devuelve un array de arrays, el primer elemento es el resultado
+    let tareas: any[] = [];
+    if (Array.isArray(resultado) && resultado.length > 0) {
+      tareas = Array.isArray(resultado[0]) ? resultado[0] : resultado;
+    } else if (Array.isArray(resultado)) {
+      tareas = resultado;
+    }
+    
+    // Asegurar que siempre sea un array
+    const tareasArray = Array.isArray(tareas) ? tareas : [];
+    
+    log.info('Tareas obtenidas:', { 
+      cantidad: tareasArray.length,
+      tipoResultado: typeof resultado,
+      esArrayResultado: Array.isArray(resultado),
+      tipoTareas: typeof tareas,
+      esArrayTareas: Array.isArray(tareas),
+      muestra: tareasArray.slice(0, 2)
+    });
 
     return ManejadorRespuestas.exito(
       res,
       'Tareas obtenidas exitosamente',
-      { tareas },
+      { tareas: tareasArray },
       'TAR_002'
     );
   } catch (error) {
@@ -675,6 +757,11 @@ export const obtenerTareasPaciente = async (req: Request, res: Response) => {
     let whereClause = 'p.usuario_id = :pacienteId AND t.deleted_at IS NULL';
     let replacements: any = { pacienteId };
 
+    // TEMPORALMENTE: Quitar filtros para debug
+    // TODO: Restaurar filtros cuando se confirme que las tareas se crean correctamente
+    // whereClause += ' AND COALESCE(t.es_borrador, false) = false';
+    // whereClause += ' AND (t.fecha_publicacion IS NULL OR t.fecha_publicacion <= NOW())';
+
     if (estado) {
       whereClause += ' AND t.estado = :estado';
       replacements.estado = estado;
@@ -685,13 +772,14 @@ export const obtenerTareasPaciente = async (req: Request, res: Response) => {
       replacements.tipo_tarea = tipo_tarea;
     }
 
-    const [tareas] = await sequelize.query(`
+    const query = `
       SELECT 
         t.id,
         t.titulo,
         t.descripcion,
         t.instrucciones,
         t.tipo_tarea,
+        t.tipo_tarea_avanzado,
         t.prioridad,
         t.fecha_asignacion,
         t.fecha_vencimiento,
@@ -702,6 +790,10 @@ export const obtenerTareasPaciente = async (req: Request, res: Response) => {
         t.respuesta_paciente,
         t.archivos_respuesta,
         t.evaluacion_psicologo,
+        t.es_borrador,
+        t.fecha_publicacion,
+        t.contenido_tarea,
+        t.configuracion_tarea,
         t.created_at,
         t.updated_at,
         u.nombres as psicologo_nombres,
@@ -712,15 +804,43 @@ export const obtenerTareasPaciente = async (req: Request, res: Response) => {
       INNER JOIN usuarios u ON t.psicologo_id = u.id
       WHERE ${whereClause}
       ORDER BY t.fecha_asignacion DESC
-    `, {
+    `;
+
+    log.info('Query para obtener tareas del paciente:', { 
+      pacienteId,
+      query: query.substring(0, 200) + '...',
+      replacements 
+    });
+
+    const resultado = await sequelize.query(query, {
       replacements,
       type: QueryTypes.SELECT
-    }) as [any[], unknown];
+    });
+
+    // Sequelize.query con SELECT devuelve un array de arrays, el primer elemento es el resultado
+    let tareas: any[] = [];
+    if (Array.isArray(resultado) && resultado.length > 0) {
+      tareas = Array.isArray(resultado[0]) ? resultado[0] : resultado;
+    } else if (Array.isArray(resultado)) {
+      tareas = resultado;
+    }
+    
+    // Asegurar que siempre sea un array
+    const tareasArray = Array.isArray(tareas) ? tareas : [];
+    
+    log.info('Tareas del paciente obtenidas:', { 
+      cantidad: tareasArray.length,
+      pacienteId,
+      tipoResultado: typeof resultado,
+      esArrayResultado: Array.isArray(resultado),
+      tipoTareas: typeof tareas,
+      esArrayTareas: Array.isArray(tareas)
+    });
 
     return ManejadorRespuestas.exito(
       res,
       'Tareas obtenidas exitosamente',
-      { tareas },
+      { tareas: tareasArray },
       'TAR_022'
     );
   } catch (error) {
@@ -891,7 +1011,7 @@ export const crearTareaAvanzada = async (req: Request, res: Response) => {
         'pendiente', :puntos_asignados, :archivos_adjuntos, '[]',
         :contenido_tarea, :configuracion_tarea, :es_borrador, :fecha_publicacion,
         NOW(), NOW()
-      ) RETURNING id, titulo, fecha_asignacion, tipo_tarea, tipo_tarea_avanzado
+      )       RETURNING id, titulo, fecha_asignacion, tipo_tarea, tipo_tarea_avanzado, es_borrador, fecha_publicacion
     `, {
       replacements: {
         paciente_id,
@@ -907,10 +1027,19 @@ export const crearTareaAvanzada = async (req: Request, res: Response) => {
         archivos_adjuntos: JSON.stringify(archivos_adjuntos || []),
         contenido_tarea: JSON.stringify(contenido_tarea || {}),
         configuracion_tarea: JSON.stringify(configuracion_tarea || {}),
-        es_borrador: es_borrador || false,
+        es_borrador: Boolean(es_borrador) === true,
         fecha_publicacion: fecha_publicacion || null
       }
     }) as [any[], unknown];
+
+    log.info('Tarea creada:', {
+      id: tareaCreada[0]?.id,
+      psicologoId,
+      paciente_id,
+      es_borrador: tareaCreada[0]?.es_borrador,
+      fecha_publicacion: tareaCreada[0]?.fecha_publicacion,
+      titulo: tareaCreada[0]?.titulo
+    });
 
     return ManejadorRespuestas.exito(
       res,
@@ -944,16 +1073,28 @@ export const guardarRespuesta = async (req: Request, res: Response) => {
       );
     }
 
-    // Verificar que la tarea existe y pertenece al paciente
-    const [tarea] = await sequelize.query(`
-      SELECT t.id FROM tareas t
+    // Verificar que la tarea existe y pertenece al paciente, y obtener el paciente_id real
+    const [tareaResult] = await sequelize.query(`
+      SELECT t.id, t.paciente_id FROM tareas t
       INNER JOIN pacientes p ON t.paciente_id = p.id
       WHERE t.id = :tarea_id AND p.usuario_id = :pacienteId AND t.deleted_at IS NULL
     `, {
-      replacements: { tarea_id, pacienteId }
+      replacements: { tarea_id, pacienteId },
+      type: QueryTypes.SELECT
     }) as [any[], unknown];
 
-    if (!Array.isArray(tarea) || tarea.length === 0) {
+    // Asegurar que sea un array
+    let tareaData: any = null;
+    if (Array.isArray(tareaResult) && tareaResult.length > 0) {
+      tareaData = tareaResult[0];
+    } else if (Array.isArray(tareaResult)) {
+      tareaData = tareaResult;
+    } else if (tareaResult && typeof tareaResult === 'object') {
+      tareaData = tareaResult;
+    }
+
+    if (!tareaData || !tareaData.id) {
+      log.error('Tarea no encontrada para el paciente:', { tarea_id, pacienteId });
       return ManejadorRespuestas.noEncontrado(
         res,
         'Tarea no encontrada',
@@ -961,12 +1102,22 @@ export const guardarRespuesta = async (req: Request, res: Response) => {
       );
     }
 
-    // Crear la respuesta
+    const pacienteIdReal = tareaData.paciente_id;
+
+    log.info('Guardando respuesta:', {
+      tarea_id,
+      pacienteIdUsuario: pacienteId,
+      pacienteIdReal,
+      tieneContenido: !!contenido_respuesta,
+      tieneArchivo: !!archivo_respuesta
+    });
+
+    // Crear la respuesta usando el paciente_id real de la tabla pacientes
     const respuesta = await RespuestaTarea.create({
       tarea_id: tarea_id as string,
-      paciente_id: pacienteId as string,
-      contenido_respuesta,
-      archivo_respuesta,
+      paciente_id: pacienteIdReal,
+      contenido_respuesta: contenido_respuesta || null,
+      archivo_respuesta: archivo_respuesta || null,
       fecha_envio: new Date()
     });
 
