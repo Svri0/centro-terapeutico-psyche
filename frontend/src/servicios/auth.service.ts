@@ -214,6 +214,30 @@ class AuthService {
     const user = this.getCurrentUser();
     return user?.rol_id === 3 || user?.rol === 'recepcionista';
   }
+
+  async forgotPassword(email: string): Promise<void> {
+    try {
+      await api.post('/autenticacion/forgot-password', { email });
+    } catch (error: any) {
+      if (error.response?.data?.mensaje) {
+        throw new Error(error.response.data.mensaje);
+      } else {
+        throw new Error('Error al solicitar recuperación de contraseña');
+      }
+    }
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    try {
+      await api.post('/autenticacion/reset-password', { token, newPassword });
+    } catch (error: any) {
+      if (error.response?.data?.mensaje) {
+        throw new Error(error.response.data.mensaje);
+      } else {
+        throw new Error('Error al restablecer contraseña');
+      }
+    }
+  }
 }
 
 export const authService = new AuthService(); 

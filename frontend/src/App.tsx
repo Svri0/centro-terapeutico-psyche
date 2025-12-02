@@ -11,6 +11,7 @@ import PanelRecepcionista from './paginas/PanelRecepcionista';
 import PerfilPaciente from './componentes/PerfilPaciente';
 import TestImages from './paginas/TestImages';
 import Pagina404 from './paginas/Pagina404';
+import ResetPassword from './paginas/ResetPassword';
 import PaginaSistemaCaido from './paginas/PaginaSistemaCaido';
 import PaginaSinConexion from './paginas/PaginaSinConexion';
 import PaginaSinPermisos from './paginas/PaginaSinPermisos';
@@ -79,6 +80,9 @@ function App() {
           
           {/* Ruta de login */}
           <Route path="/login" element={<LoginNuevo />} />
+          
+          {/* Ruta para resetear contraseña */}
+          <Route path="/reset-password" element={<ResetPassword />} />
           
           {/* Ruta de prueba para imágenes */}
           <Route path="/test-images" element={<TestImages />} />
