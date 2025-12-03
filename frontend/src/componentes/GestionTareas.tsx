@@ -100,6 +100,9 @@ const GestionTareas: React.FC = () => {
       const tareaCreada = await tareasService.crearTareaAvanzada(tareaData);
       console.log('✅ Tarea creada exitosamente:', tareaCreada);
       
+      // Esperar un poco para asegurar que la tarea se guardó en la BD
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       // Recargar datos después de crear
       console.log('🔄 Recargando lista de tareas...');
       await cargarDatos();
