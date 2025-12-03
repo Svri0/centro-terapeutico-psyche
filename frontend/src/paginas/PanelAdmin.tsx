@@ -859,7 +859,7 @@ const PanelAdmin: React.FC = () => {
                   <button
                     type="submit"
                     disabled={passwordLoading}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md disabled:opacity-50 hover-scale transition-transform duration-200"
+                    className="px-4 py-2 text-sm font-medium bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 text-amber-800 rounded-md disabled:opacity-50 hover-scale transition-transform duration-200"
                   >
                     {passwordLoading ? 'Cambiando...' : 'Cambiar Contraseña'}
                   </button>

@@ -209,10 +209,13 @@ const CalendarioCitas: React.FC<CalendarioCitasProps> = ({ psicologoId }) => {
                       className={`text-xs p-1 rounded truncate cursor-pointer hover:bg-gray-100 transition-colors ${
                         obtenerEstadoColor(cita.estado)
                       }`}
-                      title={`${cita.paciente_nombres} ${cita.paciente_apellidos} - ${cita.hora_inicio}`}
+                      title={`${cita.paciente_nombres || ''} ${cita.paciente_apellidos || ''} - ${cita.hora_inicio}`.trim()}
                     >
                       <div className="font-medium truncate">
-                        {cita.paciente_nombres} {cita.paciente_apellidos}
+                        {cita.paciente_nombres && cita.paciente_apellidos 
+                          ? `${cita.paciente_nombres} ${cita.paciente_apellidos}`
+                          : cita.paciente_nombres || cita.paciente_apellidos || 'Paciente no disponible'
+                        }
                       </div>
                       <div className="text-xs opacity-75">
                         {cita.hora_inicio.slice(0, 5)}

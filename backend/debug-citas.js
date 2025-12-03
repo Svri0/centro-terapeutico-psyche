@@ -54,3 +54,5 @@ console.log('2. Asegurar que las fechas estén en formato correcto');
 console.log('3. Verificar que el componente se esté re-renderizando correctamente');
 
 
+
+

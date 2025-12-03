@@ -102,7 +102,9 @@ const AgendaPsicologo: React.FC = () => {
       const citasMapeadas = citasData.map((cita: any) => ({
         id: cita.id,
         paciente_id: cita.paciente_id || '',
-        paciente_nombre: `${cita.paciente_nombres} ${cita.paciente_apellidos}`,
+        paciente_nombre: (cita.paciente_nombres && cita.paciente_apellidos) 
+          ? `${cita.paciente_nombres} ${cita.paciente_apellidos}`.trim()
+          : cita.paciente_nombres || cita.paciente_apellidos || 'Paciente no disponible',
         paciente_rut: cita.paciente_rut || '',
         paciente_telefono: cita.paciente_telefono || '',
         fecha: cita.fecha,
@@ -469,9 +471,9 @@ const AgendaPsicologo: React.FC = () => {
                           setSelectedCita(cita);
                           setShowDetailsModal(true);
                         }}
-                        title={`${cita.paciente_nombre} - ${cita.hora_inicio} - ${obtenerEstadoTexto(cita.estado)}`}
+                        title={`${cita.paciente_nombre || 'Paciente no disponible'} - ${cita.hora_inicio} - ${obtenerEstadoTexto(cita.estado)}`}
                       >
-                        <div className="font-medium truncate text-gray-900">{cita.paciente_nombre}</div>
+                        <div className="font-medium truncate text-gray-900">{cita.paciente_nombre || 'Paciente no disponible'}</div>
                         <div className="text-gray-600">{cita.hora_inicio}</div>
                       </div>
                     ))}

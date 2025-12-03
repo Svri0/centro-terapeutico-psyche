@@ -85,10 +85,14 @@ const GestionPagos: React.FC = () => {
         id: pago.id,
         cita_id: pago.cita_id,
         paciente_id: pago.paciente_id || '',
-        paciente_nombre: `${pago.paciente_nombres} ${pago.paciente_apellidos}`,
+        paciente_nombre: (pago.paciente_nombres && pago.paciente_apellidos) 
+          ? `${pago.paciente_nombres} ${pago.paciente_apellidos}`.trim()
+          : pago.paciente_nombres || pago.paciente_apellidos || 'Paciente no disponible',
         paciente_rut: pago.paciente_rut || '',
         psicologo_id: pago.psicologo_id || '',
-        psicologo_nombre: `${pago.psicologo_nombres} ${pago.psicologo_apellidos}`,
+        psicologo_nombre: (pago.psicologo_nombres && pago.psicologo_apellidos) 
+          ? `${pago.psicologo_nombres} ${pago.psicologo_apellidos}`.trim()
+          : pago.psicologo_nombres || pago.psicologo_apellidos || 'Psicólogo no disponible',
         fecha_cita: pago.fecha_cita,
         hora_cita: pago.hora_cita,
         monto: parseFloat(pago.monto) || 0,
@@ -116,10 +120,14 @@ const GestionPagos: React.FC = () => {
       const citasMapeadas = citasData.map((cita: any) => ({
         id: cita.id,
         paciente_id: cita.paciente_id || '',
-        paciente_nombre: `${cita.paciente_nombres} ${cita.paciente_apellidos}`,
+        paciente_nombre: (cita.paciente_nombres && cita.paciente_apellidos) 
+          ? `${cita.paciente_nombres} ${cita.paciente_apellidos}`.trim()
+          : cita.paciente_nombres || cita.paciente_apellidos || 'Paciente no disponible',
         paciente_rut: cita.paciente_rut || '',
         psicologo_id: cita.psicologo_id || '',
-        psicologo_nombre: `${cita.psicologo_nombres} ${cita.psicologo_apellidos}`,
+        psicologo_nombre: (cita.psicologo_nombres && cita.psicologo_apellidos) 
+          ? `${cita.psicologo_nombres} ${cita.psicologo_apellidos}`.trim()
+          : cita.psicologo_nombres || cita.psicologo_apellidos || 'Psicólogo no disponible',
         fecha: cita.fecha,
         hora_inicio: cita.hora_inicio,
         hora_fin: cita.hora_fin,

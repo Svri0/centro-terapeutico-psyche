@@ -34,6 +34,8 @@ const Inicio: React.FC = () => {
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
 
   // Funciones de validación
   const validateEmail = (email: string): boolean => {
@@ -133,7 +135,7 @@ const Inicio: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Mostrar mensaje de éxito
-      alert('¡Solicitud enviada exitosamente! Nos pondremos en contacto contigo pronto.');
+      setShowSuccessModal(true);
       
       // Limpiar formulario
       setFormData({
@@ -147,7 +149,7 @@ const Inicio: React.FC = () => {
       
     } catch (error) {
       console.error('Error al enviar formulario:', error);
-      alert('Hubo un error al enviar tu solicitud. Por favor, inténtalo de nuevo.');
+      setShowErrorModal(true);
     } finally {
       setIsSubmitting(false);
     }
@@ -483,20 +485,9 @@ const Inicio: React.FC = () => {
                 <div className="w-6 lg:w-8 h-1 bg-amber-400 rounded-full"></div>
               </div>
               <h3 className="text-base lg:text-lg font-medium text-gray-700 mb-2 lg:mb-3">Contáctanos</h3>
-              <p className="text-gray-600 text-xs lg:text-sm leading-relaxed mb-3 lg:mb-4">
+              <p className="text-gray-600 text-xs lg:text-sm leading-relaxed">
                 Puede ser por medio de correo electrónico, WhatsApp o nuestro formulario.
               </p>
-              <div className="flex space-x-2">
-                <div className="w-4 h-4 lg:w-5 lg:h-5 bg-amber-500 rounded flex items-center justify-center">
-                  <span className="text-white text-xs">📱</span>
-                </div>
-                <div className="w-4 h-4 lg:w-5 lg:h-5 bg-amber-500 rounded flex items-center justify-center">
-                  <span className="text-white text-xs">✉️</span>
-                </div>
-                <div className="w-4 h-4 lg:w-5 lg:h-5 bg-amber-500 rounded flex items-center justify-center">
-                  <span className="text-white text-xs">📋</span>
-                </div>
-              </div>
             </div>
             
             {/* Paso 2 - Estilo de la tarjeta 3 */}
@@ -559,7 +550,7 @@ const Inicio: React.FC = () => {
           <div className="text-center">
             <button
               onClick={() => document.getElementById('formulario-solicitud')?.scrollIntoView({ behavior: 'smooth' })}
-              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-8 py-4 rounded-full text-lg font-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+              className="bg-orange-300 hover:bg-orange-400 text-white px-8 py-4 rounded-full text-lg font-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
             >
               Solicitar mi Hora
             </button>
@@ -692,7 +683,7 @@ const Inicio: React.FC = () => {
                   className={`px-8 py-4 rounded-full text-lg font-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 ${
                     isSubmitting 
                       ? 'bg-gray-400 cursor-not-allowed' 
-                      : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600'
+                      : 'bg-orange-300 hover:bg-orange-400'
                   } text-white`}
                 >
                   {isSubmitting ? 'Enviando...' : 'Enviar Solicitud'}
@@ -1046,7 +1037,7 @@ const Inicio: React.FC = () => {
           </div>
 
           <div className="text-center mt-12">
-            <button className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-8 py-4 rounded-full text-lg font-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+            <button className="bg-orange-300 hover:bg-orange-400 text-white px-8 py-4 rounded-full text-lg font-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
               Ver Todos los Artículos
             </button>
           </div>
@@ -1129,10 +1120,7 @@ const Inicio: React.FC = () => {
             <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
               <div className="text-center sm:text-left">
                 <p className="text-sm text-gray-400">
-                  © 2024 Dentro de Psyché. Todos los derechos reservados.
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Made with ♥ from Chile
+                  © 2025 Dentro de Psyché. Todos los derechos reservados.
                 </p>
               </div>
               
@@ -1158,6 +1146,72 @@ const Inicio: React.FC = () => {
 
       {/* Chatbot */}
       <Chatbot />
+
+      {/* Modal de Éxito */}
+      {showSuccessModal && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          onClick={() => setShowSuccessModal(false)}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 transform transition-all animate-fade-in-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
+                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-800 mb-4">
+                ¡Solicitud enviada exitosamente!
+              </h3>
+              <p className="text-gray-600 mb-8 leading-relaxed">
+                Gracias por confiar en nosotros. Hemos recibido tu solicitud y nos pondremos en contacto contigo en las próximas 24 horas a través del correo electrónico o teléfono que proporcionaste.
+              </p>
+              <button
+                onClick={() => setShowSuccessModal(false)}
+                className="w-full bg-orange-300 hover:bg-orange-400 text-white px-6 py-3 rounded-full font-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+              >
+                Aceptar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Error */}
+      {showErrorModal && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          onClick={() => setShowErrorModal(false)}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 transform transition-all animate-fade-in-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-red-400 to-rose-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-800 mb-4">
+                Error al enviar solicitud
+              </h3>
+              <p className="text-gray-600 mb-8 leading-relaxed">
+                Hubo un problema al procesar tu solicitud. Por favor, verifica tu conexión a internet e inténtalo de nuevo. Si el problema persiste, contáctanos directamente.
+              </p>
+              <button
+                onClick={() => setShowErrorModal(false)}
+                className="w-full bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white px-6 py-3 rounded-full font-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

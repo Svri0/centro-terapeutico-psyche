@@ -31,3 +31,5 @@ router.get('/citas/:citaId/estado', obtenerEstadoSesion);
 export default router;
 
 
+
+

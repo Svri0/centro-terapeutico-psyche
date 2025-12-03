@@ -82,7 +82,7 @@ const tecnicasUtilizadas = [
   ["Psicoeducación", "Registros de pensamiento"]
 ];
 
-// Datos de los psicólogos (mismo array de antes)
+// Datos de los psicólogos
 const psicologos = [
   {
     nombres: 'María José',
@@ -293,7 +293,7 @@ const pacientes = [
   { nombres: 'Bárbara Soledad', apellidos: 'Pinto Carvajal', email: 'barbara.pinto@email.cl', telefono: '+56901239123', fecha_nacimiento: '1996-07-27', genero: 'femenino', rut: '19.123.457-1' }
 ];
 
-async function poblarConSesiones() {
+async function limpiarYPoblar() {
   const transaction = await sequelize.transaction();
   
   try {
@@ -324,7 +324,7 @@ async function poblarConSesiones() {
 
     // OBTENER PSICÓLOGOS EXISTENTES
     let [psicologosExistentes] = await sequelize.query(`
-      SELECT id, nombres, apellidos FROM usuarios WHERE rol_id = :rol_id AND deleted_at IS NULL
+      SELECT id, nombres, apellidos, email FROM usuarios WHERE rol_id = :rol_id AND deleted_at IS NULL
     `, {
       replacements: { rol_id: rolesMap['psicologo'] },
       transaction
@@ -332,113 +332,147 @@ async function poblarConSesiones() {
     
     // OBTENER RECEPCIONISTAS EXISTENTES
     let [recepcionistasExistentes] = await sequelize.query(`
+      SELECT id, nombres, apellidos, email FROM usuarios WHERE rol_id = :rol_id AND deleted_at IS NULL
+    `, {
+      replacements: { rol_id: rolesMap['recepcionista'] },
+      transaction
+    });
+
+    // Crear recepcionistas que no existen (verificando por email)
+    console.log('👨‍💼 Verificando y creando recepcionistas...');
+    console.log('━'.repeat(60));
+    
+    const emailsRecepcionistasExistentes = new Set(recepcionistasExistentes.map(r => r.email?.toLowerCase()).filter(Boolean));
+    let recepcionistasCreados = 0;
+    
+    for (const recepcionista of recepcionistas) {
+      // Si el recepcionista ya existe (por email), saltarlo
+      if (emailsRecepcionistasExistentes.has(recepcionista.email.toLowerCase())) {
+        console.log(`⏭️  ${recepcionista.nombres} ${recepcionista.apellidos} ya existe, omitiendo...`);
+        continue;
+      }
+      
+      const passwordHash = await bcrypt.hash(recepcionista.password, 12);
+      
+      const [usuarioCreado] = await sequelize.query(`
+        INSERT INTO usuarios (
+          id, email, password_hash, nombres, apellidos, telefono,
+          fecha_nacimiento, genero, rol_id, activo, email_verificado,
+          configuracion, created_at, updated_at
+        ) VALUES (
+          gen_random_uuid(), :email, :passwordHash, :nombres, :apellidos, :telefono,
+          :fecha_nacimiento, :genero, :rol_id, true, true,
+          '{}', NOW(), NOW()
+        ) RETURNING id, nombres, apellidos
+      `, {
+        replacements: {
+          email: recepcionista.email,
+          passwordHash,
+          nombres: recepcionista.nombres,
+          apellidos: recepcionista.apellidos,
+          telefono: recepcionista.telefono,
+          fecha_nacimiento: recepcionista.fecha_nacimiento,
+          genero: recepcionista.genero,
+          rol_id: rolesMap['recepcionista']
+        },
+        transaction
+      });
+      
+      recepcionistasExistentes.push({
+        id: usuarioCreado[0].id,
+        nombres: usuarioCreado[0].nombres,
+        apellidos: usuarioCreado[0].apellidos,
+        email: recepcionista.email
+      });
+      
+      console.log(`✅ ${recepcionista.nombres} ${recepcionista.apellidos} creado`);
+      recepcionistasCreados++;
+    }
+    
+    // Actualizar la lista completa de recepcionistas
+    [recepcionistasExistentes] = await sequelize.query(`
       SELECT id, nombres, apellidos FROM usuarios WHERE rol_id = :rol_id AND deleted_at IS NULL
     `, {
       replacements: { rol_id: rolesMap['recepcionista'] },
       transaction
     });
     
-    console.log(`✅ ${recepcionistasExistentes.length} recepcionistas encontrados\n`);
+    console.log('');
+    if (recepcionistasCreados > 0) {
+      console.log(`✅ ${recepcionistasCreados} recepcionistas nuevos creados`);
+    }
+    console.log(`✅ Total de recepcionistas: ${recepcionistasExistentes.length}\n`);
 
-    // Si no hay psicólogos, crearlos
-    if (psicologosExistentes.length === 0) {
-      console.log('👨‍⚕️ No se encontraron psicólogos. Creando psicólogos...');
-      console.log('━'.repeat(60));
-      
-      for (const psicologo of psicologos) {
-        const passwordHash = await bcrypt.hash(psicologo.password, 12);
-        
-        const [usuarioCreado] = await sequelize.query(`
-          INSERT INTO usuarios (
-            id, email, password_hash, nombres, apellidos, telefono,
-            fecha_nacimiento, genero, rol_id, activo, email_verificado,
-            configuracion, codigo_sbs, especialidad, descripcion, avatar_url,
-            created_at, updated_at
-          ) VALUES (
-            gen_random_uuid(), :email, :passwordHash, :nombres, :apellidos, :telefono,
-            :fecha_nacimiento, :genero, :rol_id, true, true,
-            '{}', :codigo_sbs, :especialidad, :descripcion, :avatar_url,
-            NOW(), NOW()
-          ) RETURNING id, nombres, apellidos
-        `, {
-          replacements: {
-            email: psicologo.email,
-            passwordHash,
-            nombres: psicologo.nombres,
-            apellidos: psicologo.apellidos,
-            telefono: psicologo.telefono,
-            fecha_nacimiento: psicologo.fecha_nacimiento,
-            genero: psicologo.genero,
-            rol_id: rolesMap['psicologo'],
-            codigo_sbs: psicologo.codigo_sbs,
-            especialidad: psicologo.especialidad,
-            descripcion: psicologo.descripcion,
-            avatar_url: psicologo.avatar_url
-          },
-          transaction
-        });
-        
-        psicologosExistentes.push({
-          id: usuarioCreado[0].id,
-          nombres: usuarioCreado[0].nombres,
-          apellidos: usuarioCreado[0].apellidos
-        });
-        
-        console.log(`✅ ${psicologo.nombres} ${psicologo.apellidos} creado`);
+    // Crear psicólogos que no existen (verificando por email)
+    console.log('👨‍⚕️ Verificando y creando psicólogos...');
+    console.log('━'.repeat(60));
+    
+    const emailsExistentes = new Set(psicologosExistentes.map(p => p.email.toLowerCase()));
+    let psicologosCreados = 0;
+    
+    for (const psicologo of psicologos) {
+      // Si el psicólogo ya existe (por email), saltarlo
+      if (emailsExistentes.has(psicologo.email.toLowerCase())) {
+        console.log(`⏭️  ${psicologo.nombres} ${psicologo.apellidos} ya existe, omitiendo...`);
+        continue;
       }
       
-      console.log('');
-      console.log(`✅ ${psicologosExistentes.length} psicólogos creados\n`);
-    } else {
-      console.log(`✅ ${psicologosExistentes.length} psicólogos encontrados\n`);
+      const passwordHash = await bcrypt.hash(psicologo.password, 12);
+      
+      const [usuarioCreado] = await sequelize.query(`
+        INSERT INTO usuarios (
+          id, email, password_hash, nombres, apellidos, telefono,
+          fecha_nacimiento, genero, rol_id, activo, email_verificado,
+          configuracion, codigo_sbs, especialidad, descripcion, avatar_url,
+          created_at, updated_at
+        ) VALUES (
+          gen_random_uuid(), :email, :passwordHash, :nombres, :apellidos, :telefono,
+          :fecha_nacimiento, :genero, :rol_id, true, true,
+          '{}', :codigo_sbs, :especialidad, :descripcion, :avatar_url,
+          NOW(), NOW()
+        ) RETURNING id, nombres, apellidos
+      `, {
+        replacements: {
+          email: psicologo.email,
+          passwordHash,
+          nombres: psicologo.nombres,
+          apellidos: psicologo.apellidos,
+          telefono: psicologo.telefono,
+          fecha_nacimiento: psicologo.fecha_nacimiento,
+          genero: psicologo.genero,
+          rol_id: rolesMap['psicologo'],
+          codigo_sbs: psicologo.codigo_sbs,
+          especialidad: psicologo.especialidad,
+          descripcion: psicologo.descripcion,
+          avatar_url: psicologo.avatar_url
+        },
+        transaction
+      });
+      
+      psicologosExistentes.push({
+        id: usuarioCreado[0].id,
+        nombres: usuarioCreado[0].nombres,
+        apellidos: usuarioCreado[0].apellidos,
+        email: psicologo.email
+      });
+      
+      console.log(`✅ ${psicologo.nombres} ${psicologo.apellidos} creado`);
+      psicologosCreados++;
     }
     
-    // Si no hay recepcionistas, crearlos
-    if (recepcionistasExistentes.length === 0) {
-      console.log('👨‍💼 No se encontraron recepcionistas. Creando recepcionistas...');
-      console.log('━'.repeat(60));
-      
-      for (const recepcionista of recepcionistas) {
-        const passwordHash = await bcrypt.hash(recepcionista.password, 12);
-        
-        const [usuarioCreado] = await sequelize.query(`
-          INSERT INTO usuarios (
-            id, email, password_hash, nombres, apellidos, telefono,
-            fecha_nacimiento, genero, rol_id, activo, email_verificado,
-            configuracion, created_at, updated_at
-          ) VALUES (
-            gen_random_uuid(), :email, :passwordHash, :nombres, :apellidos, :telefono,
-            :fecha_nacimiento, :genero, :rol_id, true, true,
-            '{}', NOW(), NOW()
-          ) RETURNING id, nombres, apellidos
-        `, {
-          replacements: {
-            email: recepcionista.email,
-            passwordHash,
-            nombres: recepcionista.nombres,
-            apellidos: recepcionista.apellidos,
-            telefono: recepcionista.telefono,
-            fecha_nacimiento: recepcionista.fecha_nacimiento,
-            genero: recepcionista.genero,
-            rol_id: rolesMap['recepcionista']
-          },
-          transaction
-        });
-        
-        recepcionistasExistentes.push({
-          id: usuarioCreado[0].id,
-          nombres: usuarioCreado[0].nombres,
-          apellidos: usuarioCreado[0].apellidos
-        });
-        
-        console.log(`✅ ${recepcionista.nombres} ${recepcionista.apellidos} creado`);
-      }
-      
-      console.log('');
-      console.log(`✅ ${recepcionistasExistentes.length} recepcionistas creados\n`);
-    } else {
-      console.log(`✅ ${recepcionistasExistentes.length} recepcionistas encontrados\n`);
+    // Actualizar la lista completa de psicólogos
+    [psicologosExistentes] = await sequelize.query(`
+      SELECT id, nombres, apellidos FROM usuarios WHERE rol_id = :rol_id AND deleted_at IS NULL
+    `, {
+      replacements: { rol_id: rolesMap['psicologo'] },
+      transaction
+    });
+    
+    console.log('');
+    if (psicologosCreados > 0) {
+      console.log(`✅ ${psicologosCreados} psicólogos nuevos creados`);
     }
+    console.log(`✅ Total de psicólogos: ${psicologosExistentes.length}\n`);
 
     // ====================
     // CREAR 50 PACIENTES
@@ -525,43 +559,101 @@ async function poblarConSesiones() {
     console.log(`✅ ${pacientesCreados.length} pacientes creados\n`);
 
     // ====================
-    // CREAR SESIONES COMPLETADAS
+    // CREAR SESIONES CON VARIEDAD DE ESTADOS
     // ====================
-    console.log('📅 CREANDO SESIONES COMPLETADAS...');
+    console.log('📅 CREANDO SESIONES CON VARIEDAD DE ESTADOS...');
     console.log('━'.repeat(60));
     
     let totalSesiones = 0;
+    let sesionesCompletadas = 0;
+    let sesionesCanceladas = 0;
+    let sesionesNoAsistio = 0;
+    let sesionesProgramadas = 0;
+    let sesionesConfirmadas = 0;
     const tiposSesion = ['presencial', 'virtual', 'telefonica'];
+    
+    // Función para generar fecha futura
+    function generarFechaFutura(diasAdelante) {
+      const hoy = new Date();
+      const diasAleatorios = Math.floor(Math.random() * diasAdelante) + 1;
+      const fecha = new Date(hoy);
+      fecha.setDate(fecha.getDate() + diasAleatorios);
+      return fecha;
+    }
     
     for (let i = 0; i < pacientesCreados.length; i++) {
       const paciente = pacientesCreados[i];
       
-      // Cada paciente tendrá entre 2 y 8 sesiones completadas (variado para realismo)
-      const numSesiones = Math.floor(Math.random() * 7) + 2; // 2 a 8 sesiones
+      // Cada paciente tendrá entre 3 y 10 sesiones (variado para realismo)
+      const numSesiones = Math.floor(Math.random() * 8) + 3; // 3 a 10 sesiones
       
       for (let j = 0; j < numSesiones; j++) {
-        // Generar fecha en los últimos 180 días (6 meses)
-        const fechaProgramada = generarFechaAleatoria(180);
-        const hora = generarHoraSesion();
-        fechaProgramada.setHours(hora, 0, 0, 0);
+        // Determinar si la sesión es pasada o futura (70% pasadas, 30% futuras)
+        const esPasada = Math.random() < 0.7;
         
-        // Fecha de inicio (misma que programada)
-        const fechaInicio = new Date(fechaProgramada);
+        let fechaProgramada;
+        let fechaInicio = null;
+        let fechaFin = null;
+        let duracion = 60;
+        let estado;
+        let notaEvolucion = null;
+        let objetivos = null;
+        let tecnicas = null;
+        let observaciones = '';
         
-        // Fecha fin (60 minutos después)
-        const duracion = 60;
-        const fechaFin = new Date(fechaInicio);
-        fechaFin.setMinutes(fechaFin.getMinutes() + duracion);
+        if (esPasada) {
+          // Sesión pasada: puede ser completada, cancelada o no asistió
+          fechaProgramada = generarFechaAleatoria(180);
+          const hora = generarHoraSesion();
+          fechaProgramada.setHours(hora, 0, 0, 0);
+          
+          // Distribución de estados para sesiones pasadas:
+          // 60% completadas, 20% canceladas, 20% no asistió
+          const rand = Math.random();
+          if (rand < 0.6) {
+            // COMPLETADA
+            estado = 'completada';
+            fechaInicio = new Date(fechaProgramada);
+            fechaFin = new Date(fechaInicio);
+            fechaFin.setMinutes(fechaFin.getMinutes() + duracion);
+            notaEvolucion = notasEvolucion[Math.floor(Math.random() * notasEvolucion.length)];
+            objetivos = objetivosSesion[Math.floor(Math.random() * objetivosSesion.length)];
+            tecnicas = tecnicasUtilizadas[Math.floor(Math.random() * tecnicasUtilizadas.length)];
+            observaciones = 'Sesión realizada con normalidad.';
+            sesionesCompletadas++;
+          } else if (rand < 0.8) {
+            // CANCELADA
+            estado = 'cancelada';
+            observaciones = 'Sesión cancelada por el paciente con anticipación.';
+            sesionesCanceladas++;
+          } else {
+            // NO ASISTIÓ
+            estado = 'no_asistio';
+            observaciones = 'Paciente no asistió a la sesión programada.';
+            sesionesNoAsistio++;
+          }
+        } else {
+          // Sesión futura: puede ser programada o confirmada
+          fechaProgramada = generarFechaFutura(60); // Próximos 60 días
+          const hora = generarHoraSesion();
+          fechaProgramada.setHours(hora, 0, 0, 0);
+          
+          // 70% programadas, 30% confirmadas
+          if (Math.random() < 0.7) {
+            estado = 'programada';
+            observaciones = 'Sesión programada, pendiente de confirmación.';
+            sesionesProgramadas++;
+          } else {
+            estado = 'confirmada';
+            observaciones = 'Sesión confirmada por el paciente.';
+            sesionesConfirmadas++;
+          }
+        }
         
         // Seleccionar tipo de sesión
         const tipoSesion = tiposSesion[Math.floor(Math.random() * tiposSesion.length)];
         
-        // Seleccionar nota, objetivos y técnicas aleatorias
-        const notaEvolucion = notasEvolucion[Math.floor(Math.random() * notasEvolucion.length)];
-        const objetivos = objetivosSesion[Math.floor(Math.random() * objetivosSesion.length)];
-        const tecnicas = tecnicasUtilizadas[Math.floor(Math.random() * tecnicasUtilizadas.length)];
-        
-        // Crear sesión completada
+        // Crear sesión
         await sequelize.query(`
           INSERT INTO sesiones (
             id, paciente_id, psicologo_id, fecha_programada, fecha_inicio, fecha_fin,
@@ -570,8 +662,8 @@ async function poblarConSesiones() {
             archivos_adjuntos, created_at, updated_at
           ) VALUES (
             gen_random_uuid(), :paciente_id, :psicologo_id, :fecha_programada, :fecha_inicio, :fecha_fin,
-            :duracion_minutos, :tipo_sesion, 'completada', :notas_evolucion,
-            :objetivos_sesion, :tecnicas_utilizadas, 'Sesión realizada con normalidad.',
+            :duracion_minutos, :tipo_sesion, :estado, :notas_evolucion,
+            :objetivos_sesion, :tecnicas_utilizadas, :observaciones,
             '[]'::jsonb, :created_at, :created_at
           )
         `, {
@@ -583,9 +675,11 @@ async function poblarConSesiones() {
             fecha_fin: fechaFin,
             duracion_minutos: duracion,
             tipo_sesion: tipoSesion,
+            estado: estado,
             notas_evolucion: notaEvolucion,
-            objetivos_sesion: JSON.stringify(objetivos),
-            tecnicas_utilizadas: JSON.stringify(tecnicas),
+            objetivos_sesion: objetivos ? JSON.stringify(objetivos) : '[]',
+            tecnicas_utilizadas: tecnicas ? JSON.stringify(tecnicas) : '[]',
+            observaciones: observaciones,
             created_at: fechaProgramada
           },
           transaction
@@ -598,7 +692,14 @@ async function poblarConSesiones() {
     }
     
     console.log('');
-    console.log(`✅ ${totalSesiones} sesiones completadas creadas\n`);
+    console.log(`✅ ${totalSesiones} sesiones creadas con variedad de estados\n`);
+    console.log('📊 DISTRIBUCIÓN DE ESTADOS:');
+    console.log(`   • Completadas: ${sesionesCompletadas} (${((sesionesCompletadas/totalSesiones)*100).toFixed(1)}%)`);
+    console.log(`   • Canceladas: ${sesionesCanceladas} (${((sesionesCanceladas/totalSesiones)*100).toFixed(1)}%)`);
+    console.log(`   • No asistió: ${sesionesNoAsistio} (${((sesionesNoAsistio/totalSesiones)*100).toFixed(1)}%)`);
+    console.log(`   • Programadas: ${sesionesProgramadas} (${((sesionesProgramadas/totalSesiones)*100).toFixed(1)}%)`);
+    console.log(`   • Confirmadas: ${sesionesConfirmadas} (${((sesionesConfirmadas/totalSesiones)*100).toFixed(1)}%)`);
+    console.log('');
 
     // Confirmar transacción
     await transaction.commit();
@@ -610,7 +711,7 @@ async function poblarConSesiones() {
     console.log('📊 RESUMEN:');
     console.log(`   • Psicólogos: ${psicologosExistentes.length}`);
     console.log(`   • Pacientes: ${pacientesCreados.length}`);
-    console.log(`   • Sesiones completadas: ${totalSesiones}`);
+    console.log(`   • Total sesiones: ${totalSesiones}`);
     console.log(`   • Promedio sesiones/paciente: ${(totalSesiones / pacientesCreados.length).toFixed(1)}`);
     console.log('');
     console.log('🔑 CONTRASEÑAS:');
@@ -618,10 +719,11 @@ async function poblarConSesiones() {
     console.log('   Ejemplos: luis123, sofia123, javier123');
     console.log('');
     console.log('📅 SESIONES:');
-    console.log('   • Todas las sesiones están completadas');
-    console.log('   • Fechas: últimos 6 meses');
+    console.log('   • Variedad de estados: completadas, canceladas, no asistió, programadas, confirmadas');
+    console.log('   • Sesiones pasadas: últimos 6 meses');
+    console.log('   • Sesiones futuras: próximos 60 días');
     console.log('   • Tipos variados: presencial, virtual, telefónica');
-    console.log('   • Con notas de evolución realistas');
+    console.log('   • Con notas de evolución realistas en sesiones completadas');
     console.log('');
 
   } catch (error) {
@@ -635,5 +737,5 @@ async function poblarConSesiones() {
 }
 
 // Ejecutar el script
-poblarConSesiones();
+limpiarYPoblar();
 

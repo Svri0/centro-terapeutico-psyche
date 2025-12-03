@@ -280,9 +280,9 @@ const PanelRecepcionista: React.FC = () => {
                 <button
                   type="submit"
                   disabled={passwordLoading}
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-md transition-colors disabled:opacity-50"
+                  className="px-4 py-2 bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 text-amber-800 rounded-md transition-colors disabled:opacity-50 font-medium"
                 >
-                  {passwordLoading ? 'Cambiando...' : 'Cambiar'}
+                  {passwordLoading ? 'Cambiando...' : 'Cambiar Contraseña'}
                 </button>
               </div>
             </form>

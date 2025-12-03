@@ -211,8 +211,11 @@ const GestionReportesProgreso: React.FC<GestionReportesProgresoProps> = ({ pacie
               <div className="flex justify-between items-start">
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    {!pacienteId && reporte.paciente && 
-                      `${reporte.paciente.nombres} ${reporte.paciente.apellidos}`
+                    {!pacienteId && reporte.paciente?.nombres && reporte.paciente?.apellidos
+                      ? `${reporte.paciente.nombres} ${reporte.paciente.apellidos}`
+                      : !pacienteId 
+                        ? 'Paciente no disponible'
+                        : ''
                     }
                   </h3>
                   <p className="text-sm text-gray-500 mb-3">
@@ -358,7 +361,7 @@ const GestionReportesProgreso: React.FC<GestionReportesProgresoProps> = ({ pacie
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl font-bold mb-4">Detalle del Reporte</h3>
             <div className="space-y-4">
-              <p className="text-gray-900"><strong>Paciente:</strong> {selectedReporte.paciente?.nombres} {selectedReporte.paciente?.apellidos}</p>
+              <p className="text-gray-900"><strong>Paciente:</strong> {selectedReporte.paciente?.nombres && selectedReporte.paciente?.apellidos ? `${selectedReporte.paciente.nombres} ${selectedReporte.paciente.apellidos}` : 'Paciente no disponible'}</p>
               <p className="text-gray-900"><strong>Período:</strong> {format(new Date(selectedReporte.periodo_inicio), 'dd/MM/yyyy')} - {format(new Date(selectedReporte.periodo_fin), 'dd/MM/yyyy')}</p>
               <div>
                 <strong className="text-gray-700">Resumen:</strong>

@@ -34,9 +34,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      '@psyche/shared': path.resolve(__dirname, '../shared/src'),
-      'recharts': path.resolve(__dirname, '../node_modules/recharts'),
-      'jspdf': path.resolve(__dirname, '../node_modules/jspdf')
+      '@psyche/shared': path.resolve(__dirname, '../shared/src')
     },
     preserveSymlinks: true
   },

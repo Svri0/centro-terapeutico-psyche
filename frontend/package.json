@@ -34,7 +34,7 @@
     "react-hot-toast": "^2.4.1",
     "react-query": "^3.39.3",
     "react-router-dom": "^6.20.1",
-    "recharts": "3.4.1",
+    "recharts": "^3.5.1",
     "socket.io-client": "^4.8.1",
     "tailwind-merge": "^2.1.0",
     "zustand": "^4.4.7"
@@ -46,6 +46,7 @@
     "@types/react": "^18.2.37",
     "@types/react-datepicker": "^4.19.6",
     "@types/react-dom": "^18.2.15",
+    "@types/recharts": "^1.8.29",
     "@typescript-eslint/eslint-plugin": "^6.13.1",
     "@typescript-eslint/parser": "^6.13.1",
     "@vitejs/plugin-react": "^4.1.1",
