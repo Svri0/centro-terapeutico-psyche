@@ -6,7 +6,7 @@ import ConfiguracionChat from './ConfiguracionChat';
 
 interface ChatPsicologoProps {
   psicologoId: string;
-  onMensajesNoLeidosChange?: (tieneMensajesNoLeidos: boolean) => void;
+  onMensajesNoLeidosChange?: (numeroMensajesNoLeidos: number) => void;
 }
 
 const ChatPsicologo: React.FC<ChatPsicologoProps> = ({ psicologoId, onMensajesNoLeidosChange }) => {
@@ -129,13 +129,25 @@ const ChatPsicologo: React.FC<ChatPsicologoProps> = ({ psicologoId, onMensajesNo
     if (onMensajesNoLeidosChange) {
       const totalMensajesNoLeidos = pacientes.reduce((sum, p) => sum + (p.mensajes_no_leidos || 0), 0) +
                                    personal.reduce((sum, p) => sum + (p.mensajes_no_leidos || 0), 0);
-      onMensajesNoLeidosChange(totalMensajesNoLeidos > 0);
+      onMensajesNoLeidosChange(totalMensajesNoLeidos);
     }
   }, [pacientes, personal, onMensajesNoLeidosChange]);
 
   // Cargar mensajes cuando se selecciona un paciente
   useEffect(() => {
     if (pacienteSeleccionado && socket) {
+      // Actualizar contador a 0 INMEDIATAMENTE cuando se selecciona un contacto
+      setPacientes(prev => prev.map(p => 
+        p.id === pacienteSeleccionado.id
+          ? { ...p, mensajes_no_leidos: 0 }
+          : p
+      ));
+      setPersonal(prev => prev.map(p => 
+        p.id === pacienteSeleccionado.id
+          ? { ...p, mensajes_no_leidos: 0 }
+          : p
+      ));
+      
       socket.emit('cargar_mensajes', {
         paciente_id: pacienteSeleccionado.id,
         psicologo_id: psicologoId
@@ -150,8 +162,13 @@ const ChatPsicologo: React.FC<ChatPsicologoProps> = ({ psicologoId, onMensajesNo
           psicologo_id: psicologoId
         });
         
-        // Actualizar contador a 0 inmediatamente cuando se abre el chat
+        // Asegurar que el contador esté en 0 (por si acaso)
         setPacientes(prev => prev.map(p => 
+          p.id === pacienteSeleccionado.id
+            ? { ...p, mensajes_no_leidos: 0 }
+            : p
+        ));
+        setPersonal(prev => prev.map(p => 
           p.id === pacienteSeleccionado.id
             ? { ...p, mensajes_no_leidos: 0 }
             : p
@@ -282,11 +299,13 @@ const ChatPsicologo: React.FC<ChatPsicologoProps> = ({ psicologoId, onMensajesNo
                 key={contacto.id}
                 onClick={() => setPacienteSeleccionado(contacto)}
                 className={`p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors ${
-                  pacienteSeleccionado?.id === contacto.id ? 'bg-amber-50 border-amber-200' : ''
+                  pacienteSeleccionado?.id === contacto.id 
+                    ? 'bg-amber-100 border-l-4 border-l-amber-500' 
+                    : ''
                 }`}
               >
                 <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-full overflow-hidden bg-amber-200 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-full overflow-hidden bg-amber-200 flex items-center justify-center flex-shrink-0">
                     {contacto.avatar_url ? (
                       <img
                         src={contacto.avatar_url}
@@ -304,6 +323,11 @@ const ChatPsicologo: React.FC<ChatPsicologoProps> = ({ psicologoId, onMensajesNo
                       <h4 className="font-medium text-gray-900 truncate">
                         {contacto.nombres} {contacto.apellidos}
                       </h4>
+                      {contacto.mensajes_no_leidos > 0 && (
+                        <span className="ml-2 flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full flex-shrink-0">
+                          {contacto.mensajes_no_leidos > 99 ? '99+' : contacto.mensajes_no_leidos}
+                        </span>
+                      )}
                     </div>
                     {filtroActivo === 'personal' && (contacto as any).rol && (
                       <p className="text-xs text-amber-600 font-medium">

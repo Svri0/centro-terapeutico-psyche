@@ -4,6 +4,7 @@ import sequelize from '../configuracion/database';
 import { MENSAJES_PACIENTES } from '../utilidades/mensajes';
 import { ManejadorRespuestas } from '../utilidades/respuestas';
 import { log } from '../utilidades/logger';
+import { enviarEmailRegistroPaciente } from '../utilidades/email.service';
 
 export const obtenerTodos = async (req: Request, res: Response) => {
   try {
@@ -266,7 +267,7 @@ export const crear = async (req: Request, res: Response) => {
         gen_random_uuid(), :email, :passwordHash, :nombres, :apellidos, :telefono,
         :fechaNacimiento, :genero, :rolId, true, false,
         '{}', NOW(), NOW()
-      ) RETURNING id
+      ) RETURNING id, token_activacion
     `, {
       replacements: {
         email,
@@ -281,6 +282,7 @@ export const crear = async (req: Request, res: Response) => {
     }) as [any[], unknown];
 
     const usuarioId = usuarioCreado[0].id;
+    const usuarioToken = usuarioCreado[0].token_activacion || '';
 
     // Generar número de ficha autoincremental por psicólogo
     log.info('🔍 Buscando última ficha para psicólogo:', psicologoId);
@@ -465,6 +467,22 @@ export const crear = async (req: Request, res: Response) => {
       }
     }
 
+    // Enviar email de bienvenida al paciente con la contraseña temporal
+    const nombreCompleto = `${nombres} ${apellidos}`;
+    const emailEnviado = await enviarEmailRegistroPaciente(
+      email,
+      nombreCompleto,
+      email,
+      passwordTemporal,
+      usuarioToken
+    );
+
+    if (emailEnviado) {
+      log.info(`Email de bienvenida enviado exitosamente al paciente: ${email}`);
+    } else {
+      log.warn(`No se pudo enviar el email de bienvenida al paciente: ${email}`);
+    }
+
     return ManejadorRespuestas.creado(
       res,
       MENSAJES_PACIENTES.PACIENTE_CREADO,
@@ -475,7 +493,8 @@ export const crear = async (req: Request, res: Response) => {
         apellidos,
         email,
         password_temporal: passwordTemporal,
-        mensaje: 'Paciente creado exitosamente. La contraseña temporal debe ser cambiada en el primer inicio de sesión.'
+        email_enviado: emailEnviado,
+        mensaje: 'Paciente creado exitosamente. Se ha enviado un email con la contraseña temporal al paciente.'
       },
       'PAC_009'
     );

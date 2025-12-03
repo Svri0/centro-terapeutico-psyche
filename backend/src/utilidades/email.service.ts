@@ -638,3 +638,86 @@ export const enviarEmailRecordatorioTareas = async (
     return false;
   }
 };
+
+export const enviarEmailRecuperacionPassword = async (
+  emailUsuario: string,
+  nombreUsuario: string,
+  tokenRecuperacion: string
+): Promise<boolean> => {
+  try {
+    const subject = '🔐 Recuperación de Contraseña - Centro Terapéutico Psyche';
+    
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${tokenRecuperacion}`;
+    
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: visible; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">🧠 Centro Terapéutico Psyche</h1>
+          <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Recuperación de Contraseña</p>
+        </div>
+        
+        <div style="padding: 40px 30px;">
+          <div style="text-align: center; margin-bottom: 30px; padding: 20px; background-color: #fef3c7; border-radius: 15px; border: 3px solid #f59e0b;">
+            <div style="width: 80px; height: 80px; border-radius: 50%; background-color: #f59e0b; display: flex; align-items: center; justify-content: center; margin: 0 auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);">
+              <span style="font-size: 40px; color: #ffffff;">🔐</span>
+            </div>
+            <p style="margin-top: 15px; color: #92400e; font-weight: bold; font-size: 18px;">Solicitud de Recuperación</p>
+          </div>
+          
+          <h2 style="color: #1f2937; margin-top: 0; font-size: 24px;">¡Hola ${nombreUsuario}!</h2>
+          
+          <p style="color: #374151; font-size: 16px; line-height: 1.6;">
+            Hemos recibido una solicitud para restablecer la contraseña de tu cuenta en el Centro Terapéutico Psyche.
+          </p>
+          
+          <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+            <h3 style="color: #1e40af; margin-top: 0; font-size: 18px;">🚀 Restablecer tu Contraseña</h3>
+            <p style="color: #1e40af; margin: 10px 0; line-height: 1.6;">
+              Haz clic en el siguiente botón para crear una nueva contraseña:
+            </p>
+            <div style="margin-top: 15px; text-align: center;">
+              <a href="${resetUrl}" style="display: inline-block; background-color: #3b82f6; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 500; transition: background-color 0.3s;">
+                🔑 Restablecer Contraseña
+              </a>
+            </div>
+          </div>
+          
+          <div style="background-color: #f3f4f6; padding: 20px; border-radius: 12px; margin: 25px 0;">
+            <h3 style="color: #1f2937; margin-top: 0; font-size: 18px;">📋 Información Importante</h3>
+            <ul style="color: #374151; line-height: 1.8; margin: 0; padding-left: 20px;">
+              <li>Este enlace expirará en <strong>1 hora</strong> por seguridad</li>
+              <li>Si no solicitaste este cambio, puedes ignorar este correo</li>
+              <li>Tu contraseña actual seguirá siendo válida si no haces clic en el enlace</li>
+              <li>Por seguridad, no compartas este enlace con nadie</li>
+            </ul>
+          </div>
+          
+          <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+            <h3 style="color: #92400e; margin-top: 0; font-size: 18px;">⚠️ ¿No solicitaste este cambio?</h3>
+            <p style="color: #92400e; margin: 10px 0; line-height: 1.6;">
+              Si no solicitaste restablecer tu contraseña, puedes ignorar este correo de forma segura. 
+              Tu cuenta permanecerá protegida.
+            </p>
+          </div>
+          
+          <div style="text-align: center; margin-top: 30px; padding: 20px; background-color: #f9fafb; border-radius: 12px;">
+            <p style="color: #6b7280; font-size: 14px; margin: 0;">
+              <strong>Centro Terapéutico Psyche</strong><br>
+              📧 info@psyche.cl | 📱 +56 9 1234 5678<br>
+              <span style="font-size: 12px;">Este es un mensaje automático. Si tienes alguna pregunta, contacta al administrador.</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    return await enviarEmail({
+      to: emailUsuario,
+      subject,
+      html
+    });
+  } catch (error) {
+    logger.error('Error al enviar email de recuperación de contraseña', { error, emailUsuario });
+    return false;
+  }
+};

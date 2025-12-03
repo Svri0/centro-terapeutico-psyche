@@ -129,21 +129,27 @@ const LoginNuevo: React.FC = () => {
     setForgotError('');
     setForgotMessage('');
 
+    // Validar email
+    if (!forgotEmail || !forgotEmail.includes('@')) {
+      setForgotError('Por favor, ingresa un email válido');
+      setForgotLoading(false);
+      return;
+    }
+
     try {
-      // Simular envío de email (aquí iría la llamada real a la API)
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await authService.forgotPassword(forgotEmail);
       
-      setForgotMessage('Se ha enviado un enlace de recuperación a tu correo electrónico.');
+      setForgotMessage('Si el email está registrado, recibirás un enlace de recuperación en tu correo electrónico.');
       setForgotEmail('');
       
-      // Cerrar modal después de 3 segundos
+      // Cerrar modal después de 5 segundos
       setTimeout(() => {
         setShowForgotPassword(false);
         setForgotMessage('');
-      }, 3000);
+      }, 5000);
       
     } catch (error: any) {
-      setForgotError('Error al enviar el email. Intenta nuevamente.');
+      setForgotError(error.message || 'Error al enviar el email. Intenta nuevamente.');
     } finally {
       setForgotLoading(false);
     }

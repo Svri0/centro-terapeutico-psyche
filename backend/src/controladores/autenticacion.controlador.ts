@@ -8,6 +8,8 @@ import { log } from '../utilidades/logger';
 import { MENSAJES_AUTH } from '../utilidades/mensajes';
 import { ManejadorRespuestas } from '../utilidades/respuestas';
 import { AuditoriaService } from '../utilidades/auditoria.service';
+import { enviarEmailRecuperacionPassword } from '../utilidades/email.service';
+import { v4 as uuidv4 } from 'uuid';
 
 // Controlador para iniciar sesión
 export const iniciarSesion = async (req: Request, res: Response) => {
@@ -528,6 +530,188 @@ export const actualizarActividadSesion = async (req: Request, res: Response): Pr
       res,
       'Error al actualizar actividad de sesión',
       'AUTH_025'
+    );
+  }
+};
+
+// Controlador para solicitar recuperación de contraseña
+export const forgotPassword = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return ManejadorRespuestas.errorValidacion(
+        res,
+        'El email es requerido',
+        { camposRequeridos: ['email'] },
+        'AUTH_026'
+      );
+    }
+
+    // Buscar usuario por email
+    const usuarios = await sequelize.query(
+      'SELECT id, nombres, apellidos, email FROM usuarios WHERE email = :email AND deleted_at IS NULL AND activo = true',
+      {
+        replacements: { email },
+        type: QueryTypes.SELECT
+      }
+    ) as any[];
+
+    // Por seguridad, siempre devolvemos éxito aunque el email no exista
+    // Esto previene que atacantes descubran qué emails están registrados
+    if (!Array.isArray(usuarios) || usuarios.length === 0) {
+      log.warn(`Intento de recuperación de contraseña para email no registrado: ${email.substring(0, 3)}***@${email.split('@')[1]}`);
+      return ManejadorRespuestas.exito(
+        res,
+        'Si el email está registrado, recibirás un enlace de recuperación',
+        null,
+        'AUTH_027'
+      );
+    }
+
+    const usuario = usuarios[0];
+
+    // Generar token de recuperación
+    const tokenRecuperacion = uuidv4();
+    const tokenExpira = new Date();
+    tokenExpira.setHours(tokenExpira.getHours() + 1); // Expira en 1 hora
+
+    // Guardar token en la base de datos
+    await sequelize.query(
+      'UPDATE usuarios SET token_activacion = :token, token_activacion_expira = :expira, updated_at = NOW() WHERE id = :id',
+      {
+        replacements: {
+          token: tokenRecuperacion,
+          expira: tokenExpira,
+          id: usuario.id
+        }
+      }
+    );
+
+    // Enviar email de recuperación
+    const nombreCompleto = `${usuario.nombres} ${usuario.apellidos}`;
+    const emailEnviado = await enviarEmailRecuperacionPassword(
+      usuario.email,
+      nombreCompleto,
+      tokenRecuperacion
+    );
+
+    if (emailEnviado) {
+      log.info(`Email de recuperación de contraseña enviado a: ${usuario.email}`);
+    } else {
+      log.warn(`No se pudo enviar el email de recuperación a: ${usuario.email}`);
+    }
+
+    return ManejadorRespuestas.exito(
+      res,
+      'Si el email está registrado, recibirás un enlace de recuperación',
+      null,
+      'AUTH_028'
+    );
+
+  } catch (error) {
+    log.error('Error en forgotPassword:', error);
+    return ManejadorRespuestas.errorInterno(
+      res,
+      'Error interno del servidor',
+      'AUTH_029'
+    );
+  }
+};
+
+// Controlador para resetear contraseña con token
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      return ManejadorRespuestas.errorValidacion(
+        res,
+        'Token y nueva contraseña son requeridos',
+        { camposRequeridos: ['token', 'newPassword'] },
+        'AUTH_030'
+      );
+    }
+
+    // Validar longitud mínima de contraseña
+    if (newPassword.length < 6) {
+      return ManejadorRespuestas.errorValidacion(
+        res,
+        'La contraseña debe tener al menos 6 caracteres',
+        { minLength: 6 },
+        'AUTH_031'
+      );
+    }
+
+    // Buscar usuario por token
+    const usuarios = await sequelize.query(
+      'SELECT id, email, token_activacion, token_activacion_expira FROM usuarios WHERE token_activacion = :token AND deleted_at IS NULL',
+      {
+        replacements: { token },
+        type: QueryTypes.SELECT
+      }
+    ) as any[];
+
+    if (!Array.isArray(usuarios) || usuarios.length === 0) {
+      return ManejadorRespuestas.noAutorizado(
+        res,
+        'Token inválido o expirado',
+        'AUTH_032'
+      );
+    }
+
+    const usuario = usuarios[0];
+
+    // Verificar que el token no haya expirado
+    if (!usuario.token_activacion_expira) {
+      return ManejadorRespuestas.noAutorizado(
+        res,
+        'Token inválido o expirado',
+        'AUTH_033'
+      );
+    }
+
+    const fechaExpiracion = new Date(usuario.token_activacion_expira);
+    const ahora = new Date();
+
+    if (ahora > fechaExpiracion) {
+      return ManejadorRespuestas.noAutorizado(
+        res,
+        'Token expirado. Por favor, solicita un nuevo enlace de recuperación',
+        'AUTH_034'
+      );
+    }
+
+    // Hash de la nueva contraseña
+    const saltRounds = 12;
+    const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
+
+    // Actualizar contraseña y limpiar token
+    await sequelize.query(
+      'UPDATE usuarios SET password_hash = :password_hash, token_activacion = NULL, token_activacion_expira = NULL, updated_at = NOW() WHERE id = :id',
+      {
+        replacements: {
+          password_hash: newPasswordHash,
+          id: usuario.id
+        }
+      }
+    );
+
+    log.info(`Contraseña restablecida exitosamente para usuario: ${usuario.email}`);
+
+    return ManejadorRespuestas.exito(
+      res,
+      'Contraseña restablecida exitosamente',
+      null,
+      'AUTH_035'
+    );
+
+  } catch (error) {
+    log.error('Error en resetPassword:', error);
+    return ManejadorRespuestas.errorInterno(
+      res,
+      'Error interno del servidor',
+      'AUTH_036'
     );
   }
 };
