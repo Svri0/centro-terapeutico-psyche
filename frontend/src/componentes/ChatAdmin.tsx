@@ -5,7 +5,7 @@ import io, { Socket } from 'socket.io-client';
 
 interface ChatAdminProps {
   adminId: string;
-  onMensajesNoLeidosChange?: (tieneMensajesNoLeidos: boolean) => void;
+  onMensajesNoLeidosChange?: (numeroMensajesNoLeidos: number) => void;
 }
 
 const ChatAdmin: React.FC<ChatAdminProps> = ({ adminId, onMensajesNoLeidosChange }) => {
@@ -183,7 +183,7 @@ const ChatAdmin: React.FC<ChatAdminProps> = ({ adminId, onMensajesNoLeidosChange
   useEffect(() => {
     if (onMensajesNoLeidosChange) {
       const totalMensajesNoLeidos = trabajadores.reduce((sum, t) => sum + (t.mensajes_no_leidos || 0), 0);
-      onMensajesNoLeidosChange(totalMensajesNoLeidos > 0);
+      onMensajesNoLeidosChange(totalMensajesNoLeidos);
     }
   }, [trabajadores, onMensajesNoLeidosChange]);
 
@@ -289,11 +289,13 @@ const ChatAdmin: React.FC<ChatAdminProps> = ({ adminId, onMensajesNoLeidosChange
                 key={trabajador.id}
                 onClick={() => setTrabajadorSeleccionado(trabajador)}
                 className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-100 transition-colors ${
-                  trabajadorSeleccionado?.id === trabajador.id ? 'bg-blue-50 border-blue-200' : ''
+                  trabajadorSeleccionado?.id === trabajador.id 
+                    ? 'bg-blue-100 border-l-4 border-l-blue-500' 
+                    : ''
                 }`}
               >
                 <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-full overflow-hidden bg-amber-200 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-full overflow-hidden bg-amber-200 flex items-center justify-center flex-shrink-0">
                     {trabajador.avatar_url ? (
                       <img
                         src={trabajador.avatar_url}
@@ -311,6 +313,11 @@ const ChatAdmin: React.FC<ChatAdminProps> = ({ adminId, onMensajesNoLeidosChange
                       <h4 className="font-medium text-gray-900 truncate">
                         {trabajador.nombres} {trabajador.apellidos}
                       </h4>
+                      {trabajador.mensajes_no_leidos > 0 && (
+                        <span className="ml-2 flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full flex-shrink-0">
+                          {trabajador.mensajes_no_leidos > 99 ? '99+' : trabajador.mensajes_no_leidos}
+                        </span>
+                      )}
                     </div>
                     {(trabajador as any).rol && (
                       <p className="text-xs text-amber-600 font-medium">

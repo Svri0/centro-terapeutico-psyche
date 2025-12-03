@@ -62,7 +62,7 @@ const PanelAdmin: React.FC = () => {
   const [confirmError, setConfirmError] = useState('');
   const [confirmCheckbox, setConfirmCheckbox] = useState(false);
   const [confirmEliminarCheckbox, setConfirmEliminarCheckbox] = useState(false);
-  const [tieneMensajesNoLeidos, setTieneMensajesNoLeidos] = useState(false);
+  const [numeroMensajesNoLeidos, setNumeroMensajesNoLeidos] = useState(0);
 
   const user = authService.getCurrentUser();
 
@@ -72,8 +72,13 @@ const PanelAdmin: React.FC = () => {
   // Ocultar badge cuando se entra al chat
   useEffect(() => {
     if (activeTab === 'chat') {
-      setTieneMensajesNoLeidos(false);
+      setNumeroMensajesNoLeidos(0);
     }
+  }, [activeTab]);
+
+  // Limpiar error cuando cambia la pestaña activa
+  useEffect(() => {
+    setError(null);
   }, [activeTab]);
 
   useEffect(() => {
@@ -632,13 +637,14 @@ const PanelAdmin: React.FC = () => {
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                💬 Chat
-                {tieneMensajesNoLeidos && activeTab !== 'chat' && (
-                  <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                  </span>
-                )}
+                <span className="flex items-center">
+                  💬 Chat
+                  {numeroMensajesNoLeidos > 0 && activeTab !== 'chat' && (
+                    <span className="ml-2 flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full">
+                      {numeroMensajesNoLeidos > 99 ? '99+' : numeroMensajesNoLeidos}
+                    </span>
+                  )}
+                </span>
               </button>
               <button
                 onClick={() => setActiveTab('estadisticas')}
@@ -687,12 +693,12 @@ const PanelAdmin: React.FC = () => {
           <div className={activeTab === 'chat' ? 'block' : 'hidden'}>
             <ChatAdmin 
               adminId={user?.id || ''} 
-              onMensajesNoLeidosChange={(tieneMensajes) => {
-                setTieneMensajesNoLeidos(prev => {
+              onMensajesNoLeidosChange={(numeroMensajes) => {
+                setNumeroMensajesNoLeidos(prev => {
                   if (activeTab === 'chat') {
-                    return false;
+                    return 0;
                   }
-                  return tieneMensajes;
+                  return numeroMensajes;
                 });
               }}
             />
@@ -735,6 +741,9 @@ const PanelAdmin: React.FC = () => {
             <ConfiguracionRecordatorios />
           ) : activeTab === 'auditoria' ? (
             <TablaAuditoria />
+          ) : activeTab === 'chat' ? (
+            // El chat ya se muestra arriba, no mostrar nada más aquí
+            null
           ) : (
             loading ? (
               <div className="flex justify-center items-center py-12">

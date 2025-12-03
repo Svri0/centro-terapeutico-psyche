@@ -5,10 +5,11 @@ import { chatService, MensajeChat, PacienteChat } from '../servicios/chat.servic
 
 interface ChatPacienteProps {
   pacienteId: string;
-  onMensajesNoLeidosChange?: (tieneMensajesNoLeidos: boolean) => void;
+  onMensajesNoLeidosChange?: (numeroMensajesNoLeidos: number) => void;
+  isChatVisible?: boolean; // Indica si el chat está visible (no oculto)
 }
 
-const ChatPaciente: React.FC<ChatPacienteProps> = ({ pacienteId, onMensajesNoLeidosChange }) => {
+const ChatPaciente: React.FC<ChatPacienteProps> = ({ pacienteId, onMensajesNoLeidosChange, isChatVisible = true }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [psicologo, setPsicologo] = useState<PacienteChat | null>(null);
   const [mensajes, setMensajes] = useState<MensajeChat[]>([]);
@@ -120,7 +121,7 @@ const ChatPaciente: React.FC<ChatPacienteProps> = ({ pacienteId, onMensajesNoLei
             
             // Notificar al padre sobre mensajes no leídos
             if (onMensajesNoLeidosChange) {
-              onMensajesNoLeidosChange(actualizado.mensajes_no_leidos > 0);
+              onMensajesNoLeidosChange(actualizado.mensajes_no_leidos || 0);
             }
             
             return actualizado;
@@ -144,10 +145,10 @@ const ChatPaciente: React.FC<ChatPacienteProps> = ({ pacienteId, onMensajesNoLei
       console.log('📨 Mensajes cargados:', mensajesData.length);
       setMensajes(mensajesData);
       
-      // Marcar mensajes como leídos y actualizar contador a 0 INMEDIATAMENTE
+      // Marcar mensajes como leídos y actualizar contador a 0 cuando se cargan los mensajes
       const psicologoActual = psicologoRef.current;
       if (psicologoActual) {
-        // SIEMPRE actualizar contador a 0 cuando se cargan los mensajes (el usuario está viendo el chat)
+        // Actualizar contador a 0 cuando se cargan los mensajes (el usuario está viendo el chat)
         setPsicologo(prev => {
           if (prev && prev.id === psicologoActual.id) {
             const actualizado = { ...prev, mensajes_no_leidos: 0 };
@@ -155,7 +156,7 @@ const ChatPaciente: React.FC<ChatPacienteProps> = ({ pacienteId, onMensajesNoLei
             
             // Notificar al padre que ya no hay mensajes no leídos
             if (onMensajesNoLeidosChange) {
-              onMensajesNoLeidosChange(false);
+              onMensajesNoLeidosChange(0);
             }
             
             return actualizado;
@@ -163,7 +164,7 @@ const ChatPaciente: React.FC<ChatPacienteProps> = ({ pacienteId, onMensajesNoLei
           return prev;
         });
         
-        // Luego marcar como leídos en el backend
+        // Marcar como leídos en el backend
         newSocket.emit('marcar_como_leidos', { 
           paciente_id: pacienteId, 
           psicologo_id: psicologoActual.id 
@@ -207,12 +208,14 @@ const ChatPaciente: React.FC<ChatPacienteProps> = ({ pacienteId, onMensajesNoLei
       mensajesCargadosRef.current = null;
     }
     
-    // Notificar al padre sobre mensajes no leídos (solo si hay mensajes y no estamos en el chat)
-    if (onMensajesNoLeidosChange) {
-      const tieneMensajesNoLeidos = psicologo?.mensajes_no_leidos ? psicologo.mensajes_no_leidos > 0 : false;
-      onMensajesNoLeidosChange(tieneMensajesNoLeidos);
+    // Notificar al padre sobre mensajes no leídos cuando cambia el psicólogo
+    // Esto asegura que el badge se muestre cuando se carga inicialmente
+    if (onMensajesNoLeidosChange && psicologo) {
+      const numeroMensajesNoLeidos = psicologo.mensajes_no_leidos || 0;
+      // Solo notificar si hay mensajes no leídos o si el contador cambió
+      onMensajesNoLeidosChange(numeroMensajesNoLeidos);
     }
-  }, [psicologo, onMensajesNoLeidosChange]);
+  }, [psicologo?.mensajes_no_leidos, psicologo?.id, onMensajesNoLeidosChange]);
 
   useEffect(() => {
     socketRef.current = socket;
@@ -245,7 +248,7 @@ const ChatPaciente: React.FC<ChatPacienteProps> = ({ pacienteId, onMensajesNoLei
     }
   };
 
-  // Cargar mensajes cuando se selecciona el psicólogo
+  // Cargar mensajes cuando se selecciona el psicólogo Y el chat está visible
   useEffect(() => {
     // Usar el ID del psicólogo como clave para evitar cargas repetidas
     const psicologoId = psicologo?.id;
@@ -253,6 +256,11 @@ const ChatPaciente: React.FC<ChatPacienteProps> = ({ pacienteId, onMensajesNoLei
     const estaAutenticado = autenticadoRef.current;
     
     if (!psicologoId || !socketActual || !estaAutenticado) {
+      return;
+    }
+
+    // Solo cargar mensajes si el chat está visible (cuando el usuario hace clic en el chat)
+    if (!isChatVisible) {
       return;
     }
 
@@ -265,30 +273,11 @@ const ChatPaciente: React.FC<ChatPacienteProps> = ({ pacienteId, onMensajesNoLei
     mensajesCargadosRef.current = psicologoId;
     setMensajes([]); // Limpiar mensajes anteriores
     
-    // Actualizar contador a 0 inmediatamente al entrar al chat (feedback visual inmediato)
-    // El handler 'mensajes_cargados' también lo actualizará cuando lleguen los mensajes
-    if (psicologo && psicologo.mensajes_no_leidos > 0) {
-      setPsicologo(prev => {
-        if (prev && prev.id === psicologoId) {
-          const actualizado = { ...prev, mensajes_no_leidos: 0 };
-          psicologoRef.current = actualizado;
-          
-          // Notificar al padre que ya no hay mensajes no leídos
-          if (onMensajesNoLeidosChange) {
-            onMensajesNoLeidosChange(false);
-          }
-          
-          return actualizado;
-        }
-        return prev;
-      });
-    }
-    
     socketActual.emit('cargar_mensajes', { 
       paciente_id: pacienteId, 
       psicologo_id: psicologoId 
     });
-  }, [psicologo?.id, pacienteId]); // Solo depender del ID del psicólogo y pacienteId
+  }, [psicologo?.id, pacienteId, isChatVisible]);
 
   if (cargando) {
     return (
@@ -342,10 +331,17 @@ const ChatPaciente: React.FC<ChatPacienteProps> = ({ pacienteId, onMensajesNoLei
               className="w-full h-full object-cover"
             />
           </div>
-          <div>
-            <h3 className="font-semibold text-gray-900">
-              Dr. {psicologo.nombres} {psicologo.apellidos}
-            </h3>
+          <div className="flex-1">
+            <div className="flex items-center space-x-2">
+              <h3 className="font-semibold text-gray-900">
+                Dr. {psicologo.nombres} {psicologo.apellidos}
+              </h3>
+              {psicologo.mensajes_no_leidos > 0 && (
+                <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full">
+                  {psicologo.mensajes_no_leidos > 99 ? '99+' : psicologo.mensajes_no_leidos}
+                </span>
+              )}
+            </div>
             <p className="text-sm text-gray-500">
               {conectado ? '🟢 En línea' : '🔴 Desconectado'}
             </p>

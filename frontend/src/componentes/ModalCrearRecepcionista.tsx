@@ -171,8 +171,8 @@ const ModalCrearRecepcionista: React.FC<ModalCrearRecepcionistaProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50 overflow-y-auto py-8">
+      <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md my-8">
         <h3 className="text-xl font-semibold text-gray-800 mb-4">Crear Nuevo Recepcionista</h3>
         
         {error && (

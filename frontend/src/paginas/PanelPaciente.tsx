@@ -51,17 +51,13 @@ const PanelPaciente: React.FC = () => {
   const [useRealImage, setUseRealImage] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileMessage, setProfileMessage] = useState('');
-  const [tieneMensajesNoLeidos, setTieneMensajesNoLeidos] = useState(false);
+  const [numeroMensajesNoLeidos, setNumeroMensajesNoLeidos] = useState(0);
 
   // Hook para timeout de sesión (15 minutos)
   useSessionTimeout(15); // 15 minutos
 
-  // Ocultar badge cuando se entra al chat
-  useEffect(() => {
-    if (activeTab === 'chat') {
-      setTieneMensajesNoLeidos(false);
-    }
-  }, [activeTab]);
+  // No ocultar el badge automáticamente al entrar al chat
+  // El badge desaparecerá cuando se carguen los mensajes en ChatPaciente
 
   useEffect(() => {
     const user = authService.getCurrentUser();
@@ -505,12 +501,9 @@ const PanelPaciente: React.FC = () => {
                 >
                   <span className="flex items-center">
                     💬 Chat
-                    {tieneMensajesNoLeidos && activeTab !== 'chat' && (
-                      <span className="ml-2 relative">
-                        <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                        </span>
+                    {numeroMensajesNoLeidos > 0 && activeTab !== 'chat' && (
+                      <span className="ml-2 flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full">
+                        {numeroMensajesNoLeidos > 99 ? '99+' : numeroMensajesNoLeidos}
                       </span>
                     )}
                   </span>
@@ -560,16 +553,11 @@ const PanelPaciente: React.FC = () => {
               <div className="bg-white rounded-lg shadow-sm border-2 border-gray-200 p-6">
                 <ChatPaciente 
                   pacienteId={userData?.id || ''} 
-                  onMensajesNoLeidosChange={(tieneMensajes) => {
-                    // Usar función de actualización para obtener el valor actual de activeTab
-                    setTieneMensajesNoLeidos(prev => {
-                      // Si estamos en el chat, siempre ocultar el badge
-                      if (activeTab === 'chat') {
-                        return false;
-                      }
-                      // Si no estamos en el chat, mostrar badge si hay mensajes
-                      return tieneMensajes;
-                    });
+                  isChatVisible={activeTab === 'chat'}
+                  onMensajesNoLeidosChange={(numeroMensajes) => {
+                    // Actualizar el contador siempre
+                    // El componente ChatPaciente se encargará de ponerlo en 0 cuando se carguen los mensajes
+                    setNumeroMensajesNoLeidos(numeroMensajes);
                   }}
                 />
               </div>

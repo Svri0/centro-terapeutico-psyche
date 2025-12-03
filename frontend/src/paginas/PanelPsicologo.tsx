@@ -50,7 +50,7 @@ const PanelPsicologo: React.FC = () => {
   // Ocultar badge cuando se entra al chat
   useEffect(() => {
     if (activeTab === 'chat') {
-      setTieneMensajesNoLeidos(false);
+      setNumeroMensajesNoLeidos(0);
     }
   }, [activeTab]);
   const [perfilData, setPerfilData] = useState({
@@ -71,7 +71,7 @@ const PanelPsicologo: React.FC = () => {
   const [servicios, setServicios] = useState<ServicioPsicologo[]>([]);
   const [servicioSeleccionado, setServicioSeleccionado] = useState<TipoServicio | null>(null);
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string>('');
-  const [tieneMensajesNoLeidos, setTieneMensajesNoLeidos] = useState(false);
+  const [numeroMensajesNoLeidos, setNumeroMensajesNoLeidos] = useState(0);
   
   // Estado para notificaciones
   const [notificacion, setNotificacion] = useState({
@@ -643,12 +643,9 @@ const PanelPsicologo: React.FC = () => {
               >
                 <span className="flex items-center">
                   💬 Chat
-                  {tieneMensajesNoLeidos && activeTab !== 'chat' && (
-                    <span className="ml-2 relative">
-                      <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                      </span>
+                  {numeroMensajesNoLeidos > 0 && activeTab !== 'chat' && (
+                    <span className="ml-2 flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full">
+                      {numeroMensajesNoLeidos > 99 ? '99+' : numeroMensajesNoLeidos}
                     </span>
                   )}
                 </span>
@@ -865,15 +862,15 @@ const PanelPsicologo: React.FC = () => {
           <div className="bg-white rounded-lg shadow-sm border border-amber-100">
             <ChatPsicologo 
               psicologoId={user?.id || ''} 
-              onMensajesNoLeidosChange={(tieneMensajes) => {
+              onMensajesNoLeidosChange={(numeroMensajes) => {
                 // Usar función de actualización para obtener el valor actual de activeTab
-                setTieneMensajesNoLeidos(prev => {
+                setNumeroMensajesNoLeidos(prev => {
                   // Si estamos en el chat, siempre ocultar el badge
                   if (activeTab === 'chat') {
-                    return false;
+                    return 0;
                   }
-                  // Si no estamos en el chat, mostrar badge si hay mensajes
-                  return tieneMensajes;
+                  // Si no estamos en el chat, mostrar badge con el número
+                  return numeroMensajes;
                 });
               }}
             />
