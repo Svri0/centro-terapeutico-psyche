@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { recepcionistaService } from '../servicios/recepcionista.service';
 import { obtenerEstadoTexto, obtenerModalidadColor } from '../utilidades/estados-citas';
+import InputFecha from './InputFecha';
 
 interface Cita {
   id: string;
@@ -236,8 +237,8 @@ const AgendaRecepcionista: React.FC = () => {
 
   const getEstadoColor = (estado: string) => {
     switch (estado) {
-      case 'confirmada': return 'bg-green-100 text-green-800 border border-black';
-      case 'programada': return 'bg-blue-100 text-blue-800 border border-black';
+      case 'confirmada': return 'bg-orange-100 text-orange-800 border border-orange-300';
+      case 'programada': return 'bg-amber-100 text-amber-800 border border-amber-300';
       case 'en_curso': return 'bg-yellow-100 text-yellow-800 border border-black';
       case 'completada': return 'bg-gray-100 text-gray-800 border border-black';
       case 'cancelada': return 'bg-red-100 text-red-800 border border-black';
@@ -271,7 +272,7 @@ const AgendaRecepcionista: React.FC = () => {
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
+          className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-md font-medium transition-colors shadow-md hover:shadow-lg"
         >
           + Nueva Cita
         </button>
@@ -286,7 +287,7 @@ const AgendaRecepcionista: React.FC = () => {
               onClick={() => setVistaActual('diaria')}
               className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 vistaActual === 'diaria'
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-amber-500 text-white shadow-md'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -296,7 +297,7 @@ const AgendaRecepcionista: React.FC = () => {
               onClick={() => setVistaActual('semanal')}
               className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 vistaActual === 'semanal'
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-amber-500 text-white shadow-md'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -306,7 +307,7 @@ const AgendaRecepcionista: React.FC = () => {
               onClick={() => setVistaActual('mensual')}
               className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 vistaActual === 'mensual'
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-amber-500 text-white shadow-md'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -608,11 +609,10 @@ const AgendaRecepcionista: React.FC = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Fecha *
                     </label>
-                    <input
-                      type="date"
+                    <InputFecha
                       value={formData.fecha}
-                      onChange={(e) => setFormData({ ...formData, fecha: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      onChange={(value) => setFormData({ ...formData, fecha: value })}
+                      label="Fecha"
                       required
                     />
                   </div>
@@ -715,7 +715,7 @@ const AgendaRecepcionista: React.FC = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                    className="px-4 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600 disabled:opacity-50 transition-colors shadow-md hover:shadow-lg"
                   >
                     {loading ? 'Procesando...' : (showCreateModal ? 'Crear Cita' : 'Actualizar Cita')}
                   </button>
@@ -805,7 +805,7 @@ const AgendaRecepcionista: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Recordatorio</label>
                   <p className="text-gray-900">
-                    {selectedCita.recordatorio_enviado ? '✓ Enviado' : '✗ No enviado'}
+                    {selectedCita.recordatorio_enviado ? 'Enviado' : 'No enviado'}
                   </p>
                 </div>
               </div>
@@ -834,7 +834,7 @@ const AgendaRecepcionista: React.FC = () => {
                     });
                     setShowEditModal(true);
                   }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                  className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors shadow-md hover:shadow-lg"
                 >
                   Editar Cita
                 </button>

@@ -15,6 +15,8 @@ import recordatoriosRoutes from './recordatorios.routes';
 import chatRoutes from './chat.rutas';
 import configuracionRoutes from './configuracion.rutas';
 import psicologoDashboardRoutes from './psicologo-dashboard.routes';
+import articulosRoutes from './articulos.routes';
+import solicitudesPublicasRoutes from './solicitudes-publicas.routes';
 
 const router = Router();
 
@@ -68,5 +70,11 @@ router.use('/configuracion', configuracionRoutes);
 
 // Rutas de dashboard de psicólogo
 router.use('/psicologo-dashboard', psicologoDashboardRoutes);
+
+// Rutas de artículos
+router.use('/articulos', articulosRoutes);
+
+// Rutas públicas de solicitudes (sin autenticación)
+router.use('/publico', solicitudesPublicasRoutes);
 
 export default router; 

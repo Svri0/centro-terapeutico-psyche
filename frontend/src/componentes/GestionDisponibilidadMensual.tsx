@@ -368,17 +368,17 @@ const GestionDisponibilidadMensual: React.FC<GestionDisponibilidadMensualProps> 
         <div className="flex space-x-2">
           <button
             onClick={generarDisponibilidadRecurrente}
-            className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            className="px-4 py-2 text-sm bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors shadow-md hover:shadow-lg"
           >
-            🔄 Generar Recurrente
+            Generar Recurrente
           </button>
           
           {!modoEdicion ? (
             <button
               onClick={iniciarEdicion}
-              className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-4 py-2 text-sm bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors shadow-md hover:shadow-lg"
             >
-              ✏️ Editar Disponibilidad
+              Editar Disponibilidad
             </button>
           ) : (
             <div className="flex space-x-2">
@@ -390,7 +390,7 @@ const GestionDisponibilidadMensual: React.FC<GestionDisponibilidadMensualProps> 
               </button>
               <button
                 onClick={guardarCambios}
-                className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                className="px-4 py-2 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors shadow-md hover:shadow-lg"
               >
                 💾 Guardar
               </button>
@@ -433,8 +433,8 @@ const GestionDisponibilidadMensual: React.FC<GestionDisponibilidadMensualProps> 
                   onClick={() => aplicarHorarioPredefinido(horario, index)}
                   className={`px-4 py-2 text-sm rounded-lg transition-colors font-medium ${
                     estaSeleccionado
-                      ? 'bg-blue-600 text-white shadow-md'
-                      : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                      ? 'bg-amber-500 text-white shadow-md'
+                      : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
                   }`}
                 >
                   {horario.nombre} ({horario.inicio}-{horario.fin})

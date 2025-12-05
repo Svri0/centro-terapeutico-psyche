@@ -10,8 +10,14 @@ export const useErrorHandler = ({ onError }: ErrorHandlerHookProps = {}) => {
     const handleUncaughtError = (event: ErrorEvent) => {
       console.error('🚨 Error no capturado:', event.error);
       
-      // Redirigir a página de error del sistema si no estamos ya en una página de error
-      if (!window.location.pathname.includes('/error')) {
+      // NO redirigir automáticamente desde la página de inicio
+      // Solo redirigir si estamos en rutas protegidas
+      if (!window.location.pathname.includes('/error') && 
+          window.location.pathname !== '/' &&
+          (window.location.pathname.startsWith('/dashboard') ||
+           window.location.pathname.startsWith('/admin') ||
+           window.location.pathname.startsWith('/psicologo') ||
+           window.location.pathname.startsWith('/paciente'))) {
         window.location.href = '/error/sistema-caido';
       }
       
@@ -24,11 +30,17 @@ export const useErrorHandler = ({ onError }: ErrorHandlerHookProps = {}) => {
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       console.error('🚨 Promesa rechazada no capturada:', event.reason);
       
-      // Solo redirigir si es un error de conexión o del servidor
+      // NO redirigir automáticamente desde la página de inicio
+      // Solo redirigir si es un error de conexión o del servidor Y estamos en rutas protegidas
       if (event.reason?.code === 'ECONNREFUSED' || 
           event.reason?.message?.includes('Network Error') ||
           event.reason?.response?.status >= 500) {
-        if (!window.location.pathname.includes('/error')) {
+        if (!window.location.pathname.includes('/error') && 
+            window.location.pathname !== '/' &&
+            (window.location.pathname.startsWith('/dashboard') ||
+             window.location.pathname.startsWith('/admin') ||
+             window.location.pathname.startsWith('/psicologo') ||
+             window.location.pathname.startsWith('/paciente'))) {
           window.location.href = '/error/sistema-caido';
         }
       }

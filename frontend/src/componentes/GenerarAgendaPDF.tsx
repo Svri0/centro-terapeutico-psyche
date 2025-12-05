@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AgendaPDFService, PeriodosDisponibles, GenerarPDFRequest } from '../servicios/agendaPDF.service';
 import { useNotificaciones } from '../hooks/useNotificaciones';
+import InputFecha from './InputFecha';
 
 interface GenerarAgendaPDFProps {
   psicologoId: string;
@@ -165,28 +166,16 @@ export const GenerarAgendaPDF: React.FC<GenerarAgendaPDFProps> = ({ psicologoId 
 
         {/* Selección de fechas */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Fecha de Inicio
-            </label>
-            <input
-              type="date"
-              value={fechaInicio}
-              onChange={handleFechaInicioChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Fecha de Fin
-            </label>
-            <input
-              type="date"
-              value={fechaFin}
-              onChange={handleFechaFinChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+          <InputFecha
+            value={fechaInicio}
+            onChange={setFechaInicio}
+            label="Fecha de Inicio"
+          />
+          <InputFecha
+            value={fechaFin}
+            onChange={setFechaFin}
+            label="Fecha de Fin"
+          />
         </div>
 
         {/* Períodos disponibles */}

@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { authService, LoginData } from '../servicios/auth.service';
 import { validateLoginForm, getFieldError, sanitizeInput, ValidationError } from '../utilidades/validation';
 
 const Login: React.FC = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState<LoginData>({
     email: '',
     password: ''
@@ -98,8 +100,8 @@ const Login: React.FC = () => {
       // Limpiar error si el login es exitoso
       clearError();
       
-      // Redirigir al dashboard
-      window.location.href = '/dashboard';
+      // Redirigir al dashboard usando React Router (mejor para móviles)
+      navigate('/dashboard', { replace: true });
     } catch (error: any) {
       const errorMessage = error.message || 'Error de autenticación';
       setError(errorMessage);
@@ -145,13 +147,13 @@ const Login: React.FC = () => {
             </p>
             <div className="flex justify-center space-x-2">
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                🧠 Psicología
+                Psicología
               </span>
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                🎯 Gamificación
+                Gamificación
               </span>
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                💻 Tecnología
+                Tecnología
               </span>
             </div>
           </div>

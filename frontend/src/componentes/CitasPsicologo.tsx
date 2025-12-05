@@ -152,7 +152,7 @@ const CitasPsicologo: React.FC = () => {
       {error && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
           <div className="flex">
-            <div className="text-red-500">⚠️</div>
+            <div className="text-red-500">⚠</div>
             <p className="ml-2 text-red-700">{error}</p>
           </div>
         </div>
@@ -168,7 +168,7 @@ const CitasPsicologo: React.FC = () => {
         <div className="space-y-8">
           {fechasOrdenadas.length === 0 ? (
             <div className="text-center py-12">
-              <div className="text-gray-400 text-6xl mb-4">📅</div>
+              <div className="text-gray-400 text-6xl mb-4"></div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
                 No tienes citas programadas
               </h3>
@@ -249,12 +249,12 @@ const CitasPsicologo: React.FC = () => {
                                   <button
                                     key={estado}
                                     onClick={() => handleActualizarEstado(cita.id, estado)}
-                                    className={`px-3 py-1 rounded text-xs transition-colors ${
+                                    className={`px-3 py-1 rounded text-xs transition-colors shadow-sm ${
                                       estado === 'confirmada' || estado === 'completada'
-                                        ? 'bg-green-600 text-white hover:bg-green-700'
-                                        : estado === 'cancelada' || estado === 'no_show'
+                                        ? 'bg-amber-500 text-white hover:bg-amber-600'
+                                        : estado === 'cancelada' || estado === 'no_show' || estado === 'no_asistio'
                                         ? 'bg-red-600 text-white hover:bg-red-700'
-                                        : 'bg-yellow-600 text-white hover:bg-yellow-700'
+                                        : 'bg-amber-400 text-white hover:bg-amber-500'
                                     }`}
                                   >
                                     {obtenerTextoAccion(estado)}

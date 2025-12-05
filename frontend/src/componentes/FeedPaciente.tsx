@@ -3,6 +3,7 @@ import { Cita, citasService } from '../servicios/citas.service';
 import { authService } from '../servicios/auth.service';
 import { AgendarCita } from './AgendarCita';
 import { obtenerEstadoTexto, obtenerEstadoColor } from '../utilidades/estados-citas';
+import ModalConfirmarCancelarCita from './ModalConfirmarCancelarCita';
 
 const FeedPaciente: React.FC = () => {
   const [citas, setCitas] = useState<Cita[]>([]);
@@ -11,6 +12,8 @@ const FeedPaciente: React.FC = () => {
   const [showAgendar, setShowAgendar] = useState(false);
   const [psicologoId, setPsicologoId] = useState<string>('');
   const [psicologoNombre, setPsicologoNombre] = useState<string>('');
+  const [citaCancelar, setCitaCancelar] = useState<Cita | null>(null);
+  const [mostrarModalCancelar, setMostrarModalCancelar] = useState(false);
 
   useEffect(() => {
     cargarCitas();
@@ -64,17 +67,27 @@ const FeedPaciente: React.FC = () => {
 
 
 
-  const handleCancelarCita = async (citaId: string) => {
-    if (!window.confirm('¿Estás seguro de que quieres cancelar esta cita?')) {
-      return;
-    }
+  const handleAbrirModalCancelar = (cita: Cita) => {
+    setCitaCancelar(cita);
+    setMostrarModalCancelar(true);
+  };
+
+  const handleConfirmarCancelar = async () => {
+    if (!citaCancelar) return;
 
     try {
-      await citasService.cancelarCita(citaId);
+      await citasService.cancelarCita(citaCancelar.id);
       await cargarCitas(); // Recargar citas
+      setMostrarModalCancelar(false);
+      setCitaCancelar(null);
     } catch (err: any) {
       setError(err.response?.data?.mensaje || 'Error al cancelar la cita');
     }
+  };
+
+  const handleCerrarModalCancelar = () => {
+    setMostrarModalCancelar(false);
+    setCitaCancelar(null);
   };
 
   if (loading) {
@@ -96,7 +109,7 @@ const FeedPaciente: React.FC = () => {
         </div>
         <button
           onClick={() => setShowAgendar(true)}
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="px-6 py-3 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors shadow-md hover:shadow-lg"
         >
           Agendar Nueva Cita
         </button>
@@ -106,7 +119,7 @@ const FeedPaciente: React.FC = () => {
       {error && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
           <div className="flex">
-            <div className="text-red-500">⚠️</div>
+            <div className="text-red-500">⚠</div>
             <p className="ml-2 text-red-700">{error}</p>
           </div>
         </div>
@@ -116,12 +129,12 @@ const FeedPaciente: React.FC = () => {
       <div className="space-y-6">
         {citas.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-gray-400 text-6xl mb-4">📅</div>
+            <div className="text-gray-400 text-6xl mb-4"></div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No tienes citas programadas</h3>
             <p className="text-gray-600 mb-6">Agenda tu primera cita para comenzar tu proceso terapéutico</p>
             <button
               onClick={() => setShowAgendar(true)}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-6 py-3 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors shadow-md hover:shadow-lg"
             >
               Agendar Cita
             </button>
@@ -164,16 +177,16 @@ const FeedPaciente: React.FC = () => {
                   </div>
 
                   {cita.notas_paciente && (
-                    <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                      <span className="font-medium text-blue-900">Notas:</span>
-                      <p className="text-blue-800 mt-1">{cita.notas_paciente}</p>
+                    <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                      <span className="font-medium text-amber-900">Notas:</span>
+                      <p className="text-amber-800 mt-1">{cita.notas_paciente}</p>
                     </div>
                   )}
 
                   {cita.notas_psicologo && (
-                    <div className="mt-4 p-3 bg-green-50 rounded-lg">
-                      <span className="font-medium text-green-900">Notas del Psicólogo:</span>
-                      <p className="text-green-800 mt-1">{cita.notas_psicologo}</p>
+                    <div className="mt-4 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                      <span className="font-medium text-orange-900">Notas del Psicólogo:</span>
+                      <p className="text-orange-800 mt-1">{cita.notas_psicologo}</p>
                     </div>
                   )}
                 </div>
@@ -181,7 +194,7 @@ const FeedPaciente: React.FC = () => {
                 <div className="flex flex-col space-y-2 ml-4">
                   {cita.estado === 'programada' && (
                     <button
-                      onClick={() => handleCancelarCita(cita.id)}
+                      onClick={() => handleAbrirModalCancelar(cita)}
                       className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
                     >
                       Cancelar
@@ -205,6 +218,20 @@ const FeedPaciente: React.FC = () => {
         psicologoId={psicologoId}
         psicologoNombre={psicologoNombre}
       />
+
+      {/* Modal para cancelar cita */}
+      {citaCancelar && (
+        <ModalConfirmarCancelarCita
+          isOpen={mostrarModalCancelar}
+          onClose={handleCerrarModalCancelar}
+          onConfirmar={handleConfirmarCancelar}
+          citaInfo={{
+            fecha: formatearFecha(citaCancelar.fecha),
+            hora: formatearHora(citaCancelar.hora_inicio),
+            paciente: `${citaCancelar.psicologo_nombres} ${citaCancelar.psicologo_apellidos}`
+          }}
+        />
+      )}
     </div>
   );
 };

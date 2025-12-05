@@ -508,37 +508,39 @@ const PanelAdmin: React.FC = () => {
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-amber-100">
         <div className="w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 sm:py-6 gap-4">
             <div className="flex items-center">
-              <div className="flex-shrink-0 mr-4">
-                <img src="/psyche.svg" alt="de psyche" className="h-20 w-auto" />
+              <div className="flex-shrink-0 mr-2 sm:mr-4">
+                <img src="/psyche.svg" alt="de psyche" className="h-12 sm:h-16 lg:h-20 w-auto" />
               </div>
               <div>
-                <h1 className="text-lg font-light text-gray-800 tracking-widest uppercase">
+                <h1 className="text-sm sm:text-base lg:text-lg font-light text-gray-800 tracking-widest uppercase">
                   Panel de Administración
                 </h1>
                 <p className="text-xs text-amber-500 tracking-widest uppercase font-light">Gestión del Sistema</p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-700">
-                Bienvenido, {user.nombres} {user.apellidos}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+              <div className="text-xs sm:text-sm text-gray-700 order-2 sm:order-1">
+                Bienvenido, <span className="font-medium">{user.nombres} {user.apellidos}</span>
               </div>
-              <button
-                onClick={() => {
-                  console.log('🔍 Botón Cambiar Contraseña clickeado');
-                  setShowChangePassword(true);
-                }}
-                className="text-sm text-amber-600 hover:text-amber-800 transition-colors"
-              >
-                Cambiar Contraseña
-              </button>
-              <button
-                onClick={handleLogout}
-                className="bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 text-amber-800 px-4 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                Cerrar Sesión
-              </button>
+              <div className="flex gap-2 sm:gap-4 order-1 sm:order-2">
+                <button
+                  onClick={() => {
+                    console.log('🔍 Botón Cambiar Contraseña clickeado');
+                    setShowChangePassword(true);
+                  }}
+                  className="text-xs sm:text-sm text-amber-600 hover:text-amber-800 transition-colors whitespace-nowrap"
+                >
+                  Cambiar Contraseña
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 text-amber-800 px-3 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap"
+                >
+                  Cerrar Sesión
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -547,10 +549,10 @@ const PanelAdmin: React.FC = () => {
       {/* Main Content */}
       <main className="w-full py-6">
         {/* Page Header */}
-        <div className="px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex justify-between items-center">
+        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h2 className="text-xl font-bold text-gray-900 tracking-widest uppercase">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 tracking-widest uppercase">
                 {activeTab === 'chat' && 'Chat'}
                 {activeTab !== 'chat' && 'Panel de Administración'}
               </h2>
@@ -562,7 +564,7 @@ const PanelAdmin: React.FC = () => {
             {activeTab === 'psicologos' && (
               <button
                 onClick={() => setShowCrearModal(true)}
-                className="bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 text-amber-800 px-4 py-2 rounded-md text-sm font-medium flex items-center transition-all duration-200 hover-bounce shadow-sm hover:shadow-md animate-bounce-in"
+                className="bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 text-amber-800 px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium flex items-center transition-all duration-200 hover-bounce shadow-sm hover:shadow-md animate-bounce-in w-full sm:w-auto justify-center"
               >
                 <svg className="w-4 h-4 mr-2 hover-rotate" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -573,7 +575,7 @@ const PanelAdmin: React.FC = () => {
             {activeTab === 'recepcionistas' && (
               <button
                 onClick={() => setShowCrearRecepcionistaModal(true)}
-                className="bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 text-amber-800 px-4 py-2 rounded-md text-sm font-medium flex items-center transition-all duration-200 hover-bounce shadow-sm hover:shadow-md animate-bounce-in"
+                className="bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 text-amber-800 px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium flex items-center transition-all duration-200 hover-bounce shadow-sm hover:shadow-md animate-bounce-in w-full sm:w-auto justify-center"
               >
                 <svg className="w-4 h-4 mr-2 hover-rotate" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -584,7 +586,7 @@ const PanelAdmin: React.FC = () => {
             {activeTab === 'pacientes' && (
               <button
                 onClick={() => setShowCrearPacienteModal(true)}
-                className="bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 text-amber-800 px-4 py-2 rounded-md text-sm font-medium flex items-center transition-all duration-200 hover-bounce shadow-sm hover:shadow-md animate-bounce-in"
+                className="bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 text-amber-800 px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium flex items-center transition-all duration-200 hover-bounce shadow-sm hover:shadow-md animate-bounce-in w-full sm:w-auto justify-center"
               >
                 <svg className="w-4 h-4 mr-2 hover-rotate" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -598,10 +600,10 @@ const PanelAdmin: React.FC = () => {
         {/* Navigation Tabs */}
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
+            <nav className="-mb-px flex space-x-4 sm:space-x-6 lg:space-x-8 overflow-x-auto scrollbar-hide">
               <button
                 onClick={() => setActiveTab('psicologos')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                className={`py-2 px-1 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
                   activeTab === 'psicologos'
                     ? 'border-amber-500 text-amber-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -611,7 +613,7 @@ const PanelAdmin: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveTab('pacientes')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                className={`py-2 px-1 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
                   activeTab === 'pacientes'
                     ? 'border-amber-500 text-amber-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -621,7 +623,7 @@ const PanelAdmin: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveTab('recepcionistas')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                className={`py-2 px-1 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
                   activeTab === 'recepcionistas'
                     ? 'border-amber-500 text-amber-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -631,16 +633,16 @@ const PanelAdmin: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveTab('chat')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors relative ${
+                className={`py-2 px-1 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-colors relative whitespace-nowrap ${
                   activeTab === 'chat'
                     ? 'border-amber-500 text-amber-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
                 <span className="flex items-center">
-                  💬 Chat
+                  Chat
                   {numeroMensajesNoLeidos > 0 && activeTab !== 'chat' && (
-                    <span className="ml-2 flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full">
+                    <span className="ml-1 sm:ml-2 flex items-center justify-center min-w-[18px] sm:min-w-[20px] h-4 sm:h-5 px-1 sm:px-1.5 bg-red-500 text-white text-xs font-bold rounded-full">
                       {numeroMensajesNoLeidos > 99 ? '99+' : numeroMensajesNoLeidos}
                     </span>
                   )}
@@ -648,33 +650,33 @@ const PanelAdmin: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveTab('estadisticas')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                className={`py-2 px-1 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
                   activeTab === 'estadisticas'
                     ? 'border-amber-500 text-amber-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                📊 Estadísticas
+                Estadísticas
               </button>
               <button
                 onClick={() => setActiveTab('recordatorios')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                className={`py-2 px-1 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
                   activeTab === 'recordatorios'
                     ? 'border-amber-500 text-amber-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                🔔 Recordatorios
+                Recordatorios
               </button>
               <button
                 onClick={() => setActiveTab('auditoria')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                className={`py-2 px-1 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
                   activeTab === 'auditoria'
                     ? 'border-amber-500 text-amber-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                📋 Registro de Accesos
+                📋 Auditoría
               </button>
             </nav>
           </div>
@@ -800,8 +802,8 @@ const PanelAdmin: React.FC = () => {
 
       {/* Modal Cambiar Contraseña */}
       {showChangePassword && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999] animate-fade-in">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white animate-slide-in-right shadow-glow">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999] animate-fade-in p-4">
+          <div className="relative top-4 sm:top-20 mx-auto p-4 sm:p-5 border w-full max-w-md shadow-lg rounded-md bg-white animate-slide-in-right shadow-glow">
             <div className="mt-3">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Cambiar Contraseña</h3>
               <form onSubmit={handleChangePassword}>

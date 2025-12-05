@@ -593,28 +593,32 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
           {/* Calendario Mensual */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
             {/* Header del calendario */}
-            <div className="px-6 py-4 border-b border-gray-200">
+            <div className="px-6 py-4 border-b border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <button
                     onClick={() => navegarMes('anterior')}
-                    className="p-2 text-gray-400 hover:text-gray-600"
+                    className="p-2 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors"
                   >
-                    ‹
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
                   </button>
                   <h3 className="text-lg font-semibold text-gray-900">
                     {formatearMes(mesActual)}
                   </h3>
                   <button
                     onClick={() => navegarMes('siguiente')}
-                    className="p-2 text-gray-400 hover:text-gray-600"
+                    className="p-2 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors"
                   >
-                    ›
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
                   </button>
                 </div>
                 {!tieneDisponibilidad() && (
                   <div className="flex items-center space-x-2 text-red-600 bg-red-50 px-3 py-1 rounded-full text-sm">
-                    <span>⚠️</span>
+                    <span>⚠</span>
                     <span>Sin disponibilidad</span>
                   </div>
                 )}
@@ -622,48 +626,55 @@ const CalendarioPaciente: React.FC<CalendarioPacienteProps> = ({ pacienteId }) =
             </div>
 
             {/* Días de la semana */}
-            <div className="grid grid-cols-7 gap-px bg-gray-200">
+            <div className="grid grid-cols-7 gap-px bg-amber-200">
               {diasSemana.map((dia) => (
-                <div key={dia.id} className="bg-white p-3 text-center">
-                  <span className="text-sm font-medium text-gray-500">{dia.abreviacion}</span>
+                <div key={dia.id} className="bg-white p-3 text-center border-b border-amber-200">
+                  <span className="text-sm font-semibold text-amber-700">{dia.abreviacion}</span>
                 </div>
               ))}
             </div>
 
             {/* Días del mes */}
-            <div className="grid grid-cols-7 gap-px bg-gray-200">
-              {diasDelMes.map((dia, index) => (
-                <div key={index} className="bg-white min-h-[80px] p-2">
-                  {dia ? (
-                    <button
-                      onClick={() => handleDiaClick(dia)}
-                      className={`w-full h-full flex flex-col items-center justify-center rounded-lg transition-colors ${
-                        esDiaDisponible(dia)
-                          ? 'hover:bg-blue-50 cursor-pointer'
-                          : 'text-gray-400 cursor-not-allowed'
-                      }`}
-                    >
-                      <span className={`text-sm font-medium ${
-                        esDiaDisponible(dia) ? 'text-gray-900' : 'text-gray-400'
-                      }`}>
-                        {dia.getDate()}
-                      </span>
-                      {esDiaDisponible(dia) && (
-                        <div className="w-2 h-2 bg-blue-500 rounded-full mt-1"></div>
-                      )}
-                    </button>
-                  ) : (
-                    <div className="w-full h-full"></div>
-                  )}
-                </div>
-              ))}
+            <div className="grid grid-cols-7 gap-px bg-amber-200">
+              {diasDelMes.map((dia, index) => {
+                const esHoy = dia && new Date().toDateString() === dia.toDateString();
+                return (
+                  <div key={index} className="bg-white min-h-[80px] p-2 border-r border-b border-amber-100">
+                    {dia ? (
+                      <button
+                        onClick={() => handleDiaClick(dia)}
+                        className={`w-full h-full flex flex-col items-center justify-center rounded-lg transition-colors ${
+                          esDiaDisponible(dia)
+                            ? 'hover:bg-amber-50 cursor-pointer'
+                            : 'text-gray-400 cursor-not-allowed'
+                        }`}
+                      >
+                        <span className={`text-sm font-medium ${
+                          esHoy 
+                            ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md'
+                            : esDiaDisponible(dia) 
+                            ? 'text-gray-900' 
+                            : 'text-gray-400'
+                        }`}>
+                          {dia.getDate()}
+                        </span>
+                        {esDiaDisponible(dia) && (
+                          <div className="w-2 h-2 bg-amber-500 rounded-full mt-1"></div>
+                        )}
+                      </button>
+                    ) : (
+                      <div className="w-full h-full"></div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
         {!tieneDisponibilidad() && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
             <div className="flex flex-col items-center space-y-4">
-              <div className="text-red-600 text-4xl">📅</div>
+              <div className="text-red-600 text-4xl"></div>
               <div className="text-red-800">
                 <p className="font-semibold text-lg">No hay días disponibles para agendar con este especialista</p>
                 <p className="text-sm mt-2">

@@ -329,7 +329,7 @@ const PanelPaciente: React.FC = () => {
     return (
       <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-8">
-          <div className="text-red-400 text-6xl mb-4">⚠️</div>
+          <div className="text-red-400 text-6xl mb-4">⚠</div>
           <h2 className="text-2xl font-light text-gray-700 mb-4">Error de Conexión</h2>
           <p className="text-gray-500 mb-6 font-light">{error}</p>
           <button 
@@ -349,7 +349,7 @@ const PanelPaciente: React.FC = () => {
       {showSuccessNotification && (
         <div className="fixed top-4 right-4 z-50 bg-green-50 border-2 border-green-400 rounded-lg p-4 shadow-lg max-w-sm">
           <div className="flex items-center space-x-3">
-            <div className="text-green-500 text-xl">✅</div>
+            <div className="text-green-500 text-xl">✓</div>
             <div className="flex-1">
               <h4 className="text-sm font-bold text-green-800">¡Éxito!</h4>
               <p className="text-sm text-green-700">Tu perfil ha sido actualizado correctamente</p>
@@ -367,14 +367,14 @@ const PanelPaciente: React.FC = () => {
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-amber-100">
         <div className="w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 sm:py-6 gap-4">
             {/* Logo y título - Izquierda */}
             <div className="flex items-center">
-              <div className="flex-shrink-0 mr-4">
-                <img src="/psyche.svg" alt="de psyche" className="h-20 w-auto" />
+              <div className="flex-shrink-0 mr-2 sm:mr-4">
+                <img src="/psyche.svg" alt="de psyche" className="h-12 sm:h-16 lg:h-20 w-auto" />
               </div>
               <div>
-                <h1 className="text-lg font-light text-gray-800 tracking-widest uppercase">
+                <h1 className="text-sm sm:text-base lg:text-lg font-light text-gray-800 tracking-widest uppercase">
                   Panel del Paciente
                 </h1>
                 <p className="text-xs text-amber-500 tracking-widest uppercase font-light">Gestión de Tareas</p>
@@ -382,38 +382,41 @@ const PanelPaciente: React.FC = () => {
             </div>
             
             {/* Frase motivadora - Centro */}
-            <div className="hidden lg:flex flex-col items-center justify-center flex-1 px-8">
-              <h2 className="text-lg lg:text-xl font-bold text-gray-600 tracking-wide text-center leading-relaxed">
+            <div className="hidden lg:flex flex-col items-center justify-center flex-1 px-4 lg:px-8">
+              <h2 className="text-base lg:text-xl font-bold text-gray-600 tracking-wide text-center leading-relaxed">
                 Transformando vidas a través de la salud mental
               </h2>
             </div>
             
             {/* Información del usuario - Derecha */}
-            <div className="flex items-center space-x-4">
-              {/* Avatar */}
-              <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-amber-300 shadow-sm flex-shrink-0">
-                <img
-                  src={userData?.avatar_url || 'https://api.dicebear.com/7.x/bottts/svg?seed=default&backgroundColor=ffdfbf&scale=80'}
-                  alt="Avatar"
-                  className="w-full h-full object-cover"
-                />
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+              <div className="flex items-center gap-2 sm:gap-4 order-1">
+                {/* Avatar */}
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden border-2 border-amber-300 shadow-sm flex-shrink-0">
+                  <img
+                    src={userData?.avatar_url || 'https://api.dicebear.com/7.x/bottts/svg?seed=default&backgroundColor=ffdfbf&scale=80'}
+                    alt="Avatar"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="text-xs sm:text-sm text-gray-700">
+                  Bienvenido, <span className="font-medium">{userData?.nombres} {userData?.apellidos}</span>
+                </div>
               </div>
-              <div className="text-sm text-gray-700">
-                Bienvenido, {userData?.nombres} {userData?.apellidos}
+              <div className="flex gap-2 sm:gap-4 order-2">
+                <button
+                  onClick={() => setShowChangePassword(true)}
+                  className="text-xs sm:text-sm text-amber-600 hover:text-amber-800 transition-colors whitespace-nowrap"
+                >
+                  Cambiar Contraseña
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 text-amber-800 px-3 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap"
+                >
+                  Cerrar Sesión
+                </button>
               </div>
-
-              <button
-                onClick={() => setShowChangePassword(true)}
-                className="text-sm text-amber-600 hover:text-amber-800 transition-colors"
-              >
-                Cambiar Contraseña
-              </button>
-              <button
-                onClick={handleLogout}
-                className="bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 text-amber-800 px-4 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                Cerrar Sesión
-              </button>
             </div>
           </div>
         </div>
@@ -500,7 +503,7 @@ const PanelPaciente: React.FC = () => {
                   }`}
                 >
                   <span className="flex items-center">
-                    💬 Chat
+                    Chat
                     {numeroMensajesNoLeidos > 0 && activeTab !== 'chat' && (
                       <span className="ml-2 flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full">
                         {numeroMensajesNoLeidos > 99 ? '99+' : numeroMensajesNoLeidos}
@@ -625,7 +628,7 @@ const PanelPaciente: React.FC = () => {
                       {/* Mensaje sobre carga automática */}
                       <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
                         <p className="text-xs text-green-700">
-                          <strong>💡 Carga Automática:</strong> Todos los campos se rellenan automáticamente con tus datos guardados. 
+                          <strong>Carga Automática:</strong> Todos los campos se rellenan automáticamente con tus datos guardados. 
                           Solo modifica los campos que quieras cambiar.
                         </p>
                       </div>
@@ -824,7 +827,7 @@ const PanelPaciente: React.FC = () => {
                     {/* Mensaje informativo sobre la actualización inteligente */}
                     <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                       <div className="flex items-start space-x-3">
-                        <div className="text-green-500 text-lg">✨</div>
+                        <div className="text-green-500 text-lg">✓</div>
                         <div className="text-sm text-green-700">
                           <p className="font-medium mb-1">Actualización Inteligente</p>
                           <p className="text-xs">

@@ -3,6 +3,7 @@ import { Cita, citasService } from '../servicios/citas.service';
 import { obtenerEstadoTexto, obtenerEstadoColor } from '../utilidades/estados-citas';
 import { authService } from '../servicios/auth.service';
 import ModalReagendarCita from './ModalReagendarCita';
+import ModalConfirmarCancelarCita from './ModalConfirmarCancelarCita';
 import { useNotificaciones } from '../hooks/useNotificaciones';
 
 interface MisCitasProps {
@@ -15,6 +16,8 @@ const MisCitas: React.FC<MisCitasProps> = () => {
   const [error, setError] = useState<string | null>(null);
   const [citaReagendar, setCitaReagendar] = useState<Cita | null>(null);
   const [mostrarModalReagendar, setMostrarModalReagendar] = useState(false);
+  const [citaCancelar, setCitaCancelar] = useState<Cita | null>(null);
+  const [mostrarModalCancelar, setMostrarModalCancelar] = useState(false);
 
   const {
     mostrarExito,
@@ -61,18 +64,28 @@ const MisCitas: React.FC<MisCitasProps> = () => {
     }
   };
 
-  const handleCancelarCita = async (citaId: string) => {
-    if (!window.confirm('¿Estás seguro de que quieres cancelar esta cita?')) {
-      return;
-    }
+  const handleAbrirModalCancelar = (cita: Cita) => {
+    setCitaCancelar(cita);
+    setMostrarModalCancelar(true);
+  };
+
+  const handleConfirmarCancelar = async () => {
+    if (!citaCancelar) return;
 
     try {
-      await citasService.cancelarCita(citaId);
+      await citasService.cancelarCita(citaCancelar.id);
       await cargarCitas(); // Recargar citas
       mostrarExito('Cita Cancelada', 'Tu cita ha sido cancelada exitosamente');
+      setMostrarModalCancelar(false);
+      setCitaCancelar(null);
     } catch (err: any) {
       mostrarError('Error al Cancelar', err.response?.data?.mensaje || err.message);
     }
+  };
+
+  const handleCerrarModalCancelar = () => {
+    setMostrarModalCancelar(false);
+    setCitaCancelar(null);
   };
 
   const handleReagendarCita = (cita: Cita) => {
@@ -138,7 +151,7 @@ const MisCitas: React.FC<MisCitasProps> = () => {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <div className="text-red-500 text-6xl mb-4">⚠️</div>
+        <div className="text-red-500 text-6xl mb-4">⚠</div>
         <h3 className="text-lg font-semibold text-gray-800 mb-2">Error al cargar las citas</h3>
         <p className="text-gray-600 mb-4">{error}</p>
         <button
@@ -154,14 +167,14 @@ const MisCitas: React.FC<MisCitasProps> = () => {
   if (citas.length === 0) {
     return (
       <div className="p-8 text-center">
-        <div className="text-amber-500 text-6xl mb-4">📅</div>
+        <div className="text-amber-500 text-6xl mb-4"></div>
         <h3 className="text-lg font-semibold text-gray-800 mb-2">No tienes citas programadas</h3>
         <p className="text-gray-600 mb-4">
           Cuando agendes una cita, aparecerá aquí para que puedas gestionarla.
         </p>
         <div className="inline-flex items-center px-4 py-2 bg-amber-50 border border-amber-200 rounded-lg">
           <span className="text-amber-700 text-sm">
-            💡 Ve a la pestaña "Agendar Cita" para programar tu próxima sesión
+            Ve a la pestaña "Agendar Cita" para programar tu próxima sesión
           </span>
         </div>
       </div>
@@ -200,7 +213,7 @@ const MisCitas: React.FC<MisCitasProps> = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
-                    <h4 className="font-semibold text-gray-800 mb-2">📅 Información de la Cita</h4>
+                    <h4 className="font-semibold text-gray-800 mb-2">Información de la Cita</h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center gap-2">
                         <span className="text-gray-500">Fecha:</span>
@@ -242,7 +255,7 @@ const MisCitas: React.FC<MisCitasProps> = () => {
 
                 {cita.notas_paciente && (
                   <div className="mb-4">
-                    <h4 className="font-semibold text-gray-800 mb-2">📝 Observaciones</h4>
+                    <h4 className="font-semibold text-gray-800 mb-2">Observaciones</h4>
                     <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
                       {cita.notas_paciente}
                     </p>
@@ -255,15 +268,15 @@ const MisCitas: React.FC<MisCitasProps> = () => {
                   <>
                     <button
                       onClick={() => handleReagendarCita(cita)}
-                      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                      className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-md hover:shadow-lg"
                     >
-                      📅 Reagendar Cita
+                      Reagendar Cita
                     </button>
                     <button
-                      onClick={() => handleCancelarCita(cita.id)}
+                      onClick={() => handleAbrirModalCancelar(cita)}
                       className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                     >
-                      🚫 Cancelar Cita
+                      Cancelar Cita
                     </button>
                   </>
                 )}
@@ -280,7 +293,7 @@ const MisCitas: React.FC<MisCitasProps> = () => {
       </div>
 
       <div className="mt-8 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-        <h4 className="font-semibold text-amber-800 mb-2">💡 Información Importante</h4>
+        <h4 className="font-semibold text-amber-800 mb-2">Información Importante</h4>
         <ul className="text-sm text-amber-700 space-y-1">
           <li>• Las citas se pueden cancelar hasta 24 horas antes de la sesión</li>
           <li>• Puedes reagendar tu cita usando el botón "Reagendar Cita"</li>
@@ -297,6 +310,20 @@ const MisCitas: React.FC<MisCitasProps> = () => {
           isOpen={mostrarModalReagendar}
           onClose={cerrarModalReagendar}
           onReagendar={handleConfirmarReagendar}
+        />
+      )}
+
+      {/* Modal para cancelar cita */}
+      {citaCancelar && (
+        <ModalConfirmarCancelarCita
+          isOpen={mostrarModalCancelar}
+          onClose={handleCerrarModalCancelar}
+          onConfirmar={handleConfirmarCancelar}
+          citaInfo={{
+            fecha: formatearFecha(citaCancelar.fecha),
+            hora: formatearHora(citaCancelar.hora_inicio),
+            paciente: `${citaCancelar.psicologo_nombres} ${citaCancelar.psicologo_apellidos}`
+          }}
         />
       )}
     </div>

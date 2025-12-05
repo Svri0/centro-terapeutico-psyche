@@ -4,6 +4,7 @@ import { es } from 'date-fns/locale';
 import { reportesService, ReporteProgreso, CrearReporteData } from '../servicios/reportes.service';
 import { pacientesService } from '../servicios/pacientes.service';
 import Notificacion from './Notificacion';
+import InputFecha from './InputFecha';
 
 interface Paciente {
   id: string;
@@ -189,13 +190,13 @@ const GestionReportesProgreso: React.FC<GestionReportesProgresoProps> = ({ pacie
           onClick={() => setShowModal(true)}
           className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-semibold"
         >
-          ➕ Nuevo Reporte
+          Nuevo Reporte
         </button>
       </div>
 
       {reportes.length === 0 ? (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-          <div className="text-6xl mb-4">📊</div>
+          <div className="text-6xl mb-4"></div>
           <h3 className="text-xl font-semibold text-gray-900 mb-4">No hay reportes registrados</h3>
           <button
             onClick={() => setShowModal(true)}
@@ -219,7 +220,7 @@ const GestionReportesProgreso: React.FC<GestionReportesProgresoProps> = ({ pacie
                     }
                   </h3>
                   <p className="text-sm text-gray-500 mb-3">
-                    📅 {format(new Date(reporte.periodo_inicio), 'dd/MM/yyyy')} - {format(new Date(reporte.periodo_fin), 'dd/MM/yyyy')}
+                    {format(new Date(reporte.periodo_inicio), 'dd/MM/yyyy')} - {format(new Date(reporte.periodo_fin), 'dd/MM/yyyy')}
                   </p>
                   <p className="text-gray-700 mb-4 line-clamp-2">
                     {reporte.resumen_evolucion}
@@ -279,30 +280,18 @@ const GestionReportesProgreso: React.FC<GestionReportesProgresoProps> = ({ pacie
                 </div>
               )}
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Período Inicio *
-                  </label>
-                  <input
-                    type="date"
-                    value={formulario.periodo_inicio}
-                    onChange={(e) => setFormulario({ ...formulario, periodo_inicio: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Período Fin *
-                  </label>
-                  <input
-                    type="date"
-                    value={formulario.periodo_fin}
-                    onChange={(e) => setFormulario({ ...formulario, periodo_fin: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    required
-                  />
-                </div>
+                <InputFecha
+                  value={formulario.periodo_inicio}
+                  onChange={(value) => setFormulario({ ...formulario, periodo_inicio: value })}
+                  label="Período Inicio"
+                  required
+                />
+                <InputFecha
+                  value={formulario.periodo_fin}
+                  onChange={(value) => setFormulario({ ...formulario, periodo_fin: value })}
+                  label="Período Fin"
+                  required
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

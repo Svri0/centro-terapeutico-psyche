@@ -1598,3 +1598,4 @@ Para preguntas sobre el proyecto, consultar esta documentación o revisar el có
 
 *Este documento es una referencia completa del proyecto Centro Terapéutico Psyche. Mantener actualizado con cada cambio significativo.*
 
+

@@ -288,7 +288,7 @@ const AgendaPsicologo: React.FC = () => {
         
         {citasDelDia.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
-            <div className="text-4xl mb-4">📅</div>
+            <div className="text-4xl mb-4"></div>
             <p>No hay citas programadas para este día</p>
           </div>
         ) : (
@@ -331,14 +331,14 @@ const AgendaPsicologo: React.FC = () => {
                         setSelectedCita(cita);
                         setShowDetailsModal(true);
                       }}
-                      className="px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200"
+                      className="px-3 py-1 text-sm bg-amber-100 text-amber-800 rounded-md hover:bg-amber-200 border border-amber-300 transition-colors"
                     >
                       Ver Detalles
                     </button>
                     {cita.estado === 'programada' && (
                       <button
                         onClick={() => cambiarEstadoCita(cita.id, 'confirmada')}
-                        className="px-3 py-1 text-sm bg-green-100 text-green-800 rounded-md hover:bg-green-200"
+                        className="px-3 py-1 text-sm bg-amber-500 text-white rounded-md hover:bg-amber-600 transition-colors shadow-sm"
                       >
                         Confirmar
                       </button>
@@ -695,7 +695,6 @@ const AgendaPsicologo: React.FC = () => {
               {/* Información de la Cita */}
               <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-6">
                 <h4 className="text-lg font-semibold text-emerald-800 mb-4 flex items-center gap-2">
-                  <span className="text-xl">📅</span>
                   Información de la Cita
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -810,7 +809,6 @@ const AgendaPsicologo: React.FC = () => {
                     }}
                     className="px-6 py-3 bg-white text-amber-700 border border-amber-300 rounded-xl hover:bg-amber-50 font-semibold shadow-md hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200 flex items-center gap-2"
                   >
-                    <span className="text-xl">🧠</span>
                     Iniciar Sesión Terapéutica
                   </button>
                 )}
@@ -858,7 +856,7 @@ const AgendaPsicologo: React.FC = () => {
                       }}
                       className="px-6 py-3 bg-gradient-to-r from-slate-600 to-gray-700 text-white rounded-xl hover:from-slate-700 hover:to-gray-800 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-2"
                     >
-                      <span className="text-xl">✅</span>
+                      <span className="text-xl">✓</span>
                       Completar Sesión
                     </button>
                   </div>

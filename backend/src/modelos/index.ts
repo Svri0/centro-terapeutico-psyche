@@ -14,6 +14,7 @@ import Etiqueta from './Etiqueta';
 import Diagnostico from './Diagnostico';
 import ConfiguracionSistema from './ConfiguracionSistema';
 import TokensMensajesPaciente from './TokensMensajesPaciente';
+import Articulo from './Articulo';
 
 // Configurar asociaciones
 
@@ -270,6 +271,17 @@ TokensMensajesPaciente.belongsTo(Paciente, {
   as: 'paciente',
 });
 
+// Usuario - Articulo (1:N) - Autor
+Usuario.hasMany(Articulo, {
+  foreignKey: 'autor_id',
+  as: 'articulos',
+});
+
+Articulo.belongsTo(Usuario, {
+  foreignKey: 'autor_id',
+  as: 'autor',
+});
+
 export {
   Rol,
   Usuario,
@@ -287,4 +299,5 @@ export {
   Diagnostico,
   ConfiguracionSistema,
   TokensMensajesPaciente,
+  Articulo,
 }; 

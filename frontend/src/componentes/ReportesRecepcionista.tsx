@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import InputFecha from './InputFecha';
 
 interface Estadistica {
   titulo: string;
@@ -231,28 +232,16 @@ const ReportesRecepcionista: React.FC = () => {
               <option value="psicologos_actividad">Actividad de Psicólogos</option>
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Fecha Inicio
-            </label>
-            <input
-              type="date"
-              value={fechaInicio}
-              onChange={(e) => setFechaInicio(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Fecha Fin
-            </label>
-            <input
-              type="date"
-              value={fechaFin}
-              onChange={(e) => setFechaFin(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+          <InputFecha
+            value={fechaInicio}
+            onChange={setFechaInicio}
+            label="Fecha Inicio"
+          />
+          <InputFecha
+            value={fechaFin}
+            onChange={setFechaFin}
+            label="Fecha Fin"
+          />
           <div className="flex items-end">
             <button
               onClick={() => generarReporte(filtroTipo)}

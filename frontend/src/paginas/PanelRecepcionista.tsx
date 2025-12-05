@@ -92,12 +92,12 @@ const PanelRecepcionista: React.FC = () => {
   }
 
   const tabs = [
-    { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-    { id: 'agenda', label: 'Agenda', icon: '📅' },
-    { id: 'pacientes', label: 'Pacientes', icon: '👥' },
-    { id: 'pagos', label: 'Pagos', icon: '💳' },
-    { id: 'reportes', label: 'Reportes', icon: '📈' },
-    { id: 'chat', label: 'Chat', icon: '💬' }
+    { id: 'dashboard', label: 'Dashboard', icon: '' },
+    { id: 'agenda', label: 'Agenda', icon: '' },
+    { id: 'pacientes', label: 'Pacientes', icon: '' },
+    { id: 'pagos', label: 'Pagos', icon: '' },
+    { id: 'reportes', label: 'Reportes', icon: '' },
+    { id: 'chat', label: 'Chat', icon: '' }
   ];
 
   return (
@@ -105,34 +105,36 @@ const PanelRecepcionista: React.FC = () => {
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-amber-100">
         <div className="w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 sm:py-6 gap-4">
             <div className="flex items-center">
-              <div className="flex-shrink-0 mr-4">
-                <img src="/psyche.svg" alt="de psyche" className="h-20 w-auto" />
+              <div className="flex-shrink-0 mr-2 sm:mr-4">
+                <img src="/psyche.svg" alt="de psyche" className="h-12 sm:h-16 lg:h-20 w-auto" />
               </div>
               <div>
-                <h1 className="text-lg font-light text-gray-800 tracking-widest uppercase">
+                <h1 className="text-sm sm:text-base lg:text-lg font-light text-gray-800 tracking-widest uppercase">
                   Panel de Recepción
                 </h1>
                 <p className="text-xs text-amber-500 tracking-widest uppercase font-light">Gestión de Pacientes y Citas</p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-700">
-                Bienvenido, {userData?.nombres} {userData?.apellidos}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+              <div className="text-xs sm:text-sm text-gray-700 order-2 sm:order-1">
+                Bienvenido, <span className="font-medium">{userData?.nombres} {userData?.apellidos}</span>
               </div>
-              <button
-                onClick={() => setShowChangePassword(true)}
-                className="text-sm text-amber-600 hover:text-amber-800 transition-colors"
-              >
-                Cambiar Contraseña
-              </button>
-              <button
-                onClick={handleLogout}
-                className="bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 text-amber-800 px-4 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                Cerrar Sesión
-              </button>
+              <div className="flex gap-2 sm:gap-4 order-1 sm:order-2">
+                <button
+                  onClick={() => setShowChangePassword(true)}
+                  className="text-xs sm:text-sm text-amber-600 hover:text-amber-800 transition-colors whitespace-nowrap"
+                >
+                  Cambiar Contraseña
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 text-amber-800 px-3 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap"
+                >
+                  Cerrar Sesión
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -141,22 +143,22 @@ const PanelRecepcionista: React.FC = () => {
       {/* Navigation Tabs */}
       <nav className="bg-white border-b border-amber-100">
         <div className="w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-8">
+          <div className="flex space-x-2 sm:space-x-4 lg:space-x-8 overflow-x-auto scrollbar-hide">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors relative ${
+                className={`py-3 sm:py-4 px-1 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-colors relative whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'border-amber-500 text-amber-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-amber-200'
                 }`}
               >
                 <span className="flex items-center">
-                  <span className="mr-2">{tab.icon}</span>
+                  <span className="mr-1 sm:mr-2">{tab.icon}</span>
                   {tab.label}
                   {tab.id === 'chat' && numeroMensajesNoLeidos > 0 && activeTab !== 'chat' && (
-                    <span className="ml-2 flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full">
+                    <span className="ml-1 sm:ml-2 flex items-center justify-center min-w-[18px] sm:min-w-[20px] h-4 sm:h-5 px-1 sm:px-1.5 bg-red-500 text-white text-xs font-bold rounded-full">
                       {numeroMensajesNoLeidos > 99 ? '99+' : numeroMensajesNoLeidos}
                     </span>
                   )}

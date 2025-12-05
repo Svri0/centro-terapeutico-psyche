@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { authService, LoginData } from '../servicios/auth.service';
 import { validateLoginForm, getFieldError, sanitizeInput, ValidationError } from '../utilidades/validation';
 import { useLogViewPerformance } from '../utilidades/performanceLogger';
 
 const LoginNuevo: React.FC = () => {
   useLogViewPerformance('Login');
+  const navigate = useNavigate();
   const [formData, setFormData] = useState<LoginData>({
     email: '',
     password: ''
@@ -105,8 +107,8 @@ const LoginNuevo: React.FC = () => {
       // Intentar login
       await authService.login(formData);
       
-      // Redirigir al dashboard
-      window.location.href = '/dashboard';
+      // Redirigir al dashboard usando React Router (mejor para móviles)
+      navigate('/dashboard', { replace: true });
     } catch (error: any) {
       const errorMessage = error.message || 'Error de autenticación';
       setError(errorMessage);
@@ -158,7 +160,18 @@ const LoginNuevo: React.FC = () => {
   return (
     <div className="min-h-screen bg-white flex">
       {/* Lado izquierdo - Formulario */}
-      <div className="flex-1 flex flex-col justify-center px-8 sm:px-12 lg:px-16 xl:px-20">
+      <div className="flex-1 flex flex-col justify-center px-8 sm:px-12 lg:px-16 xl:px-20 relative">
+        {/* Botón para volver al homepage - arriba a la izquierda */}
+        <Link
+          to="/"
+          className="absolute top-6 left-6 sm:left-8 lg:left-16 xl:left-20 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors duration-200"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span className="text-sm font-medium">Volver al inicio</span>
+        </Link>
+
         <div className="w-full max-w-md mx-auto">
 
           {/* Título principal */}

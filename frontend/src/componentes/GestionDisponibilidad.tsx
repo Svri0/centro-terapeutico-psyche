@@ -198,9 +198,9 @@ const GestionDisponibilidad: React.FC<GestionDisponibilidadProps> = ({ psicologo
           {!modoEdicion ? (
             <button
               onClick={iniciarEdicion}
-              className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-4 py-2 text-sm bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors shadow-md hover:shadow-lg"
             >
-              ✏️ Editar Disponibilidad
+              Editar Disponibilidad
             </button>
           ) : (
             <div className="flex space-x-2">
@@ -212,7 +212,7 @@ const GestionDisponibilidad: React.FC<GestionDisponibilidadProps> = ({ psicologo
               </button>
               <button
                 onClick={guardarCambios}
-                className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                className="px-4 py-2 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors shadow-md hover:shadow-lg"
               >
                 💾 Guardar
               </button>

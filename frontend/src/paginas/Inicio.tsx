@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Chatbot from '../componentes/Chatbot';
 import { useLogViewPerformance } from '../utilidades/performanceLogger';
+import { solicitudesPublicasService } from '../servicios/solicitudes-publicas.service';
 
 interface FormData {
   nombreCompleto: string;
@@ -118,6 +119,22 @@ const Inicio: React.FC = () => {
     setErrors(prev => ({ ...prev, [field]: error }));
   };
 
+  // Función para separar nombre completo en nombres y apellidos
+  const separarNombreCompleto = (nombreCompleto: string): { nombres: string; apellidos: string } => {
+    const partes = nombreCompleto.trim().split(/\s+/);
+    if (partes.length === 1) {
+      return { nombres: partes[0], apellidos: '' };
+    } else if (partes.length === 2) {
+      return { nombres: partes[0], apellidos: partes[1] };
+    } else {
+      // Si tiene más de 2 partes, tomar la primera como nombre y el resto como apellidos
+      return {
+        nombres: partes[0],
+        apellidos: partes.slice(1).join(' ')
+      };
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -128,11 +145,29 @@ const Inicio: React.FC = () => {
     setIsSubmitting(true);
     
     try {
-      // Aquí iría la lógica para enviar el formulario
-      console.log('Datos del formulario:', formData);
+      // Separar nombre completo en nombres y apellidos
+      const { nombres, apellidos } = separarNombreCompleto(formData.nombreCompleto);
       
-      // Simular envío
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Construir observaciones con la información adicional
+      const observaciones = [
+        `Preferencia de sesión: ${formData.preferenciaSesion}`,
+        `Horario preferido: ${formData.horarioPreferido}`,
+        `Motivo de consulta: ${formData.motivoConsulta}`
+      ].join('\n');
+
+      // Preparar datos para crear el paciente (igual que en ModalCrearPaciente)
+      const datosPaciente: any = {
+        nombres: nombres,
+        apellidos: apellidos || 'Sin apellido', // Si no hay apellido, usar un valor por defecto
+        email: formData.email,
+        telefono: formData.telefono,
+        observaciones: observaciones,
+      };
+
+      console.log('Datos de la solicitud:', datosPaciente);
+      
+      // Crear la solicitud usando el servicio público (sin autenticación)
+      await solicitudesPublicasService.crearSolicitudConsulta(datosPaciente);
       
       // Mostrar mensaje de éxito
       setShowSuccessModal(true);
@@ -147,9 +182,19 @@ const Inicio: React.FC = () => {
         motivoConsulta: ''
       });
       
-    } catch (error) {
+      // Limpiar errores
+      setErrors({});
+      
+    } catch (error: any) {
       console.error('Error al enviar formulario:', error);
       setShowErrorModal(true);
+      
+      // Mostrar error específico si está disponible
+      if (error.message) {
+        setErrors({ 
+          submit: error.message 
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -393,7 +438,6 @@ const Inicio: React.FC = () => {
               <div className="flex items-start space-x-4 lg:space-x-6">
                 <div className="w-12 h-12 lg:w-16 lg:h-16 bg-amber-500 rounded-lg flex items-center justify-center flex-shrink-0">
                   <div className="w-6 h-6 lg:w-8 lg:h-8 bg-white rounded-full flex items-center justify-center">
-                    <span className="text-amber-500 text-sm lg:text-lg font-bold">💬</span>
                   </div>
                 </div>
                 <div>
@@ -409,7 +453,6 @@ const Inicio: React.FC = () => {
               <div className="flex items-start space-x-4 lg:space-x-6">
                 <div className="w-12 h-12 lg:w-16 lg:h-16 bg-amber-500 rounded-lg flex items-center justify-center flex-shrink-0">
                   <div className="w-6 h-6 lg:w-8 lg:h-8 bg-white rounded-full flex items-center justify-center">
-                    <span className="text-amber-500 text-sm lg:text-lg font-bold">🧠</span>
                   </div>
                 </div>
                 <div>
@@ -428,7 +471,6 @@ const Inicio: React.FC = () => {
               <div className="flex items-start space-x-4 lg:space-x-6">
                 <div className="w-12 h-12 lg:w-16 lg:h-16 bg-amber-500 rounded-lg flex items-center justify-center flex-shrink-0">
                   <div className="w-6 h-6 lg:w-8 lg:h-8 bg-white rounded-full flex items-center justify-center">
-                    <span className="text-amber-500 text-sm lg:text-lg font-bold">🔍</span>
                   </div>
                 </div>
                 <div>
@@ -465,7 +507,6 @@ const Inicio: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <div className="w-16 h-16 bg-amber-500 rounded-full flex items-center justify-center mx-auto mb-6">
-              <span className="text-2xl text-white">📅</span>
             </div>
             <h2 className="text-3xl md:text-4xl font-light text-gray-700 mb-4 tracking-wide">
               ¿Cómo agendar con nosotros?
@@ -528,7 +569,7 @@ const Inicio: React.FC = () => {
               </div>
               <h3 className="text-base lg:text-lg font-medium text-gray-700 mb-2 lg:mb-3">Reserva tu sesión</h3>
               <p className="text-gray-600 text-xs lg:text-sm leading-relaxed">
-                Para reservar debes pagar tu sesión vía transferencia con tu psicólogo.
+                Para reservar puedes hacerlo vía transferencia a los datos del centro o pagarla de manera presencial.
               </p>
             </div>
             
@@ -721,7 +762,6 @@ const Inicio: React.FC = () => {
                 "Dentro de Psyché me ayudó a encontrar la paz que necesitaba. El ambiente es tan acogedor que desde el primer día me sentí en casa. Mi psicóloga es increíble."
               </p>
               <div className="flex text-amber-100 mt-3 lg:mt-4 text-sm lg:text-base">
-                ⭐⭐⭐⭐⭐
               </div>
             </div>
             
@@ -739,7 +779,6 @@ const Inicio: React.FC = () => {
                 "El proceso de selección de psicólogo fue perfecto. Me dieron la opción de elegir y encontré a alguien con quien realmente conecté. La terapia online también funciona excelente."
               </p>
               <div className="flex text-amber-100 mt-3 lg:mt-4 text-sm lg:text-base">
-                ⭐⭐⭐⭐⭐
               </div>
             </div>
             
@@ -757,7 +796,6 @@ const Inicio: React.FC = () => {
                 "La atención es excepcional. Desde el primer contacto hasta las sesiones, todo está pensado para tu bienestar. Definitivamente recomiendo Dentro de Psyché."
               </p>
               <div className="flex text-amber-100 mt-3 lg:mt-4 text-sm lg:text-base">
-                ⭐⭐⭐⭐⭐
               </div>
             </div>
           </div>
@@ -962,15 +1000,12 @@ const Inicio: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Artículo 1 */}
             <article className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden">
-              <div className="h-72 bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
-                <div className="w-full h-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <span className="text-2xl text-white">🧘‍♀️</span>
-                    </div>
-                    <p className="text-gray-600 font-medium">Técnicas de Relajación</p>
-                  </div>
-                </div>
+              <div className="h-72 overflow-hidden">
+                <img 
+                  src="/tecnicarelajacion.png" 
+                  alt="Técnicas de Relajación" 
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div className="p-6">
                 <div className="flex items-center mb-3">
@@ -987,15 +1022,12 @@ const Inicio: React.FC = () => {
 
             {/* Artículo 2 */}
             <article className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden">
-              <div className="h-72 bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
-                <div className="w-full h-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <span className="text-2xl text-white">👨‍👩‍👧‍👦</span>
-                    </div>
-                    <p className="text-gray-600 font-medium">Comunicación Familiar</p>
-                  </div>
-                </div>
+              <div className="h-72 overflow-hidden">
+                <img 
+                  src="/comunicacionfamilia.png" 
+                  alt="Comunicación Familiar" 
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div className="p-6">
                 <div className="flex items-center mb-3">
@@ -1012,15 +1044,12 @@ const Inicio: React.FC = () => {
 
             {/* Artículo 3 */}
             <article className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden">
-              <div className="h-72 bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
-                <div className="w-full h-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <span className="text-2xl text-white">😰</span>
-                    </div>
-                    <p className="text-gray-600 font-medium">Señales de Ansiedad</p>
-                  </div>
-                </div>
+              <div className="h-72 overflow-hidden">
+                <img 
+                  src="/ansiedad.png" 
+                  alt="Señales de Ansiedad" 
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div className="p-6">
                 <div className="flex items-center mb-3">

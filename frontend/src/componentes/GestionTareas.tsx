@@ -167,16 +167,16 @@ const GestionTareas: React.FC = () => {
 
   const obtenerTipoTareaIcono = (tipo: string) => {
     switch (tipo) {
-      case 'texto_abierto': return '📝';
+      case 'texto_abierto': return '';
       case 'opcion_multiple': return '☑️';
-      case 'test_psicologico': return '🧠';
+      case 'test_psicologico': return '';
       case 'test_imagenes': return '🖼️';
       case 'tarea_dibujo': return '🎨';
       case 'ejercicio': return '🏃';
       case 'lectura': return '📖';
       case 'reflexion': return '💭';
       case 'practica': return '✍️';
-      case 'evaluacion': return '📊';
+      case 'evaluacion': return '';
       default: return '📋';
     }
   };
@@ -408,7 +408,7 @@ const GestionTareas: React.FC = () => {
                     {tarea.estado === 'pendiente' && (
                       <button
                         onClick={() => handleActualizarEstado(tarea.id, 'en_progreso')}
-                        className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
+                        className="px-3 py-1 bg-amber-500 text-white rounded text-xs hover:bg-amber-600 transition-colors shadow-sm"
                       >
                         Marcar en Progreso
                       </button>
@@ -417,7 +417,7 @@ const GestionTareas: React.FC = () => {
                     {tarea.estado === 'en_progreso' && (
                       <button
                         onClick={() => handleActualizarEstado(tarea.id, 'completada')}
-                        className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors"
+                        className="px-3 py-1 bg-amber-500 text-white rounded text-xs hover:bg-amber-600 transition-colors shadow-sm"
                       >
                         Marcar Completada
                       </button>

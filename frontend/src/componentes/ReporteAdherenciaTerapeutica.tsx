@@ -4,6 +4,7 @@ import { es } from 'date-fns/locale';
 import { tareasService } from '../servicios/tareas.service';
 import { pacientesService } from '../servicios/pacientes.service';
 import Notificacion from './Notificacion';
+import InputFecha from './InputFecha';
 import {
   BarChart,
   Bar,
@@ -244,28 +245,16 @@ const ReporteAdherenciaTerapeutica: React.FC = () => {
               ))}
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Fecha Inicio
-            </label>
-            <input
-              type="date"
-              value={filtros.fecha_inicio}
-              onChange={(e) => setFiltros({ ...filtros, fecha_inicio: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Fecha Fin
-            </label>
-            <input
-              type="date"
-              value={filtros.fecha_fin}
-              onChange={(e) => setFiltros({ ...filtros, fecha_fin: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
+          <InputFecha
+            value={filtros.fecha_inicio}
+            onChange={(value) => setFiltros({ ...filtros, fecha_inicio: value })}
+            label="Fecha Inicio"
+          />
+          <InputFecha
+            value={filtros.fecha_fin}
+            onChange={(value) => setFiltros({ ...filtros, fecha_fin: value })}
+            label="Fecha Fin"
+          />
           <div className="flex items-end">
             <button
               onClick={generarReporte}

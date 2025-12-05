@@ -5,31 +5,35 @@ export const ESTADOS_CITAS = {
   en_progreso: 'En Sesión',
   completada: 'Completada',
   cancelada: 'Cancelada',
-  no_show: 'No Asistió'
+  no_show: 'No Asistió',
+  no_asistio: 'No Asistió'
 } as const;
 
 export const COLORES_ESTADOS = {
-  programada: 'bg-blue-100 text-blue-800 border border-black',
-  confirmada: 'bg-green-100 text-green-800 border border-black',
-  en_progreso: 'bg-purple-100 text-purple-800 border border-black',
-  completada: 'bg-gray-100 text-gray-800 border border-black',
-  cancelada: 'bg-red-100 text-red-800 border border-black',
-  no_show: 'bg-orange-100 text-orange-800 border border-black'
+  programada: 'bg-amber-100 text-amber-800 border border-amber-300',
+  confirmada: 'bg-orange-100 text-orange-800 border border-orange-300',
+  en_progreso: 'bg-yellow-100 text-yellow-800 border border-yellow-300',
+  completada: 'bg-gray-100 text-gray-800 border border-gray-300',
+  cancelada: 'bg-red-100 text-red-800 border border-red-300',
+  no_show: 'bg-orange-200 text-orange-900 border border-orange-400',
+  no_asistio: 'bg-orange-200 text-orange-900 border border-orange-400'
 } as const;
 
 export const COLORES_ESTADOS_CALENDARIO = {
-  programada: 'bg-blue-500',
-  confirmada: 'bg-green-500',
-  en_progreso: 'bg-purple-500',
+  programada: 'bg-amber-500',
+  confirmada: 'bg-orange-500',
+  en_progreso: 'bg-yellow-500',
   completada: 'bg-gray-500',
   cancelada: 'bg-red-500',
-  no_show: 'bg-orange-500'
+  no_show: 'bg-orange-600',
+  no_asistio: 'bg-orange-600'
 } as const;
 
 export const ICONOS_ESTADOS = {
   completada: '✓',
   cancelada: '✗',
   no_show: '✗',
+  no_asistio: '✗',
   programada: '○',
   confirmada: '○',
   en_progreso: '○'
@@ -58,7 +62,7 @@ export const obtenerEstadosDisponibles = (estadoActual: string): string[] => {
     case 'confirmada':
       return ['en_progreso', 'cancelada'];
     case 'en_progreso':
-      return ['completada', 'no_show'];
+      return ['completada', 'no_show', 'no_asistio'];
     default:
       return [];
   }
@@ -75,6 +79,8 @@ export const obtenerTextoAccion = (estado: string): string => {
     case 'cancelada':
       return 'Cancelar';
     case 'no_show':
+      return 'No Asistió';
+    case 'no_asistio':
       return 'No Asistió';
     default:
       return estado;

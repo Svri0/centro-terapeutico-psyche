@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import jsPDF from 'jspdf';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import InputFecha from './InputFecha';
 
 interface Estadisticas {
   totalCitas: number;
@@ -248,28 +249,18 @@ const ExportarDashboardPDF: React.FC<ExportarDashboardPDFProps> = ({
         <div className="pt-4 border-t border-gray-200">
           <h4 className="text-sm font-medium text-gray-700 mb-3">Filtrar por Período (Opcional)</h4>
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Fecha Inicio
-              </label>
-              <input
-                type="date"
-                value={filtroFechaInicio}
-                onChange={(e) => setFiltroFechaInicio(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Fecha Fin
-              </label>
-              <input
-                type="date"
-                value={filtroFechaFin}
-                onChange={(e) => setFiltroFechaFin(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500"
-              />
-            </div>
+            <InputFecha
+              value={filtroFechaInicio}
+              onChange={setFiltroFechaInicio}
+              label="Fecha Inicio"
+              className="text-xs"
+            />
+            <InputFecha
+              value={filtroFechaFin}
+              onChange={setFiltroFechaFin}
+              label="Fecha Fin"
+              className="text-xs"
+            />
           </div>
         </div>
       )}
