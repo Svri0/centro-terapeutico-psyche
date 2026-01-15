@@ -31,10 +31,14 @@ export const iniciarSesion = async (req: Request, res: Response) => {
 
     // Buscar usuario en la base de datos usando parámetros preparados
     // Intentar con JOIN primero, si falla intentar sin JOIN
+    // Manejar el caso donde los campos de políticas pueden no existir aún
     let usuarios: any[] = [];
     try {
+      // Intentar primero con campos de políticas
       usuarios = await sequelize.query(
-        `SELECT u.id, u.nombres, u.apellidos, u.email, u.telefono, u.especialidad, u.descripcion, u.avatar_url, u.password_hash, u.activo, u.rol_id, r.nombre as rol_nombre
+        `SELECT u.id, u.nombres, u.apellidos, u.email, u.telefono, u.especialidad, u.descripcion, u.avatar_url, u.password_hash, u.activo, u.rol_id, r.nombre as rol_nombre, 
+         COALESCE(u.politica_seguridad_aceptada, false) as politica_seguridad_aceptada, 
+         COALESCE(u.politica_privacidad_aceptada, false) as politica_privacidad_aceptada
          FROM usuarios u
          INNER JOIN roles r ON u.rol_id = r.id
          WHERE u.email = :email AND u.deleted_at IS NULL`,
@@ -43,22 +47,58 @@ export const iniciarSesion = async (req: Request, res: Response) => {
           type: QueryTypes.SELECT
         }
       ) as any[];
-    } catch (joinError: any) {
-      // Si falla el JOIN (tabla roles no existe), intentar sin JOIN
-      log.warn('Error en JOIN con roles, intentando sin JOIN:', joinError?.message);
-      try {
-        usuarios = await sequelize.query(
-          `SELECT u.id, u.nombres, u.apellidos, u.email, u.telefono, u.especialidad, u.descripcion, u.avatar_url, u.password_hash, u.activo, u.rol_id, 'psicologo' as rol_nombre
-           FROM usuarios u
-           WHERE u.email = :email AND u.deleted_at IS NULL`,
-          {
-            replacements: { email },
-            type: QueryTypes.SELECT
+    } catch (firstError: any) {
+      // Si falla por campos que no existen o por JOIN, intentar sin campos de políticas
+      const errorMessage = firstError?.message || '';
+      const isPoliticaError = errorMessage.includes('politica') || errorMessage.includes('column') || errorMessage.includes('does not exist');
+      const isJoinError = errorMessage.includes('roles') || errorMessage.includes('relation') || errorMessage.includes('does not exist');
+      
+      if (isPoliticaError || isJoinError) {
+        log.warn('Error en consulta inicial, intentando sin campos de políticas:', firstError?.message);
+        try {
+          // Intentar con JOIN pero sin campos de políticas
+          usuarios = await sequelize.query(
+            `SELECT u.id, u.nombres, u.apellidos, u.email, u.telefono, u.especialidad, u.descripcion, u.avatar_url, u.password_hash, u.activo, u.rol_id, r.nombre as rol_nombre
+             FROM usuarios u
+             INNER JOIN roles r ON u.rol_id = r.id
+             WHERE u.email = :email AND u.deleted_at IS NULL`,
+            {
+              replacements: { email },
+              type: QueryTypes.SELECT
+            }
+          ) as any[];
+          // Agregar valores por defecto para políticas
+          if (usuarios.length > 0) {
+            usuarios[0].politica_seguridad_aceptada = false;
+            usuarios[0].politica_privacidad_aceptada = false;
           }
-        ) as any[];
-      } catch (queryError: any) {
-        log.error('Error en consulta de usuarios:', queryError);
-        throw queryError;
+        } catch (secondError: any) {
+          // Si aún falla, intentar sin JOIN y sin campos de políticas
+          log.warn('Error en consulta con JOIN, intentando sin JOIN:', secondError?.message);
+          try {
+            usuarios = await sequelize.query(
+              `SELECT u.id, u.nombres, u.apellidos, u.email, u.telefono, u.especialidad, u.descripcion, u.avatar_url, u.password_hash, u.activo, u.rol_id, 'psicologo' as rol_nombre
+               FROM usuarios u
+               WHERE u.email = :email AND u.deleted_at IS NULL`,
+              {
+                replacements: { email },
+                type: QueryTypes.SELECT
+              }
+            ) as any[];
+            // Agregar valores por defecto para políticas
+            if (usuarios.length > 0) {
+              usuarios[0].politica_seguridad_aceptada = false;
+              usuarios[0].politica_privacidad_aceptada = false;
+            }
+          } catch (finalError: any) {
+            log.error('Error final en consulta de usuarios:', finalError);
+            throw finalError;
+          }
+        }
+      } else {
+        // Si es otro tipo de error, lanzarlo
+        log.error('Error en consulta de usuarios:', firstError);
+        throw firstError;
       }
     }
 
@@ -159,7 +199,9 @@ export const iniciarSesion = async (req: Request, res: Response) => {
         descripcion: usuario.descripcion,
         avatar_url: usuario.avatar_url,
         rol: usuario.rol_nombre,
-        rol_id: usuario.rol_id
+        rol_id: usuario.rol_id,
+        politica_seguridad_aceptada: usuario.politica_seguridad_aceptada || false,
+        politica_privacidad_aceptada: usuario.politica_privacidad_aceptada || false
       },
       token,
       expira_en: '24 horas',
@@ -712,6 +754,92 @@ export const resetPassword = async (req: Request, res: Response) => {
       res,
       'Error interno del servidor',
       'AUTH_036'
+    );
+  }
+};
+
+// Controlador para aceptar políticas de seguridad y privacidad
+export const aceptarPoliticas = async (req: Request, res: Response) => {
+  try {
+    const usuario = (req as any).usuario;
+
+    if (!usuario) {
+      return ManejadorRespuestas.noAutorizado(
+        res,
+        'Usuario no autenticado',
+        'AUTH_037'
+      );
+    }
+
+    // Verificar que el usuario es paciente (rol_id = 4)
+    if (usuario.rol_id !== 4) {
+      return ManejadorRespuestas.errorValidacion(
+        res,
+        'Esta funcionalidad solo está disponible para pacientes',
+        null,
+        'AUTH_038'
+      );
+    }
+
+    // Intentar actualizar políticas aceptadas
+    // Primero verificar si los campos existen
+    try {
+      await sequelize.query(
+        `UPDATE usuarios 
+         SET politica_seguridad_aceptada = true, 
+             politica_privacidad_aceptada = true,
+             fecha_aceptacion_politicas = NOW(),
+             updated_at = NOW()
+         WHERE id = :id`,
+        {
+          replacements: { id: usuario.id }
+        }
+      );
+    } catch (updateError: any) {
+      // Si falla porque los campos no existen, informar al usuario
+      const errorMessage = updateError?.message || '';
+      if (errorMessage.includes('column') && errorMessage.includes('does not exist')) {
+        log.error('Error: Los campos de políticas no existen en la base de datos. Ejecuta la migración:', errorMessage);
+        return ManejadorRespuestas.errorInterno(
+          res,
+          'Los campos de políticas no están disponibles. Por favor, contacta al administrador del sistema para ejecutar la migración de base de datos.',
+          'AUTH_041'
+        );
+      }
+      // Si es otro error, lanzarlo
+      throw updateError;
+    }
+
+    log.info(`Políticas aceptadas por paciente: ${usuario.email}`);
+
+    // Registrar log de auditoría
+    try {
+      await AuditoriaService.crearLog({
+        usuario_id: usuario.id,
+        accion: 'ACEPTAR_POLITICAS',
+        metadatos: {
+          email: usuario.email,
+          fecha_aceptacion: new Date().toISOString()
+        },
+        req
+      });
+    } catch (auditError) {
+      log.warn('Error al registrar log de auditoría (no crítico):', auditError);
+    }
+
+    return ManejadorRespuestas.exito(
+      res,
+      'Políticas aceptadas exitosamente',
+      null,
+      'AUTH_039'
+    );
+
+  } catch (error) {
+    log.error('Error en aceptarPoliticas:', error);
+    return ManejadorRespuestas.errorInterno(
+      res,
+      'Error interno del servidor. Por favor, verifica que la migración de base de datos se haya ejecutado correctamente.',
+      'AUTH_040'
     );
   }
 };

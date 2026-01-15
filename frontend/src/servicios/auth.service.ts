@@ -24,6 +24,8 @@ export interface User {
   avatar_url?: string;
   rol: string;
   rol_id: number;
+  politica_seguridad_aceptada?: boolean;
+  politica_privacidad_aceptada?: boolean;
 }
 
 export interface AuthResponse {
@@ -237,6 +239,35 @@ class AuthService {
         throw new Error('Error al restablecer contraseña');
       }
     }
+  }
+
+  async aceptarPoliticas(): Promise<void> {
+    try {
+      await api.post('/autenticacion/aceptar-politicas');
+      // Actualizar el usuario en localStorage
+      const user = this.getCurrentUser();
+      if (user) {
+        user.politica_seguridad_aceptada = true;
+        user.politica_privacidad_aceptada = true;
+        localStorage.setItem('user', JSON.stringify(user));
+      }
+    } catch (error: any) {
+      if (error.response?.data?.mensaje) {
+        throw new Error(error.response.data.mensaje);
+      } else {
+        throw new Error('Error al aceptar políticas');
+      }
+    }
+  }
+
+  hasAceptadoPoliticas(): boolean {
+    const user = this.getCurrentUser();
+    // Solo verificar políticas para pacientes
+    if (!this.isPaciente()) {
+      return true; // Los no-pacientes no necesitan aceptar políticas
+    }
+    // Para pacientes, verificar que ambas políticas estén aceptadas
+    return !!(user?.politica_seguridad_aceptada && user?.politica_privacidad_aceptada);
   }
 }
 

@@ -9,7 +9,8 @@ import {
   registrar,
   actualizarActividadSesion,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  aceptarPoliticas
 } from '../controladores/autenticacion.controlador';
 import { verificarToken } from '../middleware/auth.middleware';
 import { 
@@ -35,5 +36,6 @@ router.get('/perfil', verificarToken, obtenerPerfil); // GET /api/v1/auth/perfil
 router.put('/perfil', verificarToken, actualizarPerfil); // PUT /api/v1/auth/perfil
 router.put('/cambiar-password', verificarToken, cambiarPassword); // PUT /api/v1/auth/cambiar-password
 router.post('/actualizar-actividad', verificarToken, actualizarActividadSesion); // POST /api/v1/auth/actualizar-actividad
+router.post('/aceptar-politicas', verificarToken, aceptarPoliticas); // POST /api/v1/auth/aceptar-politicas
 
 export default router;

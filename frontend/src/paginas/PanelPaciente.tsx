@@ -6,6 +6,7 @@ import TestHerramientaDibujo from '../componentes/TestHerramientaDibujo';
 import AvatarSelector from '../componentes/AvatarSelector';
 import ImageUpload from '../componentes/ImageUpload';
 import ChatPaciente from '../componentes/ChatPaciente';
+import ModalPoliticas from '../componentes/ModalPoliticas';
 import { authService } from '../servicios/auth.service';
 import { actualizarPerfilPaciente, subirImagenReal } from '../servicios/usuarios.service';
 import { AVATARS_ANIMALES } from '../assets/avatars/default-avatars';
@@ -52,6 +53,8 @@ const PanelPaciente: React.FC = () => {
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileMessage, setProfileMessage] = useState('');
   const [numeroMensajesNoLeidos, setNumeroMensajesNoLeidos] = useState(0);
+  const [showPoliticasModal, setShowPoliticasModal] = useState(false);
+  const [aceptandoPoliticas, setAceptandoPoliticas] = useState(false);
 
   // Hook para timeout de sesión (15 minutos)
   useSessionTimeout(15); // 15 minutos
@@ -66,10 +69,35 @@ const PanelPaciente: React.FC = () => {
       return;
     }
 
+    // Verificar que el usuario es realmente un paciente
+    const isPaciente = authService.isPaciente();
+    if (!isPaciente) {
+      // Si no es paciente, redirigir al dashboard apropiado
+      if (authService.isAdmin()) {
+        window.location.href = '/dashboard';
+      } else if (authService.isPsicologo()) {
+        window.location.href = '/dashboard';
+      } else if (authService.isRecepcionista()) {
+        window.location.href = '/dashboard';
+      } else {
+        window.location.href = '/login';
+      }
+      return;
+    }
+
     setUserData(user);
     console.log('🔍 userData establecido:', user);
-    cargarDatosPaciente();
-    cargarPerfil();
+    
+    // Verificar si el paciente ha aceptado las políticas
+    const hasAceptadoPoliticas = authService.hasAceptadoPoliticas();
+    if (!hasAceptadoPoliticas) {
+      setShowPoliticasModal(true);
+      setLoading(false); // Establecer loading en false para mostrar el modal
+    } else {
+      // Si ya aceptó las políticas, cargar datos normalmente
+      cargarDatosPaciente();
+      cargarPerfil();
+    }
   }, []);
 
   const cargarDatosPaciente = async () => {
@@ -80,6 +108,9 @@ const PanelPaciente: React.FC = () => {
       // Por ahora, usar solo los datos del localStorage
       // Los campos se rellenarán en cargarPerfil()
       console.log('🔍 Usando datos del localStorage para el perfil');
+      
+      // Pequeño delay para asegurar que el estado se actualice
+      await new Promise(resolve => setTimeout(resolve, 100));
       
     } catch (error) {
       console.error('Error al cargar datos:', error);
@@ -339,6 +370,40 @@ const PanelPaciente: React.FC = () => {
             Reintentar Conexión
           </button>
         </div>
+      </div>
+    );
+  }
+
+  // Si el modal de políticas está abierto, bloquear el contenido
+  if (showPoliticasModal) {
+    return (
+      <div className="min-h-screen font-sans" style={{ backgroundColor: '#fff6ed' }}>
+        <ModalPoliticas
+          isOpen={showPoliticasModal}
+          onAceptar={async () => {
+            try {
+              setAceptandoPoliticas(true);
+              await authService.aceptarPoliticas();
+              // Cerrar modal y cargar datos
+              setShowPoliticasModal(false);
+              // Cargar datos después de aceptar (esto establecerá loading correctamente)
+              await cargarDatosPaciente();
+              cargarPerfil();
+            } catch (error: any) {
+              console.error('Error al aceptar políticas:', error);
+              const errorMessage = error?.message || 'Error desconocido';
+              if (errorMessage.includes('migración') || errorMessage.includes('migration')) {
+                alert('Error: Los campos de políticas no están disponibles en la base de datos. Por favor, contacta al administrador para ejecutar la migración.');
+              } else {
+                alert('Error al aceptar las políticas. Por favor, intenta nuevamente.');
+              }
+              setLoading(false);
+            } finally {
+              setAceptandoPoliticas(false);
+            }
+          }}
+          onAceptarLoading={aceptandoPoliticas}
+        />
       </div>
     );
   }

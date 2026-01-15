@@ -22,6 +22,9 @@ export interface UsuarioAttributes {
   token_activacion?: string;
   token_activacion_expira?: Date;
   ultimo_acceso?: Date;
+  politica_seguridad_aceptada: boolean;
+  politica_privacidad_aceptada: boolean;
+  fecha_aceptacion_politicas?: Date;
   configuracion: any;
   created_at: Date;
   updated_at: Date;
@@ -29,7 +32,7 @@ export interface UsuarioAttributes {
 }
 
 // Interfaz para las propiedades opcionales (para crear)
-export interface UsuarioCreationAttributes extends Optional<UsuarioAttributes, 'id' | 'activo' | 'email_verificado' | 'configuracion' | 'created_at' | 'updated_at'> {}
+export interface UsuarioCreationAttributes extends Optional<UsuarioAttributes, 'id' | 'activo' | 'email_verificado' | 'politica_seguridad_aceptada' | 'politica_privacidad_aceptada' | 'fecha_aceptacion_politicas' | 'configuracion' | 'created_at' | 'updated_at'> {}
 
 class Usuario extends Model<UsuarioAttributes, UsuarioCreationAttributes> implements UsuarioAttributes {
   public id!: string;
@@ -50,6 +53,9 @@ class Usuario extends Model<UsuarioAttributes, UsuarioCreationAttributes> implem
   public token_activacion?: string;
   public token_activacion_expira?: Date;
   public ultimo_acceso?: Date;
+  public politica_seguridad_aceptada!: boolean;
+  public politica_privacidad_aceptada!: boolean;
+  public fecha_aceptacion_politicas?: Date;
   public configuracion!: any;
   public created_at!: Date;
   public updated_at!: Date;
@@ -143,6 +149,20 @@ Usuario.init(
       allowNull: true,
     },
     ultimo_acceso: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    politica_seguridad_aceptada: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    politica_privacidad_aceptada: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    fecha_aceptacion_politicas: {
       type: DataTypes.DATE,
       allowNull: true,
     },
