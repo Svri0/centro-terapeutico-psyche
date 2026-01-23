@@ -10,19 +10,13 @@ const BannerPoliticas: React.FC = () => {
     // Verificar si el usuario está autenticado
     const isAuthenticated = authService.isAuthenticated();
     
-    // Verificar si ya se aceptaron las políticas en localStorage
-    const politicasAceptadas = localStorage.getItem('politicas_publicas_aceptadas');
-    
-    console.log('🔍 Verificando banner:', { isAuthenticated, politicasAceptadas });
-    
-    // Solo mostrar el banner si:
-    // 1. El usuario NO está autenticado
-    // 2. Las políticas públicas NO han sido aceptadas
-    if (!isAuthenticated && !politicasAceptadas) {
-      console.log('✅ Mostrando banner');
+    // Mostrar el banner siempre que el usuario NO esté autenticado
+    // (aparecerá cada vez que se refresque la página)
+    if (!isAuthenticated) {
+      console.log('✅ Mostrando banner (usuario no autenticado)');
       setMostrarBanner(true);
     } else {
-      console.log('❌ Ocultando banner');
+      console.log('❌ Ocultando banner (usuario autenticado)');
       setMostrarBanner(false);
     }
   }, []);
@@ -31,20 +25,10 @@ const BannerPoliticas: React.FC = () => {
     // Verificar inicialmente
     verificarYMostrarBanner();
 
-    // Escuchar cambios en localStorage entre pestañas/ventanas
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'politicas_publicas_aceptadas' || e.key === null) {
-        verificarYMostrarBanner();
-      }
-    };
-
-    // Escuchar evento personalizado para actualizar desde la misma pestaña
-    const handleCustomStorageChange = () => {
+    // Verificar periódicamente si el estado de autenticación cambió
+    const intervalId = setInterval(() => {
       verificarYMostrarBanner();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('politicasStorageChange', handleCustomStorageChange);
+    }, 1000); // Verificar cada segundo
 
     // Exponer funciones globales para debugging (solo en desarrollo)
     if (import.meta.env.DEV) {
@@ -64,20 +48,19 @@ const BannerPoliticas: React.FC = () => {
     }
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('politicasStorageChange', handleCustomStorageChange);
+      clearInterval(intervalId);
       if (import.meta.env.DEV) {
         delete (window as any).refrescarBannerPoliticas;
+        delete (window as any).resetearPoliticas;
       }
     };
   }, [verificarYMostrarBanner]);
 
   const handleAceptarTodo = () => {
-    // Guardar la aceptación en localStorage
+    // Guardar la aceptación en localStorage (opcional, para referencia)
     localStorage.setItem('politicas_publicas_aceptadas', 'true');
     localStorage.setItem('politicas_publicas_fecha_aceptacion', new Date().toISOString());
-    // Disparar evento personalizado para actualizar
-    window.dispatchEvent(new Event('politicasStorageChange'));
+    // Ocultar el banner (pero volverá a aparecer al refrescar)
     setMostrarBanner(false);
   };
 
@@ -90,11 +73,10 @@ const BannerPoliticas: React.FC = () => {
   };
 
   const handleAceptarEnModal = () => {
-    // Guardar la aceptación en localStorage
+    // Guardar la aceptación en localStorage (opcional, para referencia)
     localStorage.setItem('politicas_publicas_aceptadas', 'true');
     localStorage.setItem('politicas_publicas_fecha_aceptacion', new Date().toISOString());
-    // Disparar evento personalizado para actualizar
-    window.dispatchEvent(new Event('politicasStorageChange'));
+    // Cerrar modal y ocultar banner (pero volverá a aparecer al refrescar)
     setMostrarModal(false);
     setMostrarBanner(false);
   };
