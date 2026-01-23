@@ -4,12 +4,16 @@ interface ModalPoliticasProps {
   isOpen: boolean;
   onAceptar: () => void;
   onAceptarLoading?: boolean;
+  modoPublico?: boolean; // Si es true, permite cerrar el modal sin aceptar
+  onCerrar?: () => void; // Función para cerrar el modal en modo público
 }
 
 const ModalPoliticas: React.FC<ModalPoliticasProps> = ({ 
   isOpen, 
   onAceptar,
-  onAceptarLoading = false 
+  onAceptarLoading = false,
+  modoPublico = false,
+  onCerrar
 }) => {
   const [politicaSeguridadLeida, setPoliticaSeguridadLeida] = useState(false);
   const [politicaPrivacidadLeida, setPoliticaPrivacidadLeida] = useState(false);
@@ -17,12 +21,17 @@ const ModalPoliticas: React.FC<ModalPoliticasProps> = ({
 
   if (!isOpen) return null;
 
-  const puedeAceptar = politicaSeguridadLeida && politicaPrivacidadLeida;
+  // En modo público, se puede aceptar sin leer todo (opcional)
+  // En modo autenticado, se requiere leer ambas políticas
+  const puedeAceptar = modoPublico ? true : (politicaSeguridadLeida && politicaPrivacidadLeida);
 
   return (
     <div className="fixed inset-0 z-[100] overflow-y-auto">
-      {/* Backdrop - no se puede cerrar */}
-      <div className="fixed inset-0 bg-black bg-opacity-75" />
+      {/* Backdrop - se puede cerrar solo en modo público */}
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-75"
+        onClick={modoPublico && onCerrar ? onCerrar : undefined}
+      />
       
       {/* Contenido del modal */}
       <div className="flex items-center justify-center min-h-screen p-4">
@@ -34,9 +43,23 @@ const ModalPoliticas: React.FC<ModalPoliticasProps> = ({
                 Políticas de Seguridad y Privacidad
               </h2>
               <p className="mt-1 text-sm text-gray-600">
-                Por favor, lee y acepta nuestras políticas para continuar
+                {modoPublico 
+                  ? 'Revisa nuestras políticas de seguridad y privacidad'
+                  : 'Por favor, lee y acepta nuestras políticas para continuar'
+                }
               </p>
             </div>
+            {modoPublico && onCerrar && (
+              <button
+                onClick={onCerrar}
+                className="text-gray-400 hover:text-gray-600 transition-colors p-2"
+                aria-label="Cerrar"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
           </div>
           
           {/* Tabs */}
@@ -134,19 +157,21 @@ const ModalPoliticas: React.FC<ModalPoliticasProps> = ({
                   </section>
                 </div>
 
-                <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <label className="flex items-start space-x-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={politicaSeguridadLeida}
-                      onChange={(e) => setPoliticaSeguridadLeida(e.target.checked)}
-                      className="mt-1 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-700">
-                      He leído y comprendo la Política de Seguridad de Datos
-                    </span>
-                  </label>
-                </div>
+                {!modoPublico && (
+                  <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <label className="flex items-start space-x-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={politicaSeguridadLeida}
+                        onChange={(e) => setPoliticaSeguridadLeida(e.target.checked)}
+                        className="mt-1 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">
+                        He leído y comprendo la Política de Seguridad de Datos
+                      </span>
+                    </label>
+                  </div>
+                )}
               </div>
             )}
 
@@ -245,19 +270,21 @@ const ModalPoliticas: React.FC<ModalPoliticasProps> = ({
                   </section>
                 </div>
 
-                <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <label className="flex items-start space-x-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={politicaPrivacidadLeida}
-                      onChange={(e) => setPoliticaPrivacidadLeida(e.target.checked)}
-                      className="mt-1 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-700">
-                      He leído y comprendo la Política de Privacidad
-                    </span>
-                  </label>
-                </div>
+                {!modoPublico && (
+                  <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <label className="flex items-start space-x-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={politicaPrivacidadLeida}
+                        onChange={(e) => setPoliticaPrivacidadLeida(e.target.checked)}
+                        className="mt-1 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">
+                        He leído y comprendo la Política de Privacidad
+                      </span>
+                    </label>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -266,23 +293,38 @@ const ModalPoliticas: React.FC<ModalPoliticasProps> = ({
           <div className="p-6 border-t border-gray-200 bg-gray-50">
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-600">
-                {!puedeAceptar && (
+                {!modoPublico && !puedeAceptar && (
                   <span className="text-amber-600 font-medium">
                     Por favor, lee y acepta ambas políticas para continuar
                   </span>
                 )}
+                {modoPublico && (
+                  <span className="text-gray-600">
+                    Puedes leer nuestras políticas completas o aceptar directamente
+                  </span>
+                )}
               </div>
-              <button
-                onClick={onAceptar}
-                disabled={!puedeAceptar || onAceptarLoading}
-                className={`px-8 py-3 rounded-lg font-semibold text-white transition-colors ${
-                  puedeAceptar && !onAceptarLoading
-                    ? 'bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-xl'
-                    : 'bg-gray-400 cursor-not-allowed'
-                }`}
-              >
-                {onAceptarLoading ? 'Procesando...' : 'Aceptar Políticas'}
-              </button>
+              <div className="flex gap-3">
+                {modoPublico && onCerrar && (
+                  <button
+                    onClick={onCerrar}
+                    className="px-6 py-3 rounded-lg font-semibold text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 transition-colors"
+                  >
+                    Cerrar
+                  </button>
+                )}
+                <button
+                  onClick={onAceptar}
+                  disabled={(!modoPublico && !puedeAceptar) || onAceptarLoading}
+                  className={`px-8 py-3 rounded-lg font-semibold text-white transition-colors ${
+                    (modoPublico || puedeAceptar) && !onAceptarLoading
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-lg hover:shadow-xl'
+                      : 'bg-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  {onAceptarLoading ? 'Procesando...' : 'Aceptar Políticas'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

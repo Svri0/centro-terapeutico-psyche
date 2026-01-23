@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Chatbot from '../componentes/Chatbot';
+import BannerPoliticas from '../componentes/BannerPoliticas';
 import { useLogViewPerformance } from '../utilidades/performanceLogger';
 
 interface FormData {
@@ -1158,6 +1159,9 @@ const Inicio: React.FC = () => {
 
       {/* Chatbot */}
       <Chatbot />
+
+      {/* Banner de Políticas */}
+      <BannerPoliticas />
     </div>
   );
 };
