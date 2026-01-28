@@ -27,6 +27,7 @@
     "crear-admin": "ts-node scripts/crear-admin.ts",
     "crear-psicologos": "ts-node scripts/crear-psicologo.ts",
     "crear-datos-bairon": "node scripts/crear-datos-ficticios-bairon.js",
+    "crear-usuarios-ficticios": "node scripts/crear-usuarios-ficticios.js",
     "test-psicologos": "ts-node scripts/test-login-psicologo.ts",
     "test:login": "node scripts/test-login.js",
     "test:security": "node scripts/test-security.js",
