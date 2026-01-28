@@ -14,6 +14,7 @@ import Etiqueta from './Etiqueta';
 import Diagnostico from './Diagnostico';
 import ConfiguracionSistema from './ConfiguracionSistema';
 import TokensMensajesPaciente from './TokensMensajesPaciente';
+import Politica from './Politica';
 
 // Configurar asociaciones
 
@@ -287,4 +288,5 @@ export {
   Diagnostico,
   ConfiguracionSistema,
   TokensMensajesPaciente,
+  Politica,
 }; 
